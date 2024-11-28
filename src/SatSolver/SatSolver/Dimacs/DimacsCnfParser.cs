@@ -3,12 +3,17 @@ using static Revo.SatSolver.Dimacs.CnfParserException;
 
 namespace Revo.SatSolver.Dimacs;
 
+/// <summary>
+/// Parses satisfiability problems written in
+/// conjunctive normal form in DIMACS standard.
+/// </summary>
 public sealed class DimacsCnfParser
 {
     readonly List<Problem> _problems = [];
     readonly List<Clause> _clauses = [];
     readonly List<Literal> _literals = [];
     readonly string _input;
+
     int _lineNumber, _position, _lineStart;
     int _numberOfLiterals, _numberOfClauses;
 
@@ -20,11 +25,11 @@ public sealed class DimacsCnfParser
 
     void Parse()
     {
-        while (_position < _input.Length)
+        do
+        {
             ReadProblem();
-
-        if (_problems.Count == 0)
-            throw InvalidProblemLine(_lineNumber);
+            SkipTrivialLines();
+        } while (_position < _input.Length);
     }
     void ReadProblem()
     {
@@ -37,17 +42,18 @@ public sealed class DimacsCnfParser
     void ReadProblemLine()
     {
         SkipTrivialLines();
-        if (EndReached) return;
-        if (Current != 'p') throw InvalidProblemLine(_lineNumber);
+        if (EndReached || Current != 'p') throw InvalidProblemLine(_lineNumber);
         _position++;
         if (Current != ' ') throw InvalidProblemLine(_lineNumber);
         _position++;
         var format = ReadText();
         if (format != "cnf") throw InvalidProblemFormat(format, _lineNumber);
         if (Current != ' ') throw InvalidProblemLine(_lineNumber, Column);
+        _position++;
         _numberOfLiterals = ReadNumber();
         if (_numberOfLiterals < 1) throw InvalidProblemLine(_lineNumber, Column);
         if (Current != ' ') throw InvalidProblemLine(_lineNumber, Column);
+        _position++;
         _numberOfClauses = ReadNumber();
         if (_numberOfClauses < 1) throw InvalidProblemLine(_lineNumber, Column);
         FinishLine();
@@ -126,6 +132,13 @@ public sealed class DimacsCnfParser
         _lineStart = _position;
     }
 
+    /// <summary>
+    /// Parses the <paramref name="input"/> string into a set of satisfiability
+    /// <see cref="Problem"/> problems.
+    /// </summary>
+    /// <param name="input">The input string in DIMACS conjunctive normal form.</param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException">The <paramref name="input"/> string was <c>null</c>.</exception>
     public static Problem[] Parse(string input)
     {
         var parser = new DimacsCnfParser(input ?? throw new ArgumentNullException(nameof(input)));
