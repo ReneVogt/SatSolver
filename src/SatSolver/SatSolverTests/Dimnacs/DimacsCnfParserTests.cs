@@ -3,6 +3,8 @@ using Revo.SatSolver.Dimacs;
 
 namespace SatSolverTests.Dimnacs;
 
+#pragma warning disable CA1861
+
 public sealed class DimacsCnfParserTests
 {
     [Fact]
@@ -62,6 +64,41 @@ public sealed class DimacsCnfParserTests
                 new(1, [new[]{-1}]) 
             }
         ];
+
+        yield return [@"
+p cnf 5 5
+1 0
+2 0
+3 0
+4 0
+5 0
+
+c Comments and white spaces added
+
+p cnf 4 3
+c comment inside
+
+-1 -2 4 0
+-4 2 1 0
+-3 -2 0
+
+c End comment.
+",
+            new Problem[]
+            {
+                new(5, [
+                    new[]{1},
+                    new[]{2},
+                    new[]{3},
+                    new[]{4},
+                    new[]{5}]),
+                new(4, [
+                    new[]{-1, -2, 4},
+                    new[]{-4, 2, 1},
+                    new[]{-3, -2}]),
+
+            }
+            ];
     }
     public static IEnumerable<object[]> FailingTestCases()
     {
