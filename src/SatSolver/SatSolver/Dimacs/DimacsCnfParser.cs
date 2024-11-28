@@ -84,7 +84,7 @@ public sealed class DimacsCnfParser
 
         var text = ReadText();
         if (!int.TryParse(text, CultureInfo.InvariantCulture, out var id)) throw InvalidCharacter(text, _lineNumber, Column-text.Length);
-        return new(Math.Abs(id), id < 0);
+        return new(Math.Abs(id), id > 0);
     }
     string ReadText()
     {
