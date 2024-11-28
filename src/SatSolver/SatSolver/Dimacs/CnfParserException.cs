@@ -65,14 +65,14 @@ public sealed class CnfParserException : Exception
     internal static CnfParserException InvalidLine(int line) => new(string.Format(null, _invalidLine, line), line, 0, Reason.InvalidLine);
 
     static readonly CompositeFormat _invalidCharacter = CompositeFormat.Parse(Resources.CnfParserException_InvalidCharacter);
-    internal static CnfParserException InvalidCharacter(string text, int line, int column) => new(string.Format(null, _invalidCharacter, text, line, column), line, column, Reason.InvalidCharacter);
+    internal static CnfParserException InvalidCharacter(string text, int line, int column) => new(string.Format(null, _invalidCharacter, line, column, text), line, column, Reason.InvalidCharacter);
 
 
     static readonly CompositeFormat _invalidProblemLine = CompositeFormat.Parse(Resources.CnfParserException_InvalidProblemLine);
     internal static CnfParserException InvalidProblemLine(int line, int column = 0) => new(string.Format(null, _invalidProblemLine, line), line, column, Reason.InvalidProblemLine);
 
     static readonly CompositeFormat _invalidProblemFormat = CompositeFormat.Parse(Resources.CnfParserException_InvalidProblemFormat);
-    internal static CnfParserException InvalidProblemFormat(string format, int line) => new(string.Format(null, _invalidProblemFormat, format, line), line, 1, Reason.InvalidProblemFormat);
+    internal static CnfParserException InvalidProblemFormat(string format, int line) => new(string.Format(null, _invalidProblemFormat, format, line), line, 2, Reason.InvalidProblemFormat);
 
 
     static readonly CompositeFormat _literalOutOfRange = CompositeFormat.Parse(Resources.CnfParserException_LiteralOutOfRange);

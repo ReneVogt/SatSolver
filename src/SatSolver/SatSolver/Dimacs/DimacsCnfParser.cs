@@ -51,11 +51,11 @@ public sealed class DimacsCnfParser
         if (Current != ' ') throw InvalidProblemLine(_lineNumber, Column);
         _position++;
         _numberOfLiterals = ReadNumber();
-        if (_numberOfLiterals < 1) throw InvalidProblemLine(_lineNumber, Column);
+        if (_numberOfLiterals < 1) throw InvalidProblemLine(_lineNumber, Column-1);
         if (Current != ' ') throw InvalidProblemLine(_lineNumber, Column);
         _position++;
         _numberOfClauses = ReadNumber();
-        if (_numberOfClauses < 1) throw InvalidProblemLine(_lineNumber, Column);
+        if (_numberOfClauses < 1) throw InvalidProblemLine(_lineNumber, Column-1);
         FinishLine();
     }
     void ReadClause()
@@ -68,8 +68,9 @@ public sealed class DimacsCnfParser
             var literal = ReadLiteral();
             if (literal.Id == 0)
             {
-                if (_literals.Count == 0) throw MissingLiteral(_lineNumber, Column);
+                if (_literals.Count == 0) throw MissingLiteral(_lineNumber, 0);
                 _clauses.Add(new([.. _literals]));
+                _literals.Clear();
                 FinishLine();
                 return;
             }

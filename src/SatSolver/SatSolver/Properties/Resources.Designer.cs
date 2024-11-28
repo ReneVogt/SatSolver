@@ -115,7 +115,7 @@ namespace Revo.SatSolver.Properties {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Missing literal in line {0} column {1}. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Missing literal in line {0}, column {1}. ähnelt.
         /// </summary>
         internal static string CnfParserException_MissingLiteral {
             get {
@@ -124,7 +124,7 @@ namespace Revo.SatSolver.Properties {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Missing clause termination character &apos;0&apos; at line {0} column {1}. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Missing clause termination character &apos;0&apos; at line {0}, column {1}. ähnelt.
         /// </summary>
         internal static string CnfParserException_MissingTerminator {
             get {
