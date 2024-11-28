@@ -3,18 +3,55 @@ using System.Text;
 
 namespace Revo.SatSolver.Dimacs;
 
+/// <summary>
+/// Exception thrown by the <see cref="DimacsCnfParser"/> when encountering
+/// mistakes in the DIMACS input.
+/// </summary>
 public sealed class CnfParserException : Exception
 {
     public enum Reason
     {
         Unknown = 0,
+
+        /// <summary>
+        /// A line contains invalid characters or unexpected content.
+        /// </summary>
         InvalidLine,
+
+        /// <summary>
+        /// An invalid character was found in the input.
+        /// </summary>
         InvalidCharacter,
-        MissingProblemLine,
+
+        /// <summary>
+        /// An expected problem definition line is missing or invalid.
+        /// </summary>
+        InvalidProblemLine,
+
+        /// <summary>
+        /// The format specified by a problem definition is not supported.
+        /// Currently only 'cnf' is supported.
+        /// </summary>
         InvalidProblemFormat,
+
+        /// <summary>
+        /// A literal id was larger then the specified number of literals.
+        /// </summary>
         LiteralOutOfRange,
+
+        /// <summary>
+        /// There were less clauses defined than declared in the problem definition.
+        /// </summary>
         MissingClauses,
+
+        /// <summary>
+        /// A clause contained no literals.
+        /// </summary>
         MissingLiteral,
+
+        /// <summary>
+        /// A clause was not terminated by '0'.
+        /// </summary>
         MissingTerminator
     }
 
@@ -32,7 +69,7 @@ public sealed class CnfParserException : Exception
 
 
     static readonly CompositeFormat _invalidProblemLine = CompositeFormat.Parse(Resources.CnfParserException_InvalidProblemLine);
-    internal static CnfParserException InvalidProblemLine(int line, int column = 0) => new(string.Format(null, _invalidProblemLine, line), line, column, Reason.MissingProblemLine);
+    internal static CnfParserException InvalidProblemLine(int line, int column = 0) => new(string.Format(null, _invalidProblemLine, line), line, column, Reason.InvalidProblemLine);
 
     static readonly CompositeFormat _invalidProblemFormat = CompositeFormat.Parse(Resources.CnfParserException_InvalidProblemFormat);
     internal static CnfParserException InvalidProblemFormat(string format, int line) => new(string.Format(null, _invalidProblemFormat, format, line), line, 1, Reason.InvalidProblemFormat);
