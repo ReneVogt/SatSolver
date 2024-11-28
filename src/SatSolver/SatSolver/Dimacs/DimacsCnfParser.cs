@@ -5,60 +5,132 @@ namespace Revo.SatSolver.Dimacs;
 
 public sealed class DimacsCnfParser
 {
-    public static IEnumerable<Problem> Parse(string input) => ParseInternal(input ?? throw new ArgumentNullException(nameof(input)));
+    readonly List<Problem> _problems = [];
+    readonly List<Clause> _clauses = [];
+    readonly List<Literal> _literals = [];
+    readonly string _input;
+    int _lineNumber, _position, _lineStart;
+    int _numberOfLiterals, _numberOfClauses;
 
-    static IEnumerable<Problem> ParseInternal(string input)
+    char Current => _position < _input.Length ? _input[_position] : '\0';
+    bool EndReached => _position >= _input.Length;
+    int Column => _position - _lineStart;
+
+    DimacsCnfParser(string input) => _input = input;
+
+    void Parse()
     {
-        var lines = input.Split('\n').Select((line, number) => (number, parts: line.Split().Select(part => part.Trim()).Where(part => !string.IsNullOrWhiteSpace(part)).ToArray()));
-        var relevantLines = lines.Where(entry => entry.parts.Length > 0 && !entry.parts[0].StartsWith('c'));
+        while (_position < _input.Length)
+            ReadProblem();
 
-        uint numberOfLiterals = 0, numberOfClauses = 0;
-        var clauses = new List<Clause>();
-        var maxLineNumber = 0;
-        foreach (var (lineNumber, parts) in relevantLines)
-        {
-            if (numberOfLiterals == 0)
-            {
-                if (parts[0] != "p" || parts.Length != 4)
-                    throw MissingProblemLine(lineNumber);
-                if (parts[1] != "cnf")
-                    throw InvalidProblemFormat(parts[1], lineNumber);
-                if (!uint.TryParse(parts[2], CultureInfo.InvariantCulture, out numberOfLiterals) || numberOfLiterals == 0)
-                    throw InvalidCharacter(parts[2], lineNumber, 2);
-                if (!uint.TryParse(parts[3], CultureInfo.InvariantCulture, out numberOfClauses) || numberOfClauses == 0)
-                    throw InvalidCharacter(parts[3], lineNumber, 3);
-
-                continue;
-            }
-
-            var literals = new List<Literal>();
-            for (var part = 0; part < parts.Length; part++)
-            {
-                var last = part == parts.Length - 1;
-                if (!int.TryParse(parts[part], CultureInfo.InvariantCulture, out var literalId))
-                    throw InvalidCharacter(parts[3], lineNumber, part);
-                if ((!last && literalId == 0) || literalId > numberOfLiterals)
-                    throw LiteralOutOfRange(literalId, (int)numberOfLiterals, lineNumber, part);
-                if (last && literalId != 0)
-                    throw MissingTerminator(lineNumber, part);
-
-                if (!last) literals.Add(new(Math.Abs(literalId), literalId > 0));
-            }
-            if (literals.Count < 1)
-                throw MissingLiteral(lineNumber, 0);
-
-            clauses.Add(new([.. literals]));
-            if (clauses.Count == numberOfClauses)
-            {
-                yield return new((int)numberOfLiterals, [.. clauses]);
-                numberOfLiterals = numberOfClauses = 0;
-                clauses.Clear();
-            }
-
-            maxLineNumber = lineNumber;
-        }
-
-        if (numberOfClauses > 0)
-            throw MissingClauses((int)numberOfClauses - clauses.Count, maxLineNumber+1);
+        if (_problems.Count == 0)
+            throw InvalidProblemLine(_lineNumber);
     }
+    void ReadProblem()
+    {
+        ReadProblemLine();
+        for (var i = 0; i<_numberOfClauses; i++)
+            ReadClause();
+        _problems.Add(new(_numberOfLiterals, [.. _clauses]));
+        _clauses.Clear();
+    }
+    void ReadProblemLine()
+    {
+        SkipTrivialLines();
+        if (EndReached) return;
+        if (Current != 'p') throw InvalidProblemLine(_lineNumber);
+        _position++;
+        if (Current != ' ') throw InvalidProblemLine(_lineNumber);
+        _position++;
+        var format = ReadText();
+        if (format != "cnf") throw InvalidProblemFormat(format, _lineNumber);
+        if (Current != ' ') throw InvalidProblemLine(_lineNumber, Column);
+        _numberOfLiterals = ReadNumber();
+        if (_numberOfLiterals < 1) throw InvalidProblemLine(_lineNumber, Column);
+        if (Current != ' ') throw InvalidProblemLine(_lineNumber, Column);
+        _numberOfClauses = ReadNumber();
+        if (_numberOfClauses < 1) throw InvalidProblemLine(_lineNumber, Column);
+        FinishLine();
+    }
+    void ReadClause()
+    {
+        SkipTrivialLines();
+        if (EndReached || Current == 'p') throw MissingClauses(_numberOfClauses - _clauses.Count, _lineNumber);
+
+        for (; ; )
+        {
+            var literal = ReadLiteral();
+            if (literal.Id == 0)
+            {
+                if (_literals.Count == 0) throw MissingLiteral(_lineNumber, Column);
+                _clauses.Add(new([.. _literals]));
+                FinishLine();
+                return;
+            }
+            if (literal.Id > _numberOfLiterals) throw LiteralOutOfRange(literal.Id, _numberOfLiterals, _lineNumber, Column);
+            _literals.Add(literal);
+        }
+    }
+    Literal ReadLiteral()
+    {
+        while (!EndReached && char.IsWhiteSpace(Current) && Current != '\n') _position++;
+        if (EndReached || Current == '\n') throw MissingTerminator(_lineNumber, Column);
+
+        var text = ReadText();
+        if (!int.TryParse(text, CultureInfo.InvariantCulture, out var id)) throw InvalidCharacter(text, _lineNumber, Column-text.Length);
+        return new(Math.Abs(id), id < 0);
+    }
+    string ReadText()
+    {
+        var start = _position;
+        while (!EndReached && !char.IsWhiteSpace(Current)) _position++;
+        return _input[start.._position];
+    }
+    int ReadNumber()
+    {
+        var text = ReadText();
+        if (string.IsNullOrEmpty(text)) return -1;
+        if (!uint.TryParse(text, CultureInfo.InvariantCulture, out var number))
+            throw InvalidCharacter(text, _lineNumber, Column-text.Length);
+        return (int)number;
+    }
+    void SkipTrivialLines()
+    {
+        while (!EndReached && (Current == 'c' || char.IsWhiteSpace(Current)))
+        {
+            var comment = Current == 'c';
+            while (!EndReached && Current != '\n')
+            {
+                if (!comment && !char.IsWhiteSpace(Current))
+                    throw InvalidLine(_lineNumber);
+                _position++;
+            }
+            if (Current == '\n')
+            {
+                _position++;
+                _lineNumber++;
+                _lineStart = _position;
+            }
+        }
+    }
+    void FinishLine()
+    {
+        while (!EndReached && Current != '\n')
+        {
+            if (!char.IsWhiteSpace(Current))
+                throw InvalidCharacter(Current.ToString(), _lineNumber, Column);
+            _position++;
+        }
+        _position++;
+        _lineNumber++;
+        _lineStart = _position;
+    }
+
+    public static Problem[] Parse(string input)
+    {
+        var parser = new DimacsCnfParser(input ?? throw new ArgumentNullException(nameof(input)));
+        parser.Parse();
+        return [.. parser._problems];
+    }
+
 }

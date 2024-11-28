@@ -118,24 +118,27 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="CnfParserException_InvalidCharacter" xml:space="preserve">
-    <value>Invalid character at line {0}, part {1}: '{2}'.</value>
+    <value>Invalid character at line {0}, column {1}: '{2}'.</value>
+  </data>
+  <data name="CnfParserException_InvalidLine" xml:space="preserve">
+    <value>Invalid line (e.g. leading whitespace) at line {0}.</value>
   </data>
   <data name="CnfParserException_InvalidProblemFormat" xml:space="preserve">
     <value>Invalid problem format '{0}' at line {1}. Expected format 'cnf'.</value>
   </data>
-  <data name="CnfParserException_LiteralOutOfRange" xml:space="preserve">
-    <value>Literal '{0}' out of range (1 - {1}) at line {2}, part {3}.</value>
-  </data>
-  <data name="CnfParserException_MissingClauses" xml:space="preserve">
-    <value>Missing {0} clause(s) at the end of the input.</value>
-  </data>
-  <data name="CnfParserException_MissingLiteral" xml:space="preserve">
-    <value>Missing literal in line {0} part {1}.</value>
-  </data>
-  <data name="CnfParserException_MissingProblemLine" xml:space="preserve">
+  <data name="CnfParserException_InvalidProblemLine" xml:space="preserve">
     <value>Missing or invalid problem definition at line {0}.</value>
   </data>
+  <data name="CnfParserException_LiteralOutOfRange" xml:space="preserve">
+    <value>Literal '{0}' out of range (1 - {1}) at line {2}, column {3}.</value>
+  </data>
+  <data name="CnfParserException_MissingClauses" xml:space="preserve">
+    <value>Missing {0} clause(s) at line {1}.</value>
+  </data>
+  <data name="CnfParserException_MissingLiteral" xml:space="preserve">
+    <value>Missing literal in line {0} column {1}.</value>
+  </data>
   <data name="CnfParserException_MissingTerminator" xml:space="preserve">
-    <value>Missing clause termination character '0' at line {0} part {1}.</value>
+    <value>Missing clause termination character '0' at line {0} column {1}.</value>
   </data>
 </root>
