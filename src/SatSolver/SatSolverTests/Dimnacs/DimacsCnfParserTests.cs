@@ -67,6 +67,92 @@ public sealed class DimacsCnfParserTests
     {
         yield return ["", CnfParserException.Reason.InvalidProblemLine, 0, 0, "Missing or invalid problem definition at line 0."];
         yield return ["\n", CnfParserException.Reason.InvalidProblemLine, 1, 0, "Missing or invalid problem definition at line 1."];
-        yield return ["p cnf 3 5", CnfParserException.Reason.MissingClauses, 1, 0, "Missing 5 clause(s) at line 1."];             
+        yield return ["p nocnf 2 5", CnfParserException.Reason.InvalidProblemFormat, 0, 2, "Invalid problem format 'nocnf' at line 0. Expected format 'cnf'."];
+        yield return ["p cnf 3 5", CnfParserException.Reason.MissingClauses, 1, 0, "Missing 5 clause(s) at line 1."];
+        yield return ["p cnf 0 5", CnfParserException.Reason.InvalidProblemLine, 0, 6, "Missing or invalid problem definition at line 0."];
+        yield return ["p cnf 5 0", CnfParserException.Reason.InvalidProblemLine, 0, 8, "Missing or invalid problem definition at line 0."];
+
+        yield return [@"p cnf 5 1
+1 -1 0 x", CnfParserException.Reason.InvalidCharacter, 1, 7, "Invalid character at line 1, column 7: 'x'."];
+
+        yield return [@"p cnf 5 3
+1 -1 0
+1 2 3 4 5 0
+1 ab 2 3 4 0
+", CnfParserException.Reason.InvalidCharacter, 3, 2, "Invalid character at line 3, column 2: 'ab'."];
+
+        yield return [@"p cnf 5 3
+1 -1 0
+1 2 3 4 5 0
+1 -5 2 3 4 0
+c Achtung, baby!
+p cnf 3 3
+1 2 3 0
+-1 -2 -3 0
+
+c for completeness
+p cnf 7 1
+1 2 3 4 5 6 7 0
+", CnfParserException.Reason.MissingClauses, 10, 0, "Missing 1 clause(s) at line 10."];
+
+        yield return [@"p cnf 5 3
+1 -1 0
+1 2 3 4 5 0
+1 -5 2 3 4 0
+c Achtung, baby!
+p cnf 3 3
+1 2 3 0
+-1 -2 -3
+-3 2 1 0
+
+c for completeness
+p cnf 7 1
+1 2 3 4 5 6 7 0
+", CnfParserException.Reason.MissingTerminator, 7, 9, "Missing clause termination character '0' at line 7, column 9."];
+
+        yield return [@"p cnf 5 3
+1 -1 0
+1 2 3 4 5 0
+1 -5 2 3 4 0
+c Achtung, baby!
+p cnf 3 3
+1 2 3 0
+0
+-3 2 1 0
+
+c for completeness
+p cnf 7 1
+1 2 3 4 5 6 7 0
+", CnfParserException.Reason.MissingLiteral, 7, 0, "Missing literal in line 7, column 0."];
+
+        yield return [@"p cnf 5 3
+1 -1 0
+1 2 3 4 5 0
+1 -5 2 3 4 0
+c Achtung, baby!
+p cnf 10 3
+1 2 3 0
+1 17 0
+-3 2 1 0
+
+c for completeness
+p cnf 7 1
+1 2 3 4 5 6 7 0
+", CnfParserException.Reason.LiteralOutOfRange, 7, 4, "Literal '17' out of range (1 - 10) at line 7, column 4."];
+
+        yield return [@"p cnf 5 3
+1 -1 0
+1 2 3 4 5 0
+1 -5 2 3 4 0
+c Achtung, baby!
+p cnf 10 3
+1 2 3 0
+1 -17 0
+-3 2 1 0
+
+c for completeness
+p cnf 7 1
+1 2 3 4 5 6 7 0
+", CnfParserException.Reason.LiteralOutOfRange, 7, 5, "Literal '17' out of range (1 - 10) at line 7, column 5."];
     }
 }

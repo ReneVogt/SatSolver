@@ -136,9 +136,9 @@
     <value>Missing {0} clause(s) at line {1}.</value>
   </data>
   <data name="CnfParserException_MissingLiteral" xml:space="preserve">
-    <value>Missing literal in line {0} column {1}.</value>
+    <value>Missing literal in line {0}, column {1}.</value>
   </data>
   <data name="CnfParserException_MissingTerminator" xml:space="preserve">
-    <value>Missing clause termination character '0' at line {0} column {1}.</value>
+    <value>Missing clause termination character '0' at line {0}, column {1}.</value>
   </data>
 </root>
