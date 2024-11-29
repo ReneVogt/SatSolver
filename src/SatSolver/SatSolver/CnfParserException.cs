@@ -1,7 +1,7 @@
 ﻿using Revo.SatSolver.Properties;
 using System.Text;
 
-namespace Revo.SatSolver.Dimacs;
+namespace Revo.SatSolver;
 
 /// <summary>
 /// Exception thrown by the <see cref="DimacsCnfParser"/> when encountering
