@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
-using static Revo.SatSolver.Dimacs.CnfParserException;
+using static Revo.SatSolver.CnfParserException;
 
-namespace Revo.SatSolver.Dimacs;
+namespace Revo.SatSolver;
 
 /// <summary>
 /// Parses satisfiability problems written in

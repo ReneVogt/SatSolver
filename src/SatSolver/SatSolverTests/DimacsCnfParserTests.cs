@@ -1,7 +1,6 @@
 ﻿using Revo.SatSolver;
-using Revo.SatSolver.Dimacs;
 
-namespace SatSolverTests.Dimnacs;
+namespace SatSolverTests;
 
 #pragma warning disable CA1861
 
@@ -23,7 +22,7 @@ public sealed class DimacsCnfParserTests
         {
             Assert.Equal(expectedProblem.NumberOfLiterals, actualProblem.NumberOfLiterals);
             Assert.Equal(expectedProblem.NumberOfClauses, actualProblem.NumberOfClauses);
-            foreach(var (expectedClause, actualClause) in expectedProblem.Clauses.Zip(actualProblem.Clauses))
+            foreach (var (expectedClause, actualClause) in expectedProblem.Clauses.Zip(actualProblem.Clauses))
             {
                 Assert.Equal(expectedClause.Literals.Length, actualClause.Literals.Length);
                 foreach (var (expectedLiteral, actualLiteral) in expectedClause.Literals.Zip(actualClause.Literals))
@@ -59,9 +58,9 @@ public sealed class DimacsCnfParserTests
         yield return [
             @"p cnf 1 1
 -1 0",
-            new Problem[] 
+            new Problem[]
             {
-                new(1, [new[]{-1}]) 
+                new(1, [new[]{-1}])
             }
         ];
 
