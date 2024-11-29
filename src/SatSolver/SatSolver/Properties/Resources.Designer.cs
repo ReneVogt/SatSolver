@@ -61,25 +61,7 @@ namespace Revo.SatSolver.Properties {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Invalid character at line {0}, column {1}: &apos;{2}&apos;. ähnelt.
-        /// </summary>
-        internal static string CnfParserException_InvalidCharacter {
-            get {
-                return ResourceManager.GetString("CnfParserException_InvalidCharacter", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Invalid line (e.g. leading whitespace) at line {0}. ähnelt.
-        /// </summary>
-        internal static string CnfParserException_InvalidLine {
-            get {
-                return ResourceManager.GetString("CnfParserException_InvalidLine", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Invalid problem format &apos;{0}&apos; at line {1}. Expected format &apos;cnf&apos;. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Invalid problem format &apos;{0}&apos; in line {1}, position {2}. Expected format &apos;cnf&apos;. ähnelt.
         /// </summary>
         internal static string CnfParserException_InvalidProblemFormat {
             get {
@@ -88,7 +70,7 @@ namespace Revo.SatSolver.Properties {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Missing or invalid problem definition at line {0}. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Missing or invalid problem definition in line {0}. ähnelt.
         /// </summary>
         internal static string CnfParserException_InvalidProblemLine {
             get {
@@ -97,7 +79,7 @@ namespace Revo.SatSolver.Properties {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Literal &apos;{0}&apos; out of range (1 - {1}) at line {2}, column {3}. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Literal &apos;{0}&apos; out of range (1 - {1}) in line {2}, position {3}. ähnelt.
         /// </summary>
         internal static string CnfParserException_LiteralOutOfRange {
             get {
@@ -106,29 +88,11 @@ namespace Revo.SatSolver.Properties {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Missing {0} clause(s) at line {1}. ähnelt.
-        /// </summary>
-        internal static string CnfParserException_MissingClauses {
-            get {
-                return ResourceManager.GetString("CnfParserException_MissingClauses", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Missing literal in line {0}, column {1}. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Missing literal or clause termination (&apos;0&apos;) for clause {0} of {1} in line {2}, position {3}. ähnelt.
         /// </summary>
         internal static string CnfParserException_MissingLiteral {
             get {
                 return ResourceManager.GetString("CnfParserException_MissingLiteral", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Missing clause termination character &apos;0&apos; at line {0}, column {1}. ähnelt.
-        /// </summary>
-        internal static string CnfParserException_MissingTerminator {
-            get {
-                return ResourceManager.GetString("CnfParserException_MissingTerminator", resourceCulture);
             }
         }
     }
