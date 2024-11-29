@@ -27,7 +27,7 @@ public sealed class DimacsCnfParser
     {
         do
         {
-            MoveToNextNonWhiteSpace();
+            MoveToNextLineStart(skipCurrentLine: false);
             ReadProblem();
         } while (!EndReached);
     }
@@ -43,7 +43,7 @@ public sealed class DimacsCnfParser
     {
         if (Current != 'p' || Next != ' ') throw InvalidProblemLine(_lineNumber);
         _position++;
-        
+
         SkipWhiteSpacesOnLine();
         var start = _position++;
         while (!EndReached && !char.IsWhiteSpace(Current)) _position++;
@@ -98,35 +98,30 @@ public sealed class DimacsCnfParser
         return new(Math.Abs(literal), literal > 0);
     }
 
-    void MoveToNextLineStart()
+    void MoveToNextLineStart(bool skipCurrentLine = true)
     {
-        do
+        if (skipCurrentLine) SkipLine();
+        SkipWhiteSpacesOnLine();
+
+        while (!EndReached && (Current == 'c' || Current == '\n'))
+        {
+            SkipLine();
+            SkipWhiteSpacesOnLine();
+        }
+
+        void SkipLine()
         {
             while (!EndReached && Current != '\n') _position++;
             if (EndReached) return;
             _position++;
             _lineNumber++;
             _lineStart = _position;
-            MoveToNextNonWhiteSpace();
-        } while (!EndReached && Current == 'c');
+        }
     }
     void SkipWhiteSpacesOnLine()
     {
         while (!EndReached && char.IsWhiteSpace(Current) && Current != '\n')
             _position++;
-    }
-    void MoveToNextNonWhiteSpace()
-    {
-        while (!EndReached && char.IsWhiteSpace(Current))
-        {
-            var lineBreak = Current == '\n';
-            _position++;
-            if (lineBreak)
-            {
-                _lineNumber++;
-                _lineStart = _position;
-            }
-        }
     }
 
     /// <summary>

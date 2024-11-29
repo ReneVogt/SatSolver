@@ -48,7 +48,11 @@ public sealed class DimacsCnfParserTests
     public static IEnumerable<object[]> SuccessfulTestCases()
     {
         yield return [
-            @"p cnf 1 1
+            @"c start with comments
+
+c and blank lines
+
+p cnf 1 1
 1 0",
             new Problem[]
             {
