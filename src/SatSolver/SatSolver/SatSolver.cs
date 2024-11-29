@@ -2,5 +2,8 @@
 
 public static class SatSolver
 {
-    public static IEnumerable<Literal[]> Solve(Problem problem) => throw new NotImplementedException();
+    public static IEnumerable<Literal[]> Solve(Problem problem)
+    {
+        yield break;
+    }
 }
