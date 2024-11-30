@@ -1,4 +1,5 @@
 ﻿using Revo.SatSolver;
+using Revo.SatSolver.Parsing;
 
 namespace SatSolverTests;
 
