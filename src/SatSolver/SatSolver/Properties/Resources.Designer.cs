@@ -95,5 +95,23 @@ namespace Revo.SatSolver.Properties {
                 return ResourceManager.GetString("CnfParserException_MissingLiteral", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die The problem contains invalid literal IDs. ähnelt.
+        /// </summary>
+        internal static string SatSolverArgumentException_InvalidLiterals {
+            get {
+                return ResourceManager.GetString("SatSolverArgumentException_InvalidLiterals", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die The problem does not contain literals. ähnelt.
+        /// </summary>
+        internal static string SatSolverArgumentException_NumberOfLiterals {
+            get {
+                return ResourceManager.GetString("SatSolverArgumentException_NumberOfLiterals", resourceCulture);
+            }
+        }
     }
 }
