@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
-using static Revo.SatSolver.CnfParserException;
+using static Revo.SatSolver.Parsing.CnfParserException;
 
-namespace Revo.SatSolver;
+namespace Revo.SatSolver.Parsing;
 
 /// <summary>
 /// Parses satisfiability problems written in
@@ -17,7 +17,7 @@ public sealed class DimacsCnfParser
     uint _numberOfLiterals, _numberOfClauses;
 
     char Current => EndReached ? '\0' : _input[_position];
-    char Next => EndReached || (_position+1) >= _input.Length ? '\0' : _input[_position+1];
+    char Next => EndReached || _position+1 >= _input.Length ? '\0' : _input[_position+1];
     bool EndReached => _position >= _input.Length || _input[_position] == '%';
     int Column => _position - _lineStart;
 

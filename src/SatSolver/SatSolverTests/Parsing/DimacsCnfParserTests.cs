@@ -1,6 +1,7 @@
 ﻿using Revo.SatSolver;
+using Revo.SatSolver.Parsing;
 
-namespace SatSolverTests;
+namespace SatSolverTests.Parsing;
 
 #pragma warning disable CA1861
 
