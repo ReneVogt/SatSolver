@@ -83,26 +83,11 @@ public sealed class SatSolver
 
     /// <summary>
     /// Pure Literal Elimination: if a literal only occures in one sense, we can 
-    /// safely set it to its sense to satisfy the clauses it's contained in. But
-    /// this is not the same as choosing this variable, so when backtracking we have
-    /// to go back further than this step.
-    /// This is because although this help to improve the time to find a solution, 
-    /// it hides the possible other solutions, so we later want to try this variable
-    /// again.
+    /// safely set it to its sense to satisfy the clauses it's contained in.
     /// </summary>
     /// <returns><c>true</c> if clauses were changed, <c>false</c> if not (or clauses were removed).</returns>
     void PureLiteralElimination()
     {
-        //
-        // This eliminates a part of the search tree that is not added again
-        // during backtracking.
-        // If we want to sue this we may create constraints later that
-        // prohibit this selection and when we reached the end of the
-        // search space add these constraints and start again...
-        //
-        // that sounds stupid... should rethink that.
-        //
-
         while (_freeVariables.Select(id => _variables[id]).FirstOrDefault(variable => variable.Positives.Count == 0 || variable.Negatives.Count == 0) is { } variable)
             Propagate(variable, sense: variable.Negatives.Count == 0, guessed: false);
     }
