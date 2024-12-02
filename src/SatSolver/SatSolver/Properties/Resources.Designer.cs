@@ -97,6 +97,24 @@ namespace Revo.SatSolver.Properties {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Invalid or unexpected character at position {0}. ähnelt.
+        /// </summary>
+        internal static string InvalidBooleanAlgebraException_InvalidCharacter {
+            get {
+                return ResourceManager.GetString("InvalidBooleanAlgebraException_InvalidCharacter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die The boolean expression was incomplete and ended unexpectedly at position {0}. ähnelt.
+        /// </summary>
+        internal static string InvalidBooleanAlgebraException_UnexpectedEnd {
+            get {
+                return ResourceManager.GetString("InvalidBooleanAlgebraException_UnexpectedEnd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die The problem contains invalid literal IDs. ähnelt.
         /// </summary>
         internal static string SatSolverArgumentException_InvalidLiterals {

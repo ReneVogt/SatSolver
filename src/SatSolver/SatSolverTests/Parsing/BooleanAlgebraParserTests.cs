@@ -1,11 +1,16 @@
 ﻿using Revo.SatSolver.Parsing;
-using Revo.SatSolver.Parsing.Expressions;
 using Xunit.Abstractions;
 
 namespace SatSolverTests.Parsing;
 public class BooleanAlgebraParserTests(ITestOutputHelper? output)
 {
     ITestOutputHelper? _output = output;
+
+    [Fact]
+    public void Parse_Null_ArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => BooleanAlgebraParser.Parse(null!));
+    }
 
     [Fact]
     public void Parse_Literal()
@@ -46,6 +51,19 @@ public class BooleanAlgebraParserTests(ITestOutputHelper? output)
         e.AssertLiteral("not");
     }
     [Fact]
+    public void Parse_DoubleNot()
+    {
+        const string input = "a | !!b";
+        var expression = BooleanAlgebraParser.Parse(input);
+        using var e = new BooleanExpressionAsserter(expression);
+        e.AssertOr();
+        e.AssertLiteral("a");
+        e.AssertNot();
+        e.AssertNot();
+        e.AssertLiteral("b");
+    }
+
+    [Fact]
     public void Parse_ParenthesizedWithPrecedence()
     {
         const string input = "ab | (c & (a | d)) & !(x | !z) | !t";
@@ -74,25 +92,20 @@ public class BooleanAlgebraParserTests(ITestOutputHelper? output)
             e.AssertLiteral("t");
     }
 
-    void DumpExpression(BooleanExpression expression, string indent = "")
+    [
+        Theory,
+        InlineData("", 0, InvalidBooleanAlgebraException.Reason.UnexpectedEnd),
+        InlineData("a b", 2, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
+        InlineData("(a | b) && c", 9, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
+        InlineData("a | (b | c & d", 14, InvalidBooleanAlgebraException.Reason.UnexpectedEnd),
+        InlineData("a! c", 1, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
+        InlineData("a & (b | c))", 11, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
+        InlineData("(a & b!", 6, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter)
+    ]
+    public void Parse_InvalidSyntax_Exception(string input, int position, InvalidBooleanAlgebraException.Reason reason)
     {
-        switch (expression)
-        {
-            case BinaryExpression binaryExpression:
-                _output?.WriteLine($"{indent}{binaryExpression.Operator}");
-                _output?.WriteLine($"{indent} Left:");
-                DumpExpression(binaryExpression.Left, indent + "    ");
-                _output?.WriteLine($"{indent} Right:");
-                DumpExpression(binaryExpression.Right, indent + "    ");
-                break;
-            case UnaryExpression unaryExpression:
-                _output?.WriteLine($"{indent}Not");
-                _output?.WriteLine($"{indent} Expression:");
-                DumpExpression(unaryExpression.Expression, indent + "    ");
-                break;
-            case LiteralExpression literalExpression:
-                _output?.WriteLine($"{indent}'{literalExpression.Name}");
-                break;
-        }
+        var exception = Assert.Throws<InvalidBooleanAlgebraException>(() => BooleanAlgebraParser.Parse(input));
+        Assert.Equal(position, exception.Position);
+        Assert.Equal(reason, exception.Error);
     }
 }
