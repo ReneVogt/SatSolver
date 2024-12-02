@@ -4,6 +4,8 @@ namespace Revo.SatSolver.Parsing;
 
 public sealed class BooleanAlgebraParser
 {
+    const string KnownCharacters = "()!|&";
+
     readonly string _input;
 
     int _position;
@@ -13,7 +15,15 @@ public sealed class BooleanAlgebraParser
 
     BooleanAlgebraParser(string input) => _input = input ?? throw new ArgumentNullException(nameof(input));
 
-    BooleanExpression Parse() => ParseExpression();
+    BooleanExpression Parse()
+    {
+        var expression = ParseExpression();
+        SkipWhiteSpace();
+        if (!EndReached)
+            throw InvalidBooleanAlgebraException.InvalidCharacter(_position);
+        
+        return expression;
+    }
 
     void SkipWhiteSpace()
     {
@@ -61,14 +71,21 @@ public sealed class BooleanAlgebraParser
         _position++;
         var expression = ParseExpression();
         SkipWhiteSpace();
-        if (Current != ')') throw new NotImplementedException();
+        if (EndReached) throw InvalidBooleanAlgebraException.UnexpectedEnd(_position);
+        if (Current != ')') throw InvalidBooleanAlgebraException.InvalidCharacter(_position);
         _position++;
         return expression;
     }
     LiteralExpression ParseLiteralExpression()
     {
         var start = _position;
-        while (!EndReached && !(Current == '(' || Current == ')' || Current == '&' || Current == '|' || char.IsWhiteSpace(Current))) _position++;
+        if (EndReached)
+            throw InvalidBooleanAlgebraException.UnexpectedEnd(_position);
+
+        while (!(EndReached || KnownCharacters.Contains(Current) || char.IsWhiteSpace(Current))) _position++;
+        if (start == _position)
+            throw InvalidBooleanAlgebraException.InvalidCharacter(_position);
+
         return new LiteralExpression(_input[start.._position]);
     }
 

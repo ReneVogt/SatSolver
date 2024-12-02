@@ -129,6 +129,12 @@
   <data name="CnfParserException_MissingLiteral" xml:space="preserve">
     <value>Missing literal or clause termination ('0') for clause {0} of {1} in line {2}, position {3}.</value>
   </data>
+  <data name="InvalidBooleanAlgebraException_InvalidCharacter" xml:space="preserve">
+    <value>Invalid or unexpected character at position {0}.</value>
+  </data>
+  <data name="InvalidBooleanAlgebraException_UnexpectedEnd" xml:space="preserve">
+    <value>The boolean expression was incomplete and ended unexpectedly at position {0}.</value>
+  </data>
   <data name="SatSolverArgumentException_InvalidLiterals" xml:space="preserve">
     <value>The problem contains invalid literal IDs.</value>
   </data>
