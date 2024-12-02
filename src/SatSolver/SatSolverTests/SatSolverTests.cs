@@ -31,8 +31,11 @@ public sealed class SatSolverTests
     public void Solve_Cnf_Solutions(string cnf, string expectedSolutions)
     {
         var problem = DimacsCnfParser.Parse(cnf).Single();
-        var solutions = string.Join("|", SatSolver.Solve(problem).Select(s => string.Join(" ", s.OrderBy(l => l.Id).ThenBy(l => l.Sense).Select(l => l.Sense ? l.Id : -l.Id))).OrderBy(s => s));
-        Assert.Equal(expectedSolutions, solutions);
+
+        var solutions = SatSolver.Solve(problem).ToArray();
+        SolutionValidator.Validate(problem, solutions);
+        var solutionText = string.Join("|", solutions.Select(s => string.Join(" ", s.OrderBy(l => l.Id).ThenBy(l => l.Sense).Select(l => l.Sense ? l.Id : -l.Id))).OrderBy(s => s));
+        Assert.Equal(expectedSolutions, solutionText);
     }
 
 
@@ -42,7 +45,9 @@ public sealed class SatSolverTests
     {
         string cnf = File.ReadAllText(Path.Combine("SAT", fileName));
         var problem = DimacsCnfParser.Parse(cnf).Single();
-        Assert.NotEmpty(SatSolver.Solve(problem));
+        var solution = SatSolver.Solve(problem).FirstOrDefault();
+        Assert.NotNull(solution);
+        SolutionValidator.Validate(problem, solution);
     }
 
     [Theory]
