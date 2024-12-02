@@ -22,27 +22,19 @@ public sealed class SatSolverTests
         Assert.Throws<ArgumentException>(() => SatSolver.Solve(problem));
     }
 
-    /// <summary>
-    /// XOR
-    ///   a & -b            |       -a & b
-    ///   a&-b  | -a        &    a&-b | b
-    ///   a|-a  &  -b|-a    &    a|b  &  -b|b
-    /// </summary>
-    [Fact]
-    public void Solve_XOR_Solved()
+    [
+        Theory,
+        InlineData("c Basic1\np cnf 3 1\n1 2 3 0\n", "1|2|3"),
+        InlineData("c XOR\np cnf 2 4\n1 -1 0\n-2 -1 0\n1 2 0\n-2 2 0", "-1 2|1 -2"),
+        InlineData("c 2o3\np cnf 3 8\n1 2 3 0\n-1 -2 -3 0\n-1 2 3 0\n1 -2 3 0\n1 2 -3 0\n1 2 0\n1 3 0\n2 3 0 \n", "-1 2 3|1 -2 3|1 2 -3")
+    ]
+    public void Solve_Cnf_Solutions(string cnf, string expectedSolutions)
     {
-        var problem = DimacsCnfParser.Parse(@"p cnf 2 4
-1 -1 0
--2 -1 0
-1 2 0
--2 2 0
-%").Single();
-
-        const string expected = @"-1 2
-1 -2";
-        var solution = string.Join(Environment.NewLine, SatSolver.Solve(problem).Select(s => string.Join(" ", s.OrderBy(l => l.Id).ThenBy(l => l.Sense).Select(l => l.Sense ? l.Id : -l.Id))).OrderBy(s => s));
-        Assert.Equal(expected, solution);
+        var problem = DimacsCnfParser.Parse(cnf).Single();
+        var solutions = string.Join("|", SatSolver.Solve(problem).Select(s => string.Join(" ", s.OrderBy(l => l.Id).ThenBy(l => l.Sense).Select(l => l.Sense ? l.Id : -l.Id))).OrderBy(s => s));
+        Assert.Equal(expectedSolutions, solutions);
     }
+
 
     [Theory]
     [MemberData(nameof(ScanSatFiles))]
