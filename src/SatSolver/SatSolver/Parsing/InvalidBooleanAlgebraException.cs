@@ -14,7 +14,14 @@ public sealed class InvalidBooleanAlgebraException : Exception
 
     public enum Reason
     {
+        /// <summary>
+        /// An invalid or unexpected character was found in the input.
+        /// </summary>
         InvalidOrUnexpectedCharacter,
+
+        /// <summary>
+        /// The input ended unexpectedly (e.g. missing closing parentheses).
+        /// </summary>
         UnexpectedEnd
     }
 

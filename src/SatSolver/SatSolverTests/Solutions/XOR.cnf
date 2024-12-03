@@ -1,8 +1,13 @@
+c Resembles an easy XOR operation
+c ================================
 p cnf 2 4
 1 -1 0
 -2 -1 0
 1 2 0
 -2 2 0
+
+c The two possbile XOR cases
+c ==========================================
 p cnf 2 2
 -1 2 0
 1 -2 0
