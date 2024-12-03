@@ -2,5 +2,5 @@
 
 public abstract class BooleanExpression
 {
-
+    protected BooleanExpression() { }
 }
