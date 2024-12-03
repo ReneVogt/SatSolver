@@ -1,12 +1,8 @@
 ﻿using Revo.SatSolver.Parsing;
-using SatSolverTests.Parsing;
-using Xunit.Abstractions;
 
 namespace SatSolverTests.BooleanAlgebra;
-public class BooleanAlgebraParserTests(ITestOutputHelper? output)
+public class BooleanAlgebraParserTests()
 {
-    ITestOutputHelper? _output = output;
-
     [Fact]
     public void Parse_Null_ArgumentNullException()
     {
