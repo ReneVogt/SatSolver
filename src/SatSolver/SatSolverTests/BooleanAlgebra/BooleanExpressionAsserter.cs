@@ -1,6 +1,6 @@
-﻿using Revo.SatSolver.Parsing.Expressions;
+﻿using Revo.SatSolver.BooleanAlgebra;
 
-namespace SatSolverTests.Parsing;
+namespace SatSolverTests.BooleanAlgebra;
 
 sealed class BooleanExpressionAsserter(BooleanExpression expression) : IDisposable
 {

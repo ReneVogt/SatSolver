@@ -1,7 +1,8 @@
 ﻿using Revo.SatSolver.Parsing;
+using SatSolverTests.Parsing;
 using Xunit.Abstractions;
 
-namespace SatSolverTests.Parsing;
+namespace SatSolverTests.BooleanAlgebra;
 public class BooleanAlgebraParserTests(ITestOutputHelper? output)
 {
     ITestOutputHelper? _output = output;
@@ -69,27 +70,27 @@ public class BooleanAlgebraParserTests(ITestOutputHelper? output)
         const string input = "ab | (c & (a | d)) & !(x | !z) | !t";
         var expression = BooleanAlgebraParser.Parse(input);
         using var e = new BooleanExpressionAsserter(expression);
-        
+
         e.AssertOr();
-            e.AssertOr();
-                e.AssertLiteral("ab");
-        
-                e.AssertAnd();
+        e.AssertOr();
+        e.AssertLiteral("ab");
 
-                    e.AssertAnd();
-                        e.AssertLiteral("c");
-                        e.AssertOr();
-                            e.AssertLiteral("a");
-                            e.AssertLiteral("d");
+        e.AssertAnd();
 
-                    e.AssertNot();
-                        e.AssertOr();
-                            e.AssertLiteral("x");
-                            e.AssertNot();
-                                e.AssertLiteral("z");
-        
-            e.AssertNot();
-            e.AssertLiteral("t");
+        e.AssertAnd();
+        e.AssertLiteral("c");
+        e.AssertOr();
+        e.AssertLiteral("a");
+        e.AssertLiteral("d");
+
+        e.AssertNot();
+        e.AssertOr();
+        e.AssertLiteral("x");
+        e.AssertNot();
+        e.AssertLiteral("z");
+
+        e.AssertNot();
+        e.AssertLiteral("t");
     }
 
     [

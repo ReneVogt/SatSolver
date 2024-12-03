@@ -1,4 +1,4 @@
-﻿using Revo.SatSolver.Parsing.Expressions;
+﻿using Revo.SatSolver.BooleanAlgebra;
 
 namespace Revo.SatSolver.Parsing;
 

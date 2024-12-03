@@ -1,4 +1,4 @@
-﻿namespace Revo.SatSolver.Parsing.Expressions;
+﻿namespace Revo.SatSolver.BooleanAlgebra;
 
 /// <summary>
 /// A literal expression in a <see cref="BooleanExpression"/> tree.

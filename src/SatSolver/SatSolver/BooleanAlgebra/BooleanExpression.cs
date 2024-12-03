@@ -1,4 +1,4 @@
-﻿namespace Revo.SatSolver.Parsing.Expressions;
+﻿namespace Revo.SatSolver.BooleanAlgebra;
 
 /// <summary>
 /// Abstract base class for expressions in a boolean expression tree.
