@@ -39,15 +39,17 @@ public sealed class SatSolver
         } while (_state.Backtrack());
     }
 
-    bool IsSatisfiable([NotNullWhen(true)] out Literal[][]? solutions)
+    bool IsSatisfiable([NotNullWhen(true)] out Literal[]? solution)
     {
         do
         {
             _cancellationToken.ThrowIfCancellationRequested();
 
-            while (!_state.TryNextVariable(out solutions)) { _cancellationToken.ThrowIfCancellationRequested(); }
+            Literal[][]? solutions;
 
-            if (solutions is not null)
+            while (!_state.TryNextVariable(out solutions)) { _cancellationToken.ThrowIfCancellationRequested(); }
+            solution = solutions?.FirstOrDefault();
+            if (solution is not null)            
                 return true;
 
         } while (_state.Backtrack());
@@ -71,9 +73,9 @@ public sealed class SatSolver
     }
     public static bool IsSatisfiable(Problem problem, CancellationToken cancellationToken = default) => IsSatisfiable(problem, out _, cancellationToken);
     
-    public static bool IsSatisfiable(Problem problem, [NotNullWhen(true)] out Literal[][]? solutions, CancellationToken cancellationToken = default)
+    public static bool IsSatisfiable(Problem problem, [NotNullWhen(true)] out Literal[]? solution, CancellationToken cancellationToken = default)
     {
         var solver = new SatSolver(problem, DpllMode.DecisionOnly, cancellationToken);
-        return solver.IsSatisfiable(out solutions);
+        return solver.IsSatisfiable(out solution);
     }
 }

@@ -163,6 +163,12 @@ sealed class DpllProcessor
     /// <returns>The solution as Literal[].</returns>
     IEnumerable<Literal[]> CreateCurrentSolutions()
     {
+        if (_mode == DpllMode.DecisionOnly)
+        {
+            yield return _variables.Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();
+            yield break;
+        }
+
         foreach (var variable in _variables.Where(variable => !variable.Fixed)) variable.Sense = false;
         yield return _variables.Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();
 
@@ -204,13 +210,6 @@ sealed class DpllProcessor
                 _currentCandidate = variable;
                 return true;
             }
-
-            // TODO: handle PLE cases correctly:
-            // if a solution was found after a
-            // PLE, there might be solutions with
-            // the same prefix but the inverse
-            // variable, so we should somehow
-            // save this cases for later searches.
         }
 
         return false;
