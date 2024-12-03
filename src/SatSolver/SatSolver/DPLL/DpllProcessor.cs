@@ -165,15 +165,41 @@ sealed class DpllProcessor
     {
         if (_mode == DpllMode.DecisionOnly)
         {
-            yield return _variables.Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();
+            yield return CreateCurrentSolution();
             yield break;
         }
 
-        foreach (var variable in _variables.Where(variable => !variable.Fixed)) variable.Sense = false;
-        yield return _variables.Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();
+        var freeVariables = _variables.Where(variable => !variable.Fixed).ToArray();
+        foreach (var variable in freeVariables) variable.Sense = false;
+        if (freeVariables.Length == 0)
+        {
+            yield return CreateCurrentSolution();
+            yield break;
+        }
+
+        var pointer = freeVariables.Length - 1;
+        do
+        {
+            yield return _variables.Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();
+            while (pointer >= 0 && freeVariables[pointer].Sense) pointer--;
+            if (pointer >= 0)
+            {
+                freeVariables[pointer++].Sense = true;
+                while(pointer < freeVariables.Length) freeVariables[pointer++].Sense = false;
+                pointer--;
+            }
+
+        } while (pointer >= 0);
 
         // TODO: enumerate all possible solutions for still free variables
     }
+    
+    /// <summary>
+    /// Creates an array of <see cref="Literal"/>s representing
+    /// the current solution.
+    /// </summary>
+    /// <returns>The current solution.</returns>
+    Literal[] CreateCurrentSolution() => _variables.Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();
 
     /// <summary>
     /// The stack knows which variable was set and wether that
