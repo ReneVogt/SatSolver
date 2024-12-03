@@ -4,11 +4,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Revo.SatSolver;
 
+/// <summary>
+/// Finds variable configurations that satisfy all
+/// clauses in a SATisfiability problem.
+/// </summary>
 public sealed class SatSolver
 {
     readonly CancellationToken _cancellationToken;
     readonly DpllProcessor _state;
-
 
     SatSolver(Problem problem, DpllMode mode, CancellationToken cancellationToken)
     { 
@@ -59,20 +62,42 @@ public sealed class SatSolver
 
 
     /// <summary>
-    /// Tries to enumerate solutions that satisfy the given <paramref name="problem"/>.
-    /// Multiple solutions will only be produced when the returned sequence is enumerated.
+    /// Finds all variable configurations that satisfy the SATisfiability <paramref name="problem"/>.
+    /// The search is performed while iterating the result sequence.
     /// </summary>
     /// <param name="problem">The <see cref="Problem"/> to satisfy.</param>
-    /// <returns>A sequence of solutions. The sequence is empty if no solution was found.</returns>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A sequence of solutions. The sequence is empty if no solution was found. The solution search
+    /// is performed deferred and executed when iterating through this sequence.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="problem"/> was <c>null</c>.</exception>
     /// <exception cref="ArgumentException">The problem contains either invalid literal IDs or no literals at all.</exception>
-    public static IEnumerable<Literal[]> Solve(Problem problem, DpllMode mode = DpllMode.AllSolutions, CancellationToken cancellationToken = default)
+    public static IEnumerable<Literal[]> Solve(Problem problem, CancellationToken cancellationToken = default)
     {
-        var solver = new SatSolver(problem, mode, cancellationToken);
+        var solver = new SatSolver(problem, DpllMode.AllSolutions, cancellationToken);
         return solver.Solve();
     }
+
+    /// <summary>
+    /// Decides if the given SATisfiability <paramref name="problem"/> can be satisfied.
+    /// </summary>
+    /// <param name="problem">The <see cref="Problem"/> to satisfy.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns><c>true</c> if a variable configuration exists that satisfies the <paramref name="problem"/>, 
+    /// <c>false</c> if no such configuration exists.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="problem"/> was <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">The problem contains either invalid literal IDs or no literals at all.</exception>
     public static bool IsSatisfiable(Problem problem, CancellationToken cancellationToken = default) => IsSatisfiable(problem, out _, cancellationToken);
-    
+
+    /// <summary>
+    /// Decides if the given SATisfiability <paramref name="problem"/> can be satisfied.
+    /// </summary>
+    /// <param name="problem">The <see cref="Problem"/> to satisfy.</param>
+    /// <param name="solution">When <c>true</c> is returned, this contains the first encountered solution. Otherwise this is <c>null</c>.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns><c>true</c> if a variable configuration exists that satisfies the <paramref name="problem"/>, 
+    /// <c>false</c> if no such configuration exists.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="problem"/> was <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">The problem contains either invalid literal IDs or no literals at all.</exception>
     public static bool IsSatisfiable(Problem problem, [NotNullWhen(true)] out Literal[]? solution, CancellationToken cancellationToken = default)
     {
         var solver = new SatSolver(problem, DpllMode.DecisionOnly, cancellationToken);

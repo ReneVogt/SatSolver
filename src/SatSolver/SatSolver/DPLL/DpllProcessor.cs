@@ -155,12 +155,15 @@ sealed class DpllProcessor
     }
 
     /// <summary>
-    /// Compiles the current selection into 
-    /// a Literal array for the caller.
-    /// NOTE: we reduced 1-indexed literal IDs
-    /// to 0-indexed and need to reverse it now.
+    /// Compiles the currently found solution into
+    /// a sequence of arrays of <see cref="Literal"/>.
+    /// If <see cref="_mode"/> is <see cref="DpllMode.DecisionOnly"/>
+    /// the current solution is returned with still free variables as
+    /// they are.
+    /// If <see cref="_mode"/> is <see cref="DpllMode.AllSolutions"/>
+    /// all possible solutions for the still free variables are enumerated.
     /// </summary>
-    /// <returns>The solution as Literal[].</returns>
+    /// <returns>The solutions as a sequence of Literal[].</returns>
     IEnumerable<Literal[]> CreateCurrentSolutions()
     {
         if (_mode == DpllMode.DecisionOnly)
@@ -190,13 +193,15 @@ sealed class DpllProcessor
             }
 
         } while (pointer >= 0);
-
-        // TODO: enumerate all possible solutions for still free variables
     }
-    
+
     /// <summary>
     /// Creates an array of <see cref="Literal"/>s representing
     /// the current solution.
+    /// NOTE: we reduced 1-indexed literal IDs to 0-indexed 
+    /// array positions and need to reverse that now.
+    /// </summary>
+    /// <returns>The solution as Literal[].</returns>
     /// </summary>
     /// <returns>The current solution.</returns>
     Literal[] CreateCurrentSolution() => _variables.Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();

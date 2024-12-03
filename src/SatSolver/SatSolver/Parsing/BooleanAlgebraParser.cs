@@ -2,6 +2,10 @@
 
 namespace Revo.SatSolver.Parsing;
 
+/// <summary>
+/// Parses an input string containing a boolean expression
+/// into a tree of <see cref="BooleanExpression"/>s.
+/// </summary>
 public sealed class BooleanAlgebraParser
 {
     const string KnownCharacters = "()!|&";
@@ -89,6 +93,15 @@ public sealed class BooleanAlgebraParser
         return new LiteralExpression(_input[start.._position]);
     }
 
+    /// <summary>
+    /// Parses the boolean expression in the <paramref name="input"/> string into
+    /// a tree of <see cref="BooleanExpression"/>s.
+    /// </summary>
+    /// <param name="input">The input string containing the boolean expression. Operators like '&' (AND), '|' (OR) and
+    /// '!' (NOT) can be used as well as parantheses.</param>
+    /// <returns>The root <see cref="BooleanExpression"/> or the expression tree.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="input"/> is <c>null</c>.</exception>
+    /// <exception cref="InvalidBooleanAlgebraException">The expression in the <paramref name="input"/> string is invalid.</exception>
     public static BooleanExpression Parse(string input)
     {
         var parser = new BooleanAlgebraParser(input);

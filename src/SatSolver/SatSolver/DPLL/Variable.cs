@@ -15,25 +15,25 @@ sealed record Variable(int Index)
     public bool Fixed { get; set; }
 
     /// <summary>
-    /// The clauses where this variable is contained
+    /// The constraints where this variable is contained
     /// as not-negated literal.
     /// </summary>
     public List<Constraint> Positives { get; } = [];
 
     /// <summary>
-    /// The clauses where this variable is contained
+    /// The constraints where this variable is contained
     /// as negated literal.
     /// </summary>
     public List<Constraint> Negatives { get; } = [];
 
     /// <summary>
-    /// The number of still active clauses containing
+    /// The number of still active constraints containing
     /// this variable as not-negated.
     /// </summary>
     public int NumberOfActivePositives { get; set; }
 
     /// <summary>
-    /// The number of still active clauses containing
+    /// The number of still active constraints containing
     /// this variable as negated.
     /// </summary>
     public int NumberOfActiveNegatives { get; set; }

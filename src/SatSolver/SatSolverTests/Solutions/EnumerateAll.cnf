@@ -1,5 +1,13 @@
+c This should test that in AllSolutions mode
+c we enumerate all possibilites for the variables
+c that are still free when the clauses are already
+c satisfied.
+c ==============================================
 p cnf 4 1
 1 0
+
+c The eight solutions (counting through 3 bits)
+c ================================================
 p cnf 4 8
 1 2 3 4 0
 1 2 3 -4 0

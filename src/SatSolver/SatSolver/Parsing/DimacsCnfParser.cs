@@ -4,7 +4,7 @@ using static Revo.SatSolver.Parsing.CnfParserException;
 namespace Revo.SatSolver.Parsing;
 
 /// <summary>
-/// Parses satisfiability problems written in
+/// Parses SATisfiability problems written in
 /// conjunctive normal form in DIMACS standard.
 /// </summary>
 public sealed class DimacsCnfParser
@@ -125,12 +125,13 @@ public sealed class DimacsCnfParser
     }
 
     /// <summary>
-    /// Parses the <paramref name="input"/> string into a set of satisfiability
-    /// <see cref="Problem"/> problems.
+    /// Parses the <paramref name="input"/> string into a set of SATisfiability
+    /// <see cref="Problem"/>s.
     /// </summary>
     /// <param name="input">The input string in DIMACS conjunctive normal form.</param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException">The <paramref name="input"/> string was <c>null</c>.</exception>
+    /// <exception cref="CnfParserException">The input string could not be parsed successfully.</exception>
     public static Problem[] Parse(string input)
     {
         var parser = new DimacsCnfParser(input ?? throw new ArgumentNullException(nameof(input)));
