@@ -1,4 +1,4 @@
-﻿namespace Revo.SatSolver.Parsing.Expressions;
+﻿namespace Revo.SatSolver.BooleanAlgebra;
 
 /// <summary>
 /// Unary operators for <see cref="UnaryExpression"/>.

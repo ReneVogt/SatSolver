@@ -1,4 +1,4 @@
-﻿namespace Revo.SatSolver.Parsing.Expressions;
+﻿namespace Revo.SatSolver.BooleanAlgebra;
 
 /// <summary>
 /// Represents a binary expression in a <see cref="BooleanExpression"/> tree.
@@ -12,7 +12,7 @@ public sealed class BinaryExpression(BooleanExpression left, BinaryOperator op, 
     /// The left operand of this expression.
     /// </summary>
     public BooleanExpression Left { get; } = left ?? throw new ArgumentNullException(nameof(left));
-    
+
     /// <summary>
     /// The operator of this expression. Currently only OR (|) and AND (&) are supported.
     /// </summary>

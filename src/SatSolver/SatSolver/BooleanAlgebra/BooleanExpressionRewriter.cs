@@ -1,6 +1,4 @@
-﻿using Revo.SatSolver.Parsing.Expressions;
-
-namespace Revo.SatSolver.Parsing;
+﻿namespace Revo.SatSolver.BooleanAlgebra;
 
 /// <summary>
 /// Abstract base class for <see cref="BooleanExpression"/> tree
@@ -51,7 +49,7 @@ public abstract class BooleanExpressionRewriter
     /// <param name="expression">The <see cref="UnaryExpression"/> to visit.</param>
     /// <returns>A rewritten <see cref="BooleanExpression"/> or the original <paramref name="expression"/> if
     /// no changes were made.</returns>
-    public virtual BooleanExpression RewriteUnaryExpression(UnaryExpression expression) 
+    public virtual BooleanExpression RewriteUnaryExpression(UnaryExpression expression)
     {
         var exp = Rewrite(expression.Expression);
 
