@@ -1,5 +1,5 @@
 ﻿namespace Revo.SatSolver.DPLL;
-sealed class DpllState
+sealed class DpllProcessor
 { 
     enum StackReason
     {
@@ -10,6 +10,7 @@ sealed class DpllState
     }
 
     readonly CancellationToken _cancellationToken;
+    readonly DpllMode _mode;
 
     readonly Variable[] _variables;
     readonly Constraint[] _constraints;
@@ -68,9 +69,10 @@ sealed class DpllState
     /// </summary>
     int _numberOfActiveConstraints;
 
-    public DpllState(Problem problem, CancellationToken cancellationToken)
+    public DpllProcessor(Problem problem, DpllMode mode, CancellationToken cancellationToken)
     {
         _cancellationToken = cancellationToken;
+        _mode = mode;
 
         // Note that literals are actually 1-indexed. We switch to 0-indexing here
         // and need to restore that when yielding solutions.
@@ -126,12 +128,12 @@ sealed class DpllState
 
         _constraints = [.. constraints];
         _numberOfActiveConstraints = _constraints.Length;
-        _pureLiterals = new(_variables.Where(variable => variable.NumberOfActiveNegatives + variable.NumberOfActivePositives == 1));
+        _pureLiterals = _mode == DpllMode.DecisionOnly ? new(_variables.Where(variable => variable.NumberOfActiveNegatives + variable.NumberOfActivePositives == 1)) : [];
     }
 
-    public bool TryNextVariable(out Literal[]? solution)
+    public bool TryNextVariable(out Literal[][]? solutions)
     {
-        solution = null;
+        solutions = null;
 
         if (_numberOfActiveConstraints > 0 && !_foundEmptyConstraint)
         {
@@ -145,7 +147,7 @@ sealed class DpllState
 
         if (_numberOfActiveConstraints == 0)
         {
-            solution = CreateCurrentSolution();
+            solutions = CreateCurrentSolutions().ToArray();
             return true;
         }
 
@@ -159,7 +161,13 @@ sealed class DpllState
     /// to 0-indexed and need to reverse it now.
     /// </summary>
     /// <returns>The solution as Literal[].</returns>
-    Literal[] CreateCurrentSolution() => _variables.Where(variable => variable.Fixed).Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();
+    IEnumerable<Literal[]> CreateCurrentSolutions()
+    {
+        foreach (var variable in _variables.Where(variable => !variable.Fixed)) variable.Sense = false;
+        yield return _variables.Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();
+
+        // TODO: enumerate all possible solutions for still free variables
+    }
 
     /// <summary>
     /// The stack knows which variable was set and wether that
@@ -241,12 +249,12 @@ sealed class DpllState
             //
             foreach (var v in constraint.Positives.Where(v => !v.Fixed))
             {
-                if (--v.NumberOfActivePositives == 0)
+                if (--v.NumberOfActivePositives == 0 && _mode == DpllMode.DecisionOnly)
                     _pureLiterals.Enqueue(v);
             }
             foreach (var v in constraint.Negatives.Where(v => !v.Fixed))
             {
-                if (--v.NumberOfActiveNegatives == 0)
+                if (--v.NumberOfActiveNegatives == 0 && _mode == DpllMode.DecisionOnly)
                     _pureLiterals.Enqueue(v);
             }
 
@@ -375,6 +383,8 @@ sealed class DpllState
     /// <returns><c>true</c> if clauses were changed, <c>false</c> if not (or clauses were removed).</returns>
     void PureLiteralElimination()
     {
+        if (_mode != DpllMode.DecisionOnly) return;
+
         while (!(_foundEmptyConstraint || _numberOfActiveConstraints == 0) && _pureLiterals.TryDequeue(out var variable))
         {
             _cancellationToken.ThrowIfCancellationRequested();
