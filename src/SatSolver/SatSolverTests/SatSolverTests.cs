@@ -45,9 +45,8 @@ public sealed class SatSolverTests
     {
         string cnf = File.ReadAllText(Path.Combine("SAT", fileName));
         var problem = DimacsCnfParser.Parse(cnf).Single();
-        var solution = SatSolver.Solve(problem).FirstOrDefault();
-        Assert.NotNull(solution);
-        SolutionValidator.Validate(problem, solution);
+        Assert.True(SatSolver.IsSatisfiable(problem, out var solutions));        
+        SolutionValidator.Validate(problem, solutions);
     }
 
     [Theory]
@@ -56,7 +55,7 @@ public sealed class SatSolverTests
     {
         string cnf = File.ReadAllText(Path.Combine("UNSAT", fileName));
         var problem = DimacsCnfParser.Parse(cnf).Single();
-        Assert.Empty(SatSolver.Solve(problem));
+        Assert.False(SatSolver.IsSatisfiable(problem));
     }
 
     public static IEnumerable<object[]> ScanSatFiles() => Directory.EnumerateFiles("SAT").Select(file => new object[] { Path.GetFileName(file) });
