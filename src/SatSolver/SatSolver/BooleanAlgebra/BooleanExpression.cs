@@ -1,4 +1,6 @@
-﻿namespace Revo.SatSolver.BooleanAlgebra;
+﻿using System.Text;
+
+namespace Revo.SatSolver.BooleanAlgebra;
 
 /// <summary>
 /// Abstract base class for expressions in a boolean expression tree.
@@ -11,4 +13,11 @@ public abstract class BooleanExpression
     public abstract ExpressionKind Kind { get; }
 
     protected BooleanExpression() { }
+
+    public override string ToString()
+    {
+        var builder = new StringBuilder();
+        ExpressionTreeWriter.Write(this, builder);
+        return builder.ToString();
+    }
 }
