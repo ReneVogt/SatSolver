@@ -1,4 +1,6 @@
-﻿namespace Revo.SatSolver.DPLL;
+﻿using System.Security.AccessControl;
+
+namespace Revo.SatSolver.DPLL;
 sealed class DpllProcessor
 { 
     enum StackReason
@@ -94,11 +96,12 @@ sealed class DpllProcessor
         var unitClauseVariables = new List<Variable>();
         foreach (var clause in problem.Clauses)
         {
-            var literals = clause.Literals.DistinctBy(l => (l.Id, l.Sense)).ToArray();
-            if (literals.GroupBy(l => l.Id).Any(g => g.Skip(1).Any())) continue; // trivial cases 'a -a'
+            // ignore clauses that are trivially true (e.g. contain 'a -a'
+            if (clause.Literals.Zip(clause.Literals.Skip(1)).Any(pair => pair.First.Id == pair.Second.Id))
+                continue;
 
             var constraint = new Constraint(constraints.Count);
-            foreach (var literal in literals)
+            foreach (var literal in clause.Literals)
             {
                 var variable = _variables[literal.Id-1];
                 if (literal.Sense)

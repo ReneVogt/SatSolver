@@ -19,12 +19,12 @@ public sealed class Clause : IComparable<Clause>, IEquatable<Clause>
     /// given <paramref name="literals"/>.
     /// </summary>
     /// <param name="literals">A sequence of <see cref="Literal"/>s. These will
-    /// be sorted by <see cref="Literal.Id"/> and then <see cref="Literal.Sense"/>.</param>
+    /// be sorted by <see cref="Literal.Id"/> and then <see cref="Literal.Sense"/>. Duplicate literals (same ID and sense) are removed.</param>
     /// <exception cref="ArgumentNullException"><paramref name="literals"/> is <c>null</c>.</exception>    
     public Clause(IEnumerable<Literal> literals)
     {
         _ = literals ?? throw new ArgumentNullException(nameof(literals));
-        Literals = literals.OrderBy(literal => literal.Id).ThenBy(literal => literal.Sense).ToImmutableArray();
+        Literals = literals.Distinct().OrderBy(literal => literal.Id).ThenBy(literal => literal.Sense).ToImmutableArray();
     }
 
     public override int GetHashCode() =>  Literals.Aggregate(Literals.Length.GetHashCode(), (hash, literal) => hash * 371 + literal.GetHashCode());
