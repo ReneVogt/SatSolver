@@ -1,12 +1,15 @@
-﻿namespace Revo.SatSolver.BooleanAlgebra;
+﻿using System.Diagnostics;
+using static Revo.SatSolver.BooleanAlgebra.BooleanExpressionException;
+
+namespace Revo.SatSolver.BooleanAlgebra;
 
 /// <summary>
 /// This transformer takes a <see cref="BooleanExpression"/> and converts
 /// it into a conjunctive normal form.
 /// </summary>
-public sealed class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
+public class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
 {
-    ConjunctiveNormalFormTransformer()
+    protected ConjunctiveNormalFormTransformer()
     {
     }
 
@@ -15,22 +18,84 @@ public sealed class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
     /// </summary>
     /// <param name="expression">The <see cref="BinaryExpression"/> to transform.</param>
     /// <returns>The resulting <see cref="BooleanExpression"/> in conjunctive normal form.</returns>
-    public override BooleanExpression RewriteBinaryExpression(BinaryExpression expression) => base.RewriteBinaryExpression(expression);
+    public override BooleanExpression RewriteBinaryExpression(BinaryExpression expression)
+    {
+        if (expression.Operator == BinaryOperator.And) return base.RewriteBinaryExpression(expression);
+        if (expression.Operator != BinaryOperator.Or) throw UnsupportedBinaryOperator(expression.Operator);
+
+        var left = Rewrite(expression.Left);
+        var right = Rewrite(expression.Right);
+
+        if ((left.Kind == ExpressionKind.Literal || left.Kind == ExpressionKind.Unary) &&
+            (right.Kind == ExpressionKind.Literal || right.Kind == ExpressionKind.Unary))
+            return left == expression.Left && right == expression.Right
+                ? expression
+                : new BinaryExpression(left, BinaryOperator.Or, right);
+
+        if (left.Kind == ExpressionKind.Binary)
+        {
+            var leftBinary = (BinaryExpression)left;
+            if (leftBinary.Operator == BinaryOperator.And)
+                return Distribute(right, leftBinary);
+            if (leftBinary.Operator != BinaryOperator.Or) throw UnsupportedBinaryOperator(leftBinary.Operator);
+        }
+        if (right.Kind != ExpressionKind.Binary) throw UnsupportedExpressionKind(right.Kind);
+
+        var rightBinary = (BinaryExpression)right;
+        if (rightBinary.Operator == BinaryOperator.Or)
+            return left == expression.Left && right == expression.Right
+                ? expression
+                : new BinaryExpression (left, BinaryOperator.Or, rightBinary);
+
+        if (rightBinary.Operator != BinaryOperator.And) throw UnsupportedBinaryOperator(rightBinary.Operator);
+        return Distribute(left, rightBinary);
+    }
+
+    /// <summary>
+    /// Applies the distributive law to an boolean expression.
+    /// </summary>
+    /// <param name="factor">The part that will be distributed over the <paramref name="sum"/>.</param>
+    /// <param name="sum">The part in parentheses that the <paramref name="factor"/> gets distributed over.</param>
+    /// <returns>'factor & (sum1 | sum2)' -> '(factor | sum1) & (factor | sum2)' or
+    /// 'factor | (sum1 & sum2)' -> '(factor & sum1) | (factor & sum2)'</returns>
+    static BinaryExpression Distribute(BooleanExpression factor, BinaryExpression sum) =>
+        new BinaryExpression(
+            left: new BinaryExpression(
+                left: factor,
+                op: sum.Operator == BinaryOperator.And ? BinaryOperator.Or : BinaryOperator.And,
+                right: sum.Left),
+            op: sum.Operator,
+            right: new BinaryExpression(
+                left: factor,
+                op: sum.Operator == BinaryOperator.And ? BinaryOperator.Or : BinaryOperator.And,
+                right: sum.Right));
 
     /// <summary>
     /// Rewrites this <see cref="UnaryExpression"/> into a conjunctive normal form.
     /// </summary>
     /// <param name="expression">The <see cref="UnaryExpression"/> to transform.</param>
     /// <returns>The resulting <see cref="BooleanExpression"/> in conjunctive normal form.</returns>
-    public override BooleanExpression RewriteUnaryExpression(UnaryExpression expression) => base.RewriteUnaryExpression(expression);
+    public override BooleanExpression RewriteUnaryExpression(UnaryExpression expression)     
+    {
+        if (expression.Operator != UnaryOperator.Not) throw UnsupportedUnaryOperator(expression.Operator);
+        if (expression.Expression.Kind == ExpressionKind.Literal) return base.RewriteUnaryExpression(expression);
+        if (expression.Expression.Kind == ExpressionKind.Unary)
+        {
+            var unary = (UnaryExpression)expression.Expression;
+            if (unary.Operator !=  UnaryOperator.Not) throw UnsupportedUnaryOperator(unary.Operator); 
+            return Rewrite(unary.Expression);
+        }
 
-    /// <summary>
-    /// Memorizes the given literal to later reduce redundancies and tautologies
-    /// in the conjunctive normal form.
-    /// </summary>
-    /// <param name="expression">The <see cref="LiteralExpression"/> to visit.</param>
-    /// <returns>The original <see cref="LiteralExpression"/> without changes.</returns>
-    public override BooleanExpression RewriteLiteralExpression(LiteralExpression expression) => base.RewriteLiteralExpression(expression);
+        if (expression.Expression.Kind != ExpressionKind.Binary) throw UnsupportedExpressionKind(expression.Expression.Kind);
+        
+        var binary = (BinaryExpression)expression.Expression;
+        if (binary.Operator != BinaryOperator.And && binary.Operator != BinaryOperator.Or) throw UnsupportedBinaryOperator(binary.Operator);
+
+        return Rewrite(new BinaryExpression(
+            left: new UnaryExpression(UnaryOperator.Not, binary.Left),
+            op: binary.Operator == BinaryOperator.Or ? BinaryOperator.And : BinaryOperator.Or,
+            right: new UnaryExpression(UnaryOperator.Not, binary.Right)));
+    }
 
     /// <summary>
     /// Transforms the given <see cref="BooleanExpression"/> into a conjunctive normal form.
