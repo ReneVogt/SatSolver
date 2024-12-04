@@ -5,5 +5,10 @@
 /// </summary>
 public abstract class BooleanExpression
 {
+    /// <summary>
+    /// The kind of this expression.
+    /// </summary>
+    public abstract ExpressionKind Kind { get; }
+
     protected BooleanExpression() { }
 }

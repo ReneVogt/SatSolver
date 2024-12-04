@@ -8,6 +8,9 @@
 /// <param name="right">The right operand of this expression.</param>
 public sealed class BinaryExpression(BooleanExpression left, BinaryOperator op, BooleanExpression right) : BooleanExpression
 {
+    /// <inheritdoc/>
+    public override ExpressionKind Kind => ExpressionKind.Binary;
+
     /// <summary>
     /// The left operand of this expression.
     /// </summary>

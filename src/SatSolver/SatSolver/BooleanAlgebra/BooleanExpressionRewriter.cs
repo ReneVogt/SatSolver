@@ -17,12 +17,14 @@ public abstract class BooleanExpressionRewriter
     /// <param name="expression">The <see cref="BooleanExpression"/> to rewrite.</param>
     /// <returns>A rewritten <see cref="BooleanExpression"/> or the original <paramref name="expression"/> if
     /// no changes were made.</returns>
-    public virtual BooleanExpression Rewrite(BooleanExpression expression) => expression switch
-    {
-        BinaryExpression binaryExpression => RewriteBinaryExpression(binaryExpression),
-        UnaryExpression unaryExpression => RewriteUnaryExpression(unaryExpression),
-        LiteralExpression literalExpression => RewriteLiteralExpression(literalExpression),
-        _ => expression
+    /// <exception cref="ArgumentNullException"><paramref name="expression"/> ís <c>null</c>.</exception>
+    public virtual BooleanExpression Rewrite(BooleanExpression expression) => 
+        (expression?.Kind ?? throw new ArgumentNullException(nameof(expression))) switch
+        {
+            ExpressionKind.Binary => RewriteBinaryExpression((BinaryExpression)expression),
+            ExpressionKind.Unary => RewriteUnaryExpression((UnaryExpression)expression),
+            ExpressionKind.Literal => RewriteLiteralExpression((LiteralExpression)expression),
+        _ => throw new NotSupportedException($"Unsupported expression kind '{expression.Kind}'.")
     };
 
     /// <summary>
@@ -32,8 +34,10 @@ public abstract class BooleanExpressionRewriter
     /// <param name="expression">The <see cref="BinaryExpression"/> to visit.</param>
     /// <returns>A rewritten <see cref="BooleanExpression"/> or the original <paramref name="expression"/> if
     /// no changes were made.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expression"/> ís <c>null</c>.</exception>
     public virtual BooleanExpression RewriteBinaryExpression(BinaryExpression expression)
     {
+        _ = expression ?? throw new ArgumentNullException(nameof(expression));
         var left = Rewrite(expression.Left);
         var right = Rewrite(expression.Right);
 
@@ -49,8 +53,10 @@ public abstract class BooleanExpressionRewriter
     /// <param name="expression">The <see cref="UnaryExpression"/> to visit.</param>
     /// <returns>A rewritten <see cref="BooleanExpression"/> or the original <paramref name="expression"/> if
     /// no changes were made.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expression"/> ís <c>null</c>.</exception>
     public virtual BooleanExpression RewriteUnaryExpression(UnaryExpression expression)
     {
+        _ = expression ?? throw new ArgumentNullException(nameof(expression));
         var exp = Rewrite(expression.Expression);
 
         return exp == expression.Expression
@@ -64,5 +70,6 @@ public abstract class BooleanExpressionRewriter
     /// <param name="expression">The <see cref="LiteralExpression"/> to visit.</param>
     /// <returns>A rewritten <see cref="BooleanExpression"/> or the original <paramref name="expression"/> if
     /// no changes were made.</returns>
-    public virtual BooleanExpression RewriteLiteralExpression(LiteralExpression expression) => expression;
+    /// <exception cref="ArgumentNullException"><paramref name="expression"/> ís <c>null</c>.</exception>
+    public virtual BooleanExpression RewriteLiteralExpression(LiteralExpression expression) => expression ?? throw new ArgumentNullException(nameof(expression));
 }
