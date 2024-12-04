@@ -5,7 +5,7 @@
 /// </summary>
 /// <param name="Id">The id (or index) of this literal. Literal IDs are 1-indexed.</param>
 /// <param name="Sense">The sense (or value) of this literal.</param>
-public sealed record Literal(int Id, bool Sense)
+public sealed record Literal(int Id, bool Sense) : IEquatable<Literal>
 {
     public override int GetHashCode() => (Sense ? Id : -Id).GetHashCode();
     public override string ToString() => $"{(Sense ? Id : -Id)}";
