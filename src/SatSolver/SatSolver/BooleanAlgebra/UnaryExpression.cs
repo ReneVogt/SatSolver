@@ -8,6 +8,9 @@
 /// <param name="expression">The <see cref="BooleanExpression"/> this operator is applied to.</param>
 public sealed class UnaryExpression(UnaryOperator op, BooleanExpression expression) : BooleanExpression
 {
+    /// <inheritdoc/>
+    public override ExpressionKind Kind => ExpressionKind.Unary;
+
     /// <summary>
     /// The operator kind of this expression.
     /// </summary>
