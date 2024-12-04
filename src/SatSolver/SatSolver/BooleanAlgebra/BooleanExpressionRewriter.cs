@@ -1,4 +1,6 @@
-﻿namespace Revo.SatSolver.BooleanAlgebra;
+﻿using static Revo.SatSolver.BooleanAlgebra.BooleanExpressionException;
+
+namespace Revo.SatSolver.BooleanAlgebra;
 
 /// <summary>
 /// Abstract base class for <see cref="BooleanExpression"/> tree
@@ -24,7 +26,7 @@ public abstract class BooleanExpressionRewriter
             ExpressionKind.Binary => RewriteBinaryExpression((BinaryExpression)expression),
             ExpressionKind.Unary => RewriteUnaryExpression((UnaryExpression)expression),
             ExpressionKind.Literal => RewriteLiteralExpression((LiteralExpression)expression),
-        _ => throw new NotSupportedException($"Unsupported expression kind '{expression.Kind}'.")
+        _ => throw UnsupportedExpressionKind(expression.Kind)
     };
 
     /// <summary>
