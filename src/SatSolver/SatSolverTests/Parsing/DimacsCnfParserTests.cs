@@ -1,4 +1,5 @@
-﻿using Revo.SatSolver;
+﻿using FluentAssertions;
+using Revo.SatSolver;
 using Revo.SatSolver.Parsing;
 
 namespace SatSolverTests.Parsing;
@@ -18,21 +19,7 @@ public sealed class DimacsCnfParserTests
     public void Parse_Success(string input, Problem[] problems)
     {
         var result = DimacsCnfParser.Parse(input);
-        Assert.Equal(problems.Length, result.Length);
-        foreach (var (expectedProblem, actualProblem) in problems.Zip(result))
-        {
-            Assert.Equal(expectedProblem.NumberOfLiterals, actualProblem.NumberOfLiterals);
-            Assert.Equal(expectedProblem.NumberOfClauses, actualProblem.NumberOfClauses);
-            foreach (var (expectedClause, actualClause) in expectedProblem.Clauses.Zip(actualProblem.Clauses))
-            {
-                Assert.Equal(expectedClause.Literals.Length, actualClause.Literals.Length);
-                foreach (var (expectedLiteral, actualLiteral) in expectedClause.Literals.Zip(actualClause.Literals))
-                {
-                    Assert.Equal(expectedLiteral.Id, actualLiteral.Id);
-                    Assert.Equal(expectedLiteral.Sense, actualLiteral.Sense);
-                }
-            }
-        }
+        result.Should().Equal(problems);
     }
 
     [Theory]
