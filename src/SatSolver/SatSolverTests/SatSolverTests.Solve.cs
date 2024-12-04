@@ -1,5 +1,6 @@
 ﻿using Revo.SatSolver;
 using Revo.SatSolver.Parsing;
+using System.Collections.Immutable;
 
 namespace SatSolverTests;
 
@@ -15,7 +16,7 @@ public sealed partial class SatSolverTests
         AssertSameSolutions(problems[1].Clauses.Select(clause => clause.Literals).ToArray(), solutions);
     }
 
-    void AssertSameSolutions(Literal[][] expectedSolutions, Literal[][] actualSolutions)
+    void AssertSameSolutions(ImmutableArray<Literal>[] expectedSolutions, Literal[][] actualSolutions)
     {
         if (expectedSolutions.Length != actualSolutions.Length)
             Assert.Fail($"Different number of solutions: {expectedSolutions.Length} expected, actual {actualSolutions.Length}.");
