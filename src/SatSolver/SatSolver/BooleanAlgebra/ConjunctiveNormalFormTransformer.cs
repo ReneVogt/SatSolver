@@ -1,5 +1,5 @@
-﻿using System.Diagnostics;
-using static Revo.SatSolver.BooleanAlgebra.BooleanExpressionException;
+﻿using static Revo.SatSolver.BooleanAlgebra.BooleanExpressionException;
+using static Revo.SatSolver.BooleanAlgebra.ExpressionFactory;
 
 namespace Revo.SatSolver.BooleanAlgebra;
 
@@ -26,29 +26,25 @@ public class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
         var left = Rewrite(expression.Left);
         var right = Rewrite(expression.Right);
 
-        if ((left.Kind == ExpressionKind.Literal || left.Kind == ExpressionKind.Unary) &&
-            (right.Kind == ExpressionKind.Literal || right.Kind == ExpressionKind.Unary))
-            return left == expression.Left && right == expression.Right
-                ? expression
-                : new BinaryExpression(left, BinaryOperator.Or, right);
-
         if (left.Kind == ExpressionKind.Binary)
         {
             var leftBinary = (BinaryExpression)left;
             if (leftBinary.Operator == BinaryOperator.And)
-                return Distribute(right, leftBinary);
+                return Rewrite(Distribute(right, leftBinary));
             if (leftBinary.Operator != BinaryOperator.Or) throw UnsupportedBinaryOperator(leftBinary.Operator);
         }
-        if (right.Kind != ExpressionKind.Binary) throw UnsupportedExpressionKind(right.Kind);
 
-        var rightBinary = (BinaryExpression)right;
-        if (rightBinary.Operator == BinaryOperator.Or)
-            return left == expression.Left && right == expression.Right
-                ? expression
-                : new BinaryExpression (left, BinaryOperator.Or, rightBinary);
+        if (right.Kind == ExpressionKind.Binary)
+        {
+            var rightBinary = (BinaryExpression)right;
+            if (rightBinary.Operator == BinaryOperator.And)
+                return Rewrite(Distribute(left, rightBinary));
+            if (rightBinary.Operator != BinaryOperator.Or) throw UnsupportedBinaryOperator(rightBinary.Operator);
+        }
 
-        if (rightBinary.Operator != BinaryOperator.And) throw UnsupportedBinaryOperator(rightBinary.Operator);
-        return Distribute(left, rightBinary);
+        return left == expression.Left && right == expression.Right
+            ? expression
+            : left.Or(right);
     }
 
     /// <summary>
@@ -59,16 +55,12 @@ public class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
     /// <returns>'factor & (sum1 | sum2)' -> '(factor | sum1) & (factor | sum2)' or
     /// 'factor | (sum1 & sum2)' -> '(factor & sum1) | (factor & sum2)'</returns>
     static BinaryExpression Distribute(BooleanExpression factor, BinaryExpression sum) =>
-        new BinaryExpression(
-            left: new BinaryExpression(
-                left: factor,
-                op: sum.Operator == BinaryOperator.And ? BinaryOperator.Or : BinaryOperator.And,
-                right: sum.Left),
-            op: sum.Operator,
-            right: new BinaryExpression(
-                left: factor,
-                op: sum.Operator == BinaryOperator.And ? BinaryOperator.Or : BinaryOperator.And,
-                right: sum.Right));
+        sum.Operator switch
+        {
+            BinaryOperator.And => factor.Or(sum.Left).And(factor.Or(sum.Right)),
+            BinaryOperator.Or => factor.And(sum.Left).Or(factor.And(sum.Right)),
+            _ => throw UnsupportedBinaryOperator(sum.Operator)
+        };
 
     /// <summary>
     /// Rewrites this <see cref="UnaryExpression"/> into a conjunctive normal form.
@@ -91,10 +83,12 @@ public class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
         var binary = (BinaryExpression)expression.Expression;
         if (binary.Operator != BinaryOperator.And && binary.Operator != BinaryOperator.Or) throw UnsupportedBinaryOperator(binary.Operator);
 
-        return Rewrite(new BinaryExpression(
-            left: new UnaryExpression(UnaryOperator.Not, binary.Left),
-            op: binary.Operator == BinaryOperator.Or ? BinaryOperator.And : BinaryOperator.Or,
-            right: new UnaryExpression(UnaryOperator.Not, binary.Right)));
+        return Rewrite(binary.Operator switch
+        {
+            BinaryOperator.And => Not(binary.Left).Or(Not(binary.Right)),
+            BinaryOperator.Or => Not(binary.Left).And(Not(binary.Right)),
+            _ => throw UnsupportedBinaryOperator(binary.Operator)
+        });
     }
 
     /// <summary>
