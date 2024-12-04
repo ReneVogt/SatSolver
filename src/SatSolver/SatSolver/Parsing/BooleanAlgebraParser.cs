@@ -1,4 +1,5 @@
 ﻿using Revo.SatSolver.BooleanAlgebra;
+using static Revo.SatSolver.BooleanAlgebra.ExpressionFactory;
 
 namespace Revo.SatSolver.Parsing;
 
@@ -42,7 +43,7 @@ public sealed class BooleanAlgebraParser
         if (Current == '!')
         {
             _position++;
-            left = new UnaryExpression(UnaryOperator.Not, ParseExpression(3));
+            left = Not(ParseExpression(3));
         }
         else
             left = ParsePrimaryExpression();
@@ -62,7 +63,7 @@ public sealed class BooleanAlgebraParser
 
             _position++;
             var right = ParseExpression(precedence);
-            left = new BinaryExpression(left, current == '&' ? BinaryOperator.And : BinaryOperator.Or, right);
+            left = current == '&' ? left.And(right) : left.Or(right);
         }
     }
     BooleanExpression ParsePrimaryExpression()
@@ -90,7 +91,7 @@ public sealed class BooleanAlgebraParser
         if (start == _position)
             throw InvalidBooleanAlgebraException.InvalidCharacter(_position);
 
-        return new LiteralExpression(_input[start.._position]);
+        return Literal(_input[start.._position]);
     }
 
     /// <summary>
