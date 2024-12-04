@@ -1,4 +1,6 @@
-﻿using static Revo.SatSolver.BooleanAlgebra.BooleanExpressionException;
+﻿using Microsoft.VisualBasic;
+using System.Net.Mail;
+using static Revo.SatSolver.BooleanAlgebra.BooleanExpressionException;
 using static Revo.SatSolver.BooleanAlgebra.ExpressionFactory;
 
 namespace Revo.SatSolver.BooleanAlgebra;
@@ -9,6 +11,11 @@ namespace Revo.SatSolver.BooleanAlgebra;
 /// </summary>
 public class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
 {
+
+    bool _alwaysTrue;
+    HashSet<string> _positives = [];
+    HashSet<string> _negatives = [];
+
     protected ConjunctiveNormalFormTransformer()
     {
     }
@@ -18,13 +25,23 @@ public class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
     /// </summary>
     /// <param name="expression">The <see cref="BinaryExpression"/> to transform.</param>
     /// <returns>The resulting <see cref="BooleanExpression"/> in conjunctive normal form.</returns>
-    public override BooleanExpression RewriteBinaryExpression(BinaryExpression expression)
+    public override BooleanExpression RewriteBinaryExpression(BinaryExpression expression) => expression.Operator switch
     {
-        if (expression.Operator == BinaryOperator.And) return base.RewriteBinaryExpression(expression);
-        if (expression.Operator != BinaryOperator.Or) throw UnsupportedBinaryOperator(expression.Operator);
+        BinaryOperator.Or => RewriteOr(expression),
+        BinaryOperator.And => RewriteAnd(expression),
+        _ => throw UnsupportedBinaryOperator(expression.Operator)
+    };
+    BooleanExpression RewriteOr(BinaryExpression expression)
+    {
+        var savedTrue = _alwaysTrue;
 
+        _alwaysTrue = false;
         var left = Rewrite(expression.Left);
+        var leftAlwaysTrue = _alwaysTrue;
+        _alwaysTrue = false;
         var right = Rewrite(expression.Right);
+        var rightAlwaysTrue = _alwaysTrue;
+        _alwaysTrue = savedTrue;
 
         if (left.Kind == ExpressionKind.Binary)
         {
@@ -42,9 +59,39 @@ public class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
             if (rightBinary.Operator != BinaryOperator.Or) throw UnsupportedBinaryOperator(rightBinary.Operator);
         }
 
-        return left == expression.Left && right == expression.Right
-            ? expression
-            : left.Or(right);
+        _alwaysTrue |= leftAlwaysTrue || rightAlwaysTrue || _negatives.Intersect(_positives).Any();
+        var literals = _positives.Select(name => (BooleanExpression)Literal(name)).Concat(_negatives.Select(name => Not(Literal(name)))).ToArray();
+        if (literals.Length == 1) return literals[0];
+        BooleanExpression result = literals[^1];
+        for (var i = literals.Length-2; i>=0; i--)
+            result = literals[i].Or(result);
+
+        return result;
+    }
+
+    BooleanExpression RewriteAnd(BinaryExpression expression)
+    {
+        _alwaysTrue = false;
+        _positives.Clear();
+        _negatives.Clear();
+        var left = Rewrite(expression.Left);
+        var leftAlwaysTrue = _alwaysTrue;
+        var leftPositives = _positives;
+        var leftNegatives = _negatives;
+
+        _alwaysTrue = false;
+        _positives = [];
+        _negatives = [];
+        var right = Rewrite(expression.Right);
+        var rightAlwaysTrue = _alwaysTrue;
+
+        _alwaysTrue = leftAlwaysTrue && rightAlwaysTrue;
+        if (leftAlwaysTrue)
+            return right;
+        if (rightAlwaysTrue || leftPositives.SetEquals(_positives) && leftNegatives.SetEquals(_negatives))
+            return left;
+
+        return left == expression.Left && right == expression.Right ? expression : left.And(right);
     }
 
     /// <summary>
@@ -70,7 +117,11 @@ public class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
     public override BooleanExpression RewriteUnaryExpression(UnaryExpression expression)     
     {
         if (expression.Operator != UnaryOperator.Not) throw UnsupportedUnaryOperator(expression.Operator);
-        if (expression.Expression.Kind == ExpressionKind.Literal) return base.RewriteUnaryExpression(expression);
+        if (expression.Expression.Kind == ExpressionKind.Literal)
+        {
+            _negatives.Add(((LiteralExpression)expression.Expression).Name);
+            return expression;
+        }
         if (expression.Expression.Kind == ExpressionKind.Unary)
         {
             var unary = (UnaryExpression)expression.Expression;
@@ -91,11 +142,23 @@ public class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
         });
     }
 
+    public override BooleanExpression RewriteLiteralExpression(LiteralExpression expression)
+    {
+        _positives.Add(expression.Name);
+        return expression;
+    }
+
     /// <summary>
     /// Transforms the given <see cref="BooleanExpression"/> into a conjunctive normal form.
     /// </summary>
     /// <param name="expression">The <see cref="BooleanExpression"/> to transform.</param>
-    /// <returns>A <see cref="BooleanExpression"/> representing the conjunctive normal form of the original <paramref name="expression"/>.</returns>
+    /// <returns>A <see cref="BooleanExpression"/> representing the conjunctive normal form of the original <paramref name="expression"/> or <c>null</c> if the expression always evaluates to <c>true</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> is <c>null</c>.</exception>
-    public static BooleanExpression Transform(BooleanExpression expression) => new ConjunctiveNormalFormTransformer().Rewrite(expression ?? throw new ArgumentNullException(nameof(expression)));
+    public static BooleanExpression? Transform(BooleanExpression expression)
+    {
+        _ = expression ?? throw new ArgumentNullException(nameof(expression));
+        var transformer = new ConjunctiveNormalFormTransformer();
+        var result = transformer.Rewrite(expression);
+        return transformer._alwaysTrue ? null : result;
+    }
 }
