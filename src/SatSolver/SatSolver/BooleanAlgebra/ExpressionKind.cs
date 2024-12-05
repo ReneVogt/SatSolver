@@ -8,6 +8,13 @@
 public enum ExpressionKind
 {
     /// <summary>
+    /// A <see cref="ConstantExpression"/> that 
+    /// is either <c>true</c> (or '1') or
+    /// <c>false</c> (or '0').
+    /// </summary>
+    Constant,
+
+    /// <summary>
     /// A <see cref="LiteralExpression"/>.
     /// </summary>
     Literal,

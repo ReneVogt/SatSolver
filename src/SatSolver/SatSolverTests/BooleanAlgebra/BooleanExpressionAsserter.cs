@@ -39,6 +39,19 @@ sealed class BooleanExpressionAsserter(BooleanExpression expression) : IDisposab
 
     bool Markfailed() => !(hasErrors = true);
 
+    public void AssertConstant(bool sense)
+    {
+        try
+        {
+            Assert.True(enumerator.MoveNext());
+            var constantExpression = Assert.IsType<ConstantExpression>(enumerator.Current);
+            Assert.Equal(sense, constantExpression.Sense);
+        }
+        catch when (Markfailed())
+        {
+            throw;
+        }
+    }
     public void AssertLiteral(string name)
     {
         try
