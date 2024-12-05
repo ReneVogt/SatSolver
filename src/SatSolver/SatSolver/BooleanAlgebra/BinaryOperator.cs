@@ -11,7 +11,12 @@ public enum BinaryOperator
     And,
 
     /// <summary>
-    /// OR operator (|)
+    /// OR operator (|).
     /// </summary>
-    Or
+    Or,
+
+    /// <summary>
+    /// XOR operator (%).
+    /// </summary>
+    Xor
 }

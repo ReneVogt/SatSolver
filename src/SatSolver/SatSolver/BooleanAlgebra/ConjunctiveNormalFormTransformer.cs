@@ -27,6 +27,14 @@ public class ConjunctiveNormalFormTransformer : BooleanExpressionRewriter
         // need rewriting.
         //
         if (expression.Operator == BinaryOperator.And) return base.RewriteBinaryExpression(expression);
+
+        //
+        // XOR expressions like a % b are rewritten as (a | b) & (!a | !b) and 
+        // this converted expression is rewritten again to transform children.
+        //
+        if (expression.Operator == BinaryOperator.Xor)
+            return Rewrite(expression.Left.Or(expression.Right).And(Not(expression.Left).Or(Not(expression.Right))));
+        
         if (expression.Operator != BinaryOperator.Or) throw UnsupportedBinaryOperator(expression.Operator);
 
         // rewrite children

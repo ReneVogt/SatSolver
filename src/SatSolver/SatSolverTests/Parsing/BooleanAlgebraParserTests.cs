@@ -1,4 +1,5 @@
-﻿using Revo.SatSolver.Parsing;
+﻿using FluentAssertions;
+using Revo.SatSolver.Parsing;
 using SatSolverTests.BooleanAlgebra;
 
 namespace SatSolverTests.Parsing;
@@ -44,6 +45,16 @@ public class BooleanAlgebraParserTests()
         var expression = BooleanAlgebraParser.Parse(input);
         using var e = new BooleanExpressionAsserter(expression);
         e.AssertOr();
+        e.AssertLiteral("a");
+        e.AssertLiteral("b");
+    }
+    [Fact]
+    public void Parse_Xor()
+    {
+        const string input = "a % b";
+        var expression = BooleanAlgebraParser.Parse(input);
+        using var e = new BooleanExpressionAsserter(expression);
+        e.AssertXor();
         e.AssertLiteral("a");
         e.AssertLiteral("b");
     }
@@ -154,4 +165,13 @@ public class BooleanAlgebraParserTests()
         Assert.Equal(position, exception.Position);
         Assert.Equal(reason, exception.Error);
     }
+
+    [
+        Theory,
+        InlineData("a | b % c & d", "(a | (b % (c & d)))"),
+        InlineData("a & b % c | d", "(((a & b) % c) | d)"),
+        InlineData("a & (!(b % !c | d))", "(a & !((b % !c) | d))")
+    ]
+    public void Parse_Precedence(string input, string expected) =>
+        BooleanAlgebraParser.Parse(input).ToString().Should().Be(expected);
 }
