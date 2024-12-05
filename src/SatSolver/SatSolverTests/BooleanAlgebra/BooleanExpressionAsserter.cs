@@ -10,7 +10,7 @@ sealed class BooleanExpressionAsserter(BooleanExpression expression) : IDisposab
     public void Dispose()
     {
         if (!hasErrors)
-            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.MoveNext(), "More expressions than expected.");
         enumerator.Dispose();
     }
 
@@ -72,6 +72,19 @@ sealed class BooleanExpressionAsserter(BooleanExpression expression) : IDisposab
             Assert.True(enumerator.MoveNext());
             var binaryExpression = Assert.IsType<BinaryExpression>(enumerator.Current);
             Assert.Equal(BinaryOperator.Or, binaryExpression.Operator);
+        }
+        catch when (Markfailed())
+        {
+            throw;
+        }
+    }
+    public void AssertXor()
+    {
+        try
+        {
+            Assert.True(enumerator.MoveNext());
+            var binaryExpression = Assert.IsType<BinaryExpression>(enumerator.Current);
+            Assert.Equal(BinaryOperator.Xor, binaryExpression.Operator);
         }
         catch when (Markfailed())
         {

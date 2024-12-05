@@ -9,7 +9,7 @@ namespace Revo.SatSolver.Parsing;
 /// </summary>
 public sealed class BooleanAlgebraParser
 {
-    const string KnownCharacters = "()!|&10";
+    const string KnownCharacters = "()!|&10%";
 
     readonly string _input;
 
@@ -55,7 +55,8 @@ public sealed class BooleanAlgebraParser
             var current = Current;
             var precedence = current switch
             {
-                '&' => 2,
+                '&' => 3,
+                '%' => 2,
                 '|' => 1,
                 _ => 0
             };
@@ -63,7 +64,12 @@ public sealed class BooleanAlgebraParser
 
             _position++;
             var right = ParseExpression(precedence);
-            left = current == '&' ? left.And(right) : left.Or(right);
+            left = current switch
+            {
+                '&' => left.And(right),
+                '%' => left.Xor(right),
+                _ => left.Or(right)
+            };
         }
     }
     BooleanExpression ParsePrimaryExpression()

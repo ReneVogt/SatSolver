@@ -16,11 +16,13 @@ public class ExpressionTreeWriter : BooleanExpressionRewriter
         _ = expression ?? throw new ArgumentNullException(nameof(expression));
         Write("(");
         Rewrite(expression.Left);
-        Write(expression.Operator == BinaryOperator.Or 
-            ? " | " 
-            : expression.Operator == BinaryOperator.And 
-                ? " & " 
-                : throw UnsupportedBinaryOperator(expression.Operator));
+        Write(expression.Operator switch
+        {
+            BinaryOperator.Or => " | ",
+            BinaryOperator.And => " & ",
+            BinaryOperator.Xor => " % ",
+            _ => throw UnsupportedBinaryOperator(expression.Operator)
+        });
         Rewrite(expression.Right);
         Write(")");
         return expression;
