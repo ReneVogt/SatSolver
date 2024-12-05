@@ -1,6 +1,4 @@
-﻿using System.Security.AccessControl;
-
-namespace Revo.SatSolver.DPLL;
+﻿namespace Revo.SatSolver.DPLL;
 sealed class DpllProcessor
 { 
     enum StackReason
