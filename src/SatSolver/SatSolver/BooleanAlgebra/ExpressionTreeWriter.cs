@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using static Revo.SatSolver.BooleanAlgebra.BooleanExpressionException;
 
 namespace Revo.SatSolver.BooleanAlgebra;
 
@@ -19,7 +20,7 @@ public class ExpressionTreeWriter : BooleanExpressionRewriter
             ? " | " 
             : expression.Operator == BinaryOperator.And 
                 ? " & " 
-                : $" {expression.Operator} ");
+                : throw UnsupportedBinaryOperator(expression.Operator));
         Rewrite(expression.Right);
         Write(")");
         return expression;
@@ -27,7 +28,7 @@ public class ExpressionTreeWriter : BooleanExpressionRewriter
     public override BooleanExpression RewriteUnaryExpression(UnaryExpression expression)
     {
         _ = expression ?? throw new ArgumentNullException(nameof(expression));
-        Write(expression.Operator == UnaryOperator.Not ? "!" : expression.Operator.ToString());
+        Write(expression.Operator == UnaryOperator.Not ? "!" : throw UnsupportedUnaryOperator(expression.Operator));
         return base.RewriteUnaryExpression(expression);
     }
     public override BooleanExpression RewriteLiteralExpression(LiteralExpression expression)
