@@ -26,6 +26,7 @@ public abstract class BooleanExpressionRewriter
             ExpressionKind.Binary => RewriteBinaryExpression((BinaryExpression)expression),
             ExpressionKind.Unary => RewriteUnaryExpression((UnaryExpression)expression),
             ExpressionKind.Literal => RewriteLiteralExpression((LiteralExpression)expression),
+            ExpressionKind.Constant => RewriteConstantExpression((ConstantExpression)expression),
         _ => throw UnsupportedExpressionKind(expression.Kind)
     };
 
@@ -65,6 +66,7 @@ public abstract class BooleanExpressionRewriter
             ? expression
             : new UnaryExpression(expression.Operator, exp);
     }
+
     /// <summary>
     /// Visits a <see cref="LiteralExpression"/>.
     /// In a derived class rewrites the expression as necessary.
@@ -74,4 +76,14 @@ public abstract class BooleanExpressionRewriter
     /// no changes were made.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> ís <c>null</c>.</exception>
     public virtual BooleanExpression RewriteLiteralExpression(LiteralExpression expression) => expression ?? throw new ArgumentNullException(nameof(expression));
+
+    /// <summary>
+    /// Visits a <see cref="ConstantExpression"/>.
+    /// In a derived class rewrites the expression as necessary.
+    /// </summary>
+    /// <param name="expression">The <see cref="ConstantExpression"/> to visit.</param>
+    /// <returns>A rewritten <see cref="BooleanExpression"/> or the original <paramref name="expression"/> if
+    /// no changes were made.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expression"/> ís <c>null</c>.</exception>
+    public virtual BooleanExpression RewriteConstantExpression(ConstantExpression expression) => expression ?? throw new ArgumentNullException(nameof(expression));
 }

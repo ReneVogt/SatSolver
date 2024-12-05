@@ -36,6 +36,12 @@ public class ExpressionTreeWriter : BooleanExpressionRewriter
         Write(expression.Name);
         return base.RewriteLiteralExpression(expression);
     }
+    public override BooleanExpression RewriteConstantExpression(ConstantExpression expression)
+    {
+        _ = expression ?? throw new ArgumentNullException(nameof(expression));
+        Write(expression.Sense ? "1" : "0");
+        return base.RewriteConstantExpression(expression);
+    }
 
     void Write(string text)
     {
