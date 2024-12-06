@@ -1,4 +1,7 @@
-﻿using Revo.SatSolver.BooleanAlgebra;
+﻿using FluentAssertions;
+using Revo.SatSolver.BooleanAlgebra;
+using Revo.SatSolver.Parsing;
+using System.Globalization;
 using static Revo.SatSolver.BooleanAlgebra.ExpressionFactory;
 
 namespace SatSolverTests.BooleanAlgebra;
@@ -29,7 +32,7 @@ public class ExpressionTreeWriterTests()
             new LiteralExpression("right"));
         using var writer = new StringWriter();
         ExpressionTreeWriter.Write(expression, writer);
-        Assert.Equal("(left | right)", writer.ToString());
+        Assert.Equal("left | right", writer.ToString());
     }
     [Fact]
     public void Write_And()
@@ -40,7 +43,7 @@ public class ExpressionTreeWriterTests()
             new LiteralExpression("right"));
         using var writer = new StringWriter();
         ExpressionTreeWriter.Write(expression, writer);
-        Assert.Equal("(left & right)", writer.ToString());
+        Assert.Equal("left & right", writer.ToString());
     }
     [Fact]
     public void Write_Complex()
@@ -51,6 +54,22 @@ public class ExpressionTreeWriterTests()
         using var writer = new StringWriter();
         ExpressionTreeWriter.Write(expression, writer);
 
-        Assert.Equal("(!!lit1 | (!(lit2 | lit3) & (lit4 | !lit5)))", writer.ToString());
+        Assert.Equal("!!lit1 | !(lit2 | lit3) & (lit4 | !lit5)", writer.ToString());
     }
+
+    [
+        Theory,
+        InlineData("a", "a", "a"),
+        InlineData("a | b", "a | b", "a | b"),
+        InlineData("a & b", "a & b", "a & b"),
+        InlineData("a % b", "a % b", "a % b"),
+        InlineData("!(a | b & c % (d | a))", "!(a | b & c % (d | a))", "!(a | ((b & c) % (d | a)))")
+    ]
+    public void Write_Formatted(string input, string withoutParentheses, string withParentheses)
+    {
+        var expression = BooleanAlgebraParser.Parse(input);
+        expression.ToString().Should().Be(withoutParentheses);
+        expression.ToString("N", CultureInfo.InvariantCulture).Should().Be(withoutParentheses);
+        expression.ToString("P", CultureInfo.InvariantCulture).Should().Be(withParentheses);
+    }    
 }
