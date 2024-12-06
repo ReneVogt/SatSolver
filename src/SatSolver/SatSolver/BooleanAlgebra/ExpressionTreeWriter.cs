@@ -7,14 +7,34 @@ public class ExpressionTreeWriter : BooleanExpressionRewriter
 {
     readonly TextWriter? _writer;
     readonly StringBuilder? _builder;
+    readonly bool _explicitParentheses;
 
-    protected ExpressionTreeWriter(TextWriter? writer = null, StringBuilder? builder = null) =>
-        (_writer, _builder) = (writer, builder);
+    int _parentPrecedence;
 
+    protected ExpressionTreeWriter(bool explicitParentheses, TextWriter? writer = null, StringBuilder? builder = null) =>
+        (_explicitParentheses, _writer, _builder) = (explicitParentheses, writer, builder);
+
+    public override BooleanExpression Rewrite(BooleanExpression expression) 
+    {
+        var savedPrecedence = _parentPrecedence;
+        try
+        {
+            return base.Rewrite(expression);
+        }
+        finally
+        {
+            _parentPrecedence = savedPrecedence;
+        }
+    }
     public override BooleanExpression RewriteBinaryExpression(BinaryExpression expression)
     {
         _ = expression ?? throw new ArgumentNullException(nameof(expression));
-        Write("(");
+
+        var precedence = expression.Operator.GetPrecedence();
+        var parentheses = _parentPrecedence > 0 && (_explicitParentheses || precedence < _parentPrecedence);
+        _parentPrecedence = precedence;
+
+        if (parentheses) Write("(");
         Rewrite(expression.Left);
         Write(expression.Operator switch
         {
@@ -24,12 +44,13 @@ public class ExpressionTreeWriter : BooleanExpressionRewriter
             _ => throw UnsupportedBinaryOperator(expression.Operator)
         });
         Rewrite(expression.Right);
-        Write(")");
+        if (parentheses) Write(")");
         return expression;
     }
     public override BooleanExpression RewriteUnaryExpression(UnaryExpression expression)
     {
         _ = expression ?? throw new ArgumentNullException(nameof(expression));
+        _parentPrecedence = expression.Operator.GetPrecedence();
         Write(expression.Operator == UnaryOperator.Not ? "!" : throw UnsupportedUnaryOperator(expression.Operator));
         return base.RewriteUnaryExpression(expression);
     }
@@ -57,15 +78,18 @@ public class ExpressionTreeWriter : BooleanExpressionRewriter
     /// </summary>
     /// <param name="expression">The <see cref="BooleanExpression"/> to write out.</param>
     /// <param name="writer">The <see cref="TextWriter"/> to write to.</param>
+    /// <param name="explicitParentheses">If <c>true</c> explicit parentheses are written around every binary expression (except root).</param>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> or <paramref name="writer"/> is <c>null</c>.</exception>
-    public static void Write(BooleanExpression expression, TextWriter writer) =>
-        new ExpressionTreeWriter(writer: writer ?? throw new ArgumentNullException(nameof(writer))).Rewrite(expression);
+    public static void Write(BooleanExpression expression, TextWriter writer, bool explicitParentheses = false) =>
+        new ExpressionTreeWriter(explicitParentheses, writer: writer ?? throw new ArgumentNullException(nameof(writer))).Rewrite(expression);
+
     /// <summary>
     /// Writes the <paramref name="expression"/> to the <paramref name="builder"/>.
     /// </summary>
     /// <param name="expression">The <see cref="BooleanExpression"/> to write out.</param>
     /// <param name="builder">The <see cref="StringBuilder"/> to write to.</param>
+    /// <param name="explicitParentheses">If <c>true</c> explicit parentheses are written around every binary expression (except root).</param>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> or <paramref name="builder"/> is <c>null</c>.</exception>
-    public static void Write(BooleanExpression expression, StringBuilder builder) =>
-        new ExpressionTreeWriter(builder: builder ?? throw new ArgumentNullException(nameof(builder))).Rewrite(expression);
+    public static void Write(BooleanExpression expression, StringBuilder builder, bool explicitParentheses = false) =>
+        new ExpressionTreeWriter(explicitParentheses, builder: builder ?? throw new ArgumentNullException(nameof(builder))).Rewrite(expression);
 }

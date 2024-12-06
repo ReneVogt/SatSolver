@@ -29,18 +29,19 @@ public class ConjunctiveNormalFormTransformerTests
 
     [
         Theory,
-        InlineData("a | b & c", "((a | b) & (a | c))"),
-        InlineData("a & b | c", "((a | c) & (b | c))"),
-        InlineData("a & b | c & d", "((((a | c) & (a | d)) & (b | c)) & (b | d))"),
-        InlineData("a % b", "((a | b) & (!a | !b))"),
-        InlineData("a & !(b | c) | !(a & b)", "((a | (!a | !b)) & ((!b | (!a | !b)) & (!c | (!a | !b))))"),
-        InlineData("a & !b | !a & b", "((((a | !a) & (a | b)) & (!b | !a)) & (!b | b))"),
-        InlineData("a & (b % c)", "(a & ((b | c) & (!b | !c)))"),
-        InlineData("(a % b) | c", "(((a | b) | c) & ((!a | !b) | c))")
+        InlineData("a | b & c", "(a | b) & (a | c)"),
+        InlineData("a & b | c", "(a | c) & (b | c)"),
+        InlineData("a & b | c & d", "(a | c) & (a | d) & (b | c) & (b | d)"),
+        InlineData("a % b", "(a | b) & (!a | !b)"),
+        InlineData("a & !(b | c) | !(a & b)", "(a | !a | !b) & (!b | !a | !b) & (!c | !a | !b)"),
+        InlineData("a & !b | !a & b", "(a | !a) & (a | b) & (!b | !a) & (!b | b)"),
+        InlineData("a & (b % c)", "a & (b | c) & (!b | !c)"),
+        InlineData("a % b | c", "(a | b | c) & (!a | !b | c)")
     ]
     public void Transform_CorrectTransformation(string input, string expected)
     {
         var expression = BooleanAlgebraParser.Parse(input);
+        expression.ToString().Should().Be(input);
         Transform(expression).ToString().Should().Be(expected);
     }
 
@@ -50,7 +51,7 @@ public class ConjunctiveNormalFormTransformerTests
         const string input = "a & b & !c | a&!b&c | !a&b&c";
         var expression = BooleanAlgebraParser.Parse(input);
         var transformed = Transform(expression);
-        transformed.ToString().Should().Be("((((((((((((a | a) | !a) & ((a | !b) | !a)) & ((b | a) | !a)) & ((b | !b) | !a)) & (((a | c) | !a) & ((b | c) | !a))) & ((((((a | a) | b) & ((a | !b) | b)) & ((b | a) | b)) & ((b | !b) | b)) & (((a | c) | b) & ((b | c) | b)))) & (((!c | a) | !a) & ((!c | !b) | !a))) & (((!c | a) | b) & ((!c | !b) | b))) & (((((((a | a) | c) & ((a | !b) | c)) & ((b | a) | c)) & ((b | !b) | c)) & (((a | c) | c) & ((b | c) | c))) & (((!c | a) | c) & ((!c | !b) | c)))) & (((!c | c) | !a) & ((!c | c) | b))) & ((!c | c) | c))");
+        transformed.ToString().Should().Be("(a | a | !a) & (a | !b | !a) & (b | a | !a) & (b | !b | !a) & (a | c | !a) & (b | c | !a) & (a | a | b) & (a | !b | b) & (b | a | b) & (b | !b | b) & (a | c | b) & (b | c | b) & (!c | a | !a) & (!c | !b | !a) & (!c | a | b) & (!c | !b | b) & (a | a | c) & (a | !b | c) & (b | a | c) & (b | !b | c) & (a | c | c) & (b | c | c) & (!c | a | c) & (!c | !b | c) & (!c | c | !a) & (!c | c | b) & (!c | c | c)");
         Assert.Fail("Just to remember to forward this test to the redundancy reducer.");
     }
 }
