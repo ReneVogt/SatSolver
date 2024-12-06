@@ -9,8 +9,6 @@ namespace Revo.SatSolver.Parsing;
 /// </summary>
 public sealed class BooleanAlgebraParser
 {
-    const string KnownCharacters = "()!|&10%";
-
     readonly string _input;
 
     int _position;
@@ -40,10 +38,12 @@ public sealed class BooleanAlgebraParser
         SkipWhiteSpace();
 
         BooleanExpression left;
-        if (Current == '!')
+        var unaryPrecedence = SyntaxFacts.ParseUnaryOperator(Current).GetPrecedence();
+        if (unaryPrecedence > 0 && unaryPrecedence >= parentPrecedence)
         {
+            // NOT (!) is currently the only known unary operator.
             _position++;
-            left = Not(ParseExpression(3));
+            left = Not(ParseExpression(unaryPrecedence));
         }
         else
             left = ParsePrimaryExpression();
@@ -52,22 +52,16 @@ public sealed class BooleanAlgebraParser
         for (; ; )
         {
             SkipWhiteSpace();
-            var current = Current;
-            var precedence = current switch
-            {
-                '&' => 3,
-                '%' => 2,
-                '|' => 1,
-                _ => 0
-            };
+            var binaryOperator = SyntaxFacts.ParseBinaryOperator(Current);
+            var precedence = binaryOperator.GetPrecedence();
             if (precedence <= parentPrecedence) return left;
 
             _position++;
             var right = ParseExpression(precedence);
-            left = current switch
+            left = binaryOperator switch
             {
-                '&' => left.And(right),
-                '%' => left.Xor(right),
+                BinaryOperator.And => left.And(right),
+                BinaryOperator.Xor => left.Xor(right),
                 _ => left.Or(right)
             };
         }
@@ -104,7 +98,7 @@ public sealed class BooleanAlgebraParser
             return Zero;
         }
 
-        while (!(EndReached || KnownCharacters.Contains(Current) || char.IsWhiteSpace(Current))) _position++;
+        while (!(EndReached || Current.IsSpecialCharacter() || char.IsWhiteSpace(Current))) _position++;
         if (start == _position)
             throw InvalidBooleanAlgebraException.InvalidCharacter(_position);
 

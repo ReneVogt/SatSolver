@@ -6,6 +6,11 @@
 public enum BinaryOperator
 {
     /// <summary>
+    /// Unknown operator.
+    /// </summary>
+    Unknown,
+
+    /// <summary>
     /// AND operator (&).
     /// </summary>
     And,
