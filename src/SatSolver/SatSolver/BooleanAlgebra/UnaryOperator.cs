@@ -6,6 +6,11 @@
 public enum UnaryOperator
 {
     /// <summary>
+    /// Unknown operator.
+    /// </summary>
+    Unknown,
+
+    /// <summary>
     /// NOT operator (!).
     /// </summary>
     Not

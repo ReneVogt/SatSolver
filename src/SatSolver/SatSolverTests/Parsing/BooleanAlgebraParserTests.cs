@@ -147,6 +147,43 @@ public class BooleanAlgebraParserTests()
         e.AssertConstant(false);
     }
 
+    [Fact]
+    public void Parse_WrongAfterSyntaxFacts_PrecedenceMustBeAtLeastOneForTheParserToWork()
+    {
+        const string input = "!(a | b & c % (d | a))";
+        var expression = BooleanAlgebraParser.Parse(input);
+        using var e = new BooleanExpressionAsserter(expression);
+
+        e.AssertNot();
+        e.AssertOr();
+        e.AssertLiteral("a");
+        e.AssertXor();
+        e.AssertAnd();
+        e.AssertLiteral("b");
+        e.AssertLiteral("c");
+        e.AssertOr();
+        e.AssertLiteral("d");
+        e.AssertLiteral("a");
+    }
+
+    [Fact]
+    public void Parse_WrongAfterSyntaxFacts_AlsoUseCorrectUnaryPrecedence()
+    {
+        const string input = "a & !b | !a & b";
+        var expression = BooleanAlgebraParser.Parse(input);
+        using var e = new BooleanExpressionAsserter(expression);
+
+        e.AssertOr();
+        e.AssertAnd();
+        e.AssertLiteral("a");
+        e.AssertNot();
+        e.AssertLiteral("b");
+        e.AssertAnd();
+        e.AssertNot();
+        e.AssertLiteral("a");
+        e.AssertLiteral("b");
+    }
+
     [
         Theory,
         InlineData("", 0, InvalidBooleanAlgebraException.Reason.UnexpectedEnd),
@@ -158,6 +195,8 @@ public class BooleanAlgebraParserTests()
         InlineData("(a & b!", 6, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
         InlineData("(a0 & b)", 2, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
         InlineData("(0a & b)", 2, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
+        InlineData("a ^ b", 2, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
+        InlineData("!(a ^ b)", 4, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter)
     ]
     public void Parse_InvalidSyntax_Exception(string input, int position, InvalidBooleanAlgebraException.Reason reason)
     {
@@ -168,10 +207,10 @@ public class BooleanAlgebraParserTests()
 
     [
         Theory,
-        InlineData("a | b % c & d", "(a | (b % (c & d)))"),
-        InlineData("a & b % c | d", "(((a & b) % c) | d)"),
-        InlineData("a & (!(b % !c | d))", "(a & !((b % !c) | d))")
+        InlineData("a | b % c & d", "a | (b % (c & d))"),
+        InlineData("a & b % c | d", "((a & b) % c) | d"),
+        InlineData("a & (!(b % !c | d))", "a & !((b % !c) | d)")
     ]
     public void Parse_Precedence(string input, string expected) =>
-        BooleanAlgebraParser.Parse(input).ToString().Should().Be(expected);
+        BooleanAlgebraParser.Parse(input).ToString("P", null).Should().Be(expected);
 }
