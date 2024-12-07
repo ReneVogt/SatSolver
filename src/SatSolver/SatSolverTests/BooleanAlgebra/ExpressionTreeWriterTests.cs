@@ -10,18 +10,14 @@ public class ExpressionTreeWriterTests()
     [Fact]
     public void Write_Literal()
     {
-        var expression = new LiteralExpression("test");
-        using var writer = new StringWriter();
-        ExpressionTreeWriter.Write(expression, writer);
-        Assert.Equal("test", writer.ToString());
+        var expression = new LiteralExpression("test");        ;
+        Assert.Equal("test", ExpressionTreeWriter.Write(expression));
     }
     [Fact]
     public void Write_NegatedLiteral()
     {
         var expression = new UnaryExpression(UnaryOperator.Not, new LiteralExpression("test"));
-        using var writer = new StringWriter();
-        ExpressionTreeWriter.Write(expression, writer);
-        Assert.Equal("!test", writer.ToString());
+        Assert.Equal("!test", ExpressionTreeWriter.Write(expression));
     }
     [Fact]
     public void Write_Or()
@@ -30,9 +26,7 @@ public class ExpressionTreeWriterTests()
             new LiteralExpression("left"),
             BinaryOperator.Or, 
             new LiteralExpression("right"));
-        using var writer = new StringWriter();
-        ExpressionTreeWriter.Write(expression, writer);
-        Assert.Equal("left | right", writer.ToString());
+        Assert.Equal("left | right", ExpressionTreeWriter.Write(expression));
     }
     [Fact]
     public void Write_And()
@@ -41,9 +35,7 @@ public class ExpressionTreeWriterTests()
             new LiteralExpression("left"),
             BinaryOperator.And,
             new LiteralExpression("right"));
-        using var writer = new StringWriter();
-        ExpressionTreeWriter.Write(expression, writer);
-        Assert.Equal("left & right", writer.ToString());
+        Assert.Equal("left & right", ExpressionTreeWriter.Write(expression));
     }
     [Fact]
     public void Write_Complex()
@@ -51,10 +43,7 @@ public class ExpressionTreeWriterTests()
         var expression = Not(Not(Literal("lit1"))).Or(
             Not(Literal("lit2").Or(Literal("lit3")))
             .And(Literal("lit4").Or(Not(Literal("lit5")))));
-        using var writer = new StringWriter();
-        ExpressionTreeWriter.Write(expression, writer);
-
-        Assert.Equal("!!lit1 | !(lit2 | lit3) & (lit4 | !lit5)", writer.ToString());
+        Assert.Equal("!!lit1 | !(lit2 | lit3) & (lit4 | !lit5)", ExpressionTreeWriter.Write(expression));
     }
 
     [
