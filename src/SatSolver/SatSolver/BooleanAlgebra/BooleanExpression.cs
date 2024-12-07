@@ -16,13 +16,11 @@ public abstract class BooleanExpression : IFormattable
 
     public override string ToString() => ToString(null, null);
 
-    public string ToString(string? format, IFormatProvider? formatProvider)
+    public string ToString(string? format, IFormatProvider? formatProvider = null)
     {
         format ??= "N";
         if (format != "N" && format != "P") throw new FormatException($"Format '{format}' is not supported.");
         
-        var builder = new StringBuilder();
-        ExpressionTreeWriter.Write(this, builder, format == "P");
-        return builder.ToString();
+        return ExpressionTreeWriter.Write(this, format == "P");
     }
 }

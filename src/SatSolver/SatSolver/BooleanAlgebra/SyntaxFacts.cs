@@ -1,7 +1,14 @@
-﻿namespace Revo.SatSolver.BooleanAlgebra;
+﻿using static Revo.SatSolver.BooleanAlgebra.BooleanExpressionException;
+
+namespace Revo.SatSolver.BooleanAlgebra;
 
 static class SyntaxFacts
 {
+    public static char GetOperatorChar(this UnaryOperator op) => op switch
+    {
+        UnaryOperator.Not => '!',
+        _ => throw UnsupportedUnaryOperator(op)
+    };
     public static UnaryOperator ParseUnaryOperator(char c) => c switch
     {
         '!' => UnaryOperator.Not,
@@ -13,6 +20,14 @@ static class SyntaxFacts
         _ => 0
     };
 
+
+    public static char GetOperatorChar(this BinaryOperator op) => op switch
+    {
+        BinaryOperator.And => '&',
+        BinaryOperator.Xor => '%',
+        BinaryOperator.Or => '|',
+        _ => throw UnsupportedBinaryOperator(op)
+    };
     public static BinaryOperator ParseBinaryOperator(char c) => c switch
     {
         '&' => BinaryOperator.And,
