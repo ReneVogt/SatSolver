@@ -44,7 +44,7 @@
     <None Update="Solutions\2of3.cnf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Solutions\EnumerateAll.cnf">
+    <None Update="Solutions\YieldOnlyFixedVariables.cnf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Solutions\XOR.cnf">

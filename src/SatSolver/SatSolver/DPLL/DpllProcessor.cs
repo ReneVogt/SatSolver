@@ -1,4 +1,6 @@
-﻿namespace Revo.SatSolver.DPLL;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Revo.SatSolver.DPLL;
 sealed class DpllProcessor
 { 
     enum StackReason
@@ -132,68 +134,40 @@ sealed class DpllProcessor
         _pureLiterals = _mode == DpllMode.DecisionOnly ? new(_variables.Where(variable => variable.NumberOfActiveNegatives + variable.NumberOfActivePositives == 1)) : [];
     }
 
-    public bool TryNextVariable(out Literal[][]? solutions)
-    {
-        solutions = null;
-
-        if (_numberOfActiveConstraints > 0 && !_foundEmptyConstraint)
-        {
-            var variable = _currentCandidate ?? GetNextCandidate();
-            var reason = _currentCandidate is null ? StackReason.FirstGuess : StackReason.SecondGuess;
-            _currentCandidate = null;
-            Propagate(variable, reason);
-            UnitPropagation();
-            PureLiteralElimination();
-        }
-
-        if (_numberOfActiveConstraints == 0)
-        {
-            solutions = CreateCurrentSolutions().ToArray();
-            return true;
-        }
-
-        return _foundEmptyConstraint;
-    }
-
     /// <summary>
-    /// Compiles the currently found solution into
-    /// a sequence of arrays of <see cref="Literal"/>.
-    /// If <see cref="_mode"/> is <see cref="DpllMode.DecisionOnly"/>
-    /// the current solution is returned with still free variables as
-    /// they are.
-    /// If <see cref="_mode"/> is <see cref="DpllMode.AllSolutions"/>
-    /// all possible solutions for the still free variables are enumerated.
+    /// Searches the possibility tree to find the next
+    /// satisfiying variable set.
     /// </summary>
-    /// <returns>The solutions as a sequence of Literal[].</returns>
-    IEnumerable<Literal[]> CreateCurrentSolutions()
+    /// <param name="solution">Receives the found solution. This can be <c>null</c> if
+    /// no further solution was found</param>
+    /// <returns><c>true</c> if there is more to investigate, 
+    /// <c>false</c> if all varibale configurations are
+    /// examined.</returns>    
+    public bool FindNextSolution(out Literal[]? solution)
     {
-        if (_mode == DpllMode.DecisionOnly)
-        {
-            yield return CreateCurrentSolution();
-            yield break;
-        }
+        solution = null;
 
-        var freeVariables = _variables.Where(variable => !variable.Fixed).ToArray();
-        foreach (var variable in freeVariables) variable.Sense = false;
-        if (freeVariables.Length == 0)
-        {
-            yield return CreateCurrentSolution();
-            yield break;
-        }
-
-        var pointer = freeVariables.Length - 1;
         do
         {
-            yield return _variables.Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();
-            while (pointer >= 0 && freeVariables[pointer].Sense) pointer--;
-            if (pointer >= 0)
+            while(_numberOfActiveConstraints > 0 && !_foundEmptyConstraint)
             {
-                freeVariables[pointer++].Sense = true;
-                while(pointer < freeVariables.Length) freeVariables[pointer++].Sense = false;
-                pointer--;
+                var variable = _currentCandidate ?? GetNextCandidate();
+                var reason = _currentCandidate is null ? StackReason.FirstGuess : StackReason.SecondGuess;
+                _currentCandidate = null;
+                Propagate(variable, reason);
+                UnitPropagation();
+                PureLiteralElimination();
             }
 
-        } while (pointer >= 0);
+            if (_numberOfActiveConstraints == 0)
+            {
+                solution = CreateCurrentSolution();
+                return Backtrack();
+            }
+
+        } while (Backtrack());
+
+        return false;
     }
 
     /// <summary>
@@ -203,9 +177,7 @@ sealed class DpllProcessor
     /// array positions and need to reverse that now.
     /// </summary>
     /// <returns>The solution as Literal[].</returns>
-    /// </summary>
-    /// <returns>The current solution.</returns>
-    Literal[] CreateCurrentSolution() => _variables.Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();
+    Literal[] CreateCurrentSolution() => _variables.Where(variable => variable.Fixed).Select(variable => new Literal(variable.Index+1, variable.Sense)).ToArray();
 
     /// <summary>
     /// The stack knows which variable was set and wether that
@@ -220,7 +192,7 @@ sealed class DpllProcessor
     /// </summary>
     /// <returns><c>true</c> if we changed a variable and
     /// start over, <c>false</c> if not and we finished.</returns>
-    public bool Backtrack()
+    bool Backtrack()
     {
         while(_stack.Count > 0)
         {

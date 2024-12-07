@@ -28,38 +28,17 @@ public sealed class SatSolver
 
     IEnumerable<Literal[]> Solve()
     {
+        bool done;
         do
         {
-            _cancellationToken.ThrowIfCancellationRequested();
-            
-            Literal[][]? solutions;
-            while(!_state.TryNextVariable(out solutions)) { _cancellationToken.ThrowIfCancellationRequested(); }
+            done = !_state.FindNextSolution(out var solution);
+            if (solution is not null)
+                yield return solution;
 
-            if (solutions is not null)
-                foreach(var solution in solutions)
-                    yield return solution;
-
-        } while (_state.Backtrack());
+        } while (!done);
     }
 
-    bool IsSatisfiable([NotNullWhen(true)] out Literal[]? solution)
-    {
-        do
-        {
-            _cancellationToken.ThrowIfCancellationRequested();
-
-            Literal[][]? solutions;
-
-            while (!_state.TryNextVariable(out solutions)) { _cancellationToken.ThrowIfCancellationRequested(); }
-            solution = solutions?.FirstOrDefault();
-            if (solution is not null)            
-                return true;
-
-        } while (_state.Backtrack());
-
-        return false;
-    }
-
+    bool IsSatisfiable([NotNullWhen(true)] out Literal[]? solution) => _state.FindNextSolution(out solution);
 
     /// <summary>
     /// Finds all variable configurations that satisfy the SATisfiability <paramref name="problem"/>.
