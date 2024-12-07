@@ -1,4 +1,6 @@
-﻿using static Revo.SatSolver.BooleanAlgebra.RedundancyReducer;
+﻿using FluentAssertions;
+using Revo.SatSolver.Parsing;
+using static Revo.SatSolver.BooleanAlgebra.RedundancyReducer;
 
 namespace SatSolverTests.BooleanAlgebra;
 
@@ -9,4 +11,36 @@ public class RedundancyReducerTests
     {
         Assert.Throws<ArgumentNullException>(() => Reduce(null!));
     }
+
+    [
+        Theory,
+        InlineData("0", "0"),
+        InlineData("1", "1"),
+        InlineData("a", "a"),
+        InlineData("a | b", "a | b"),
+        InlineData("a & b", "a & b"),
+        InlineData("a % b", "a % b"),
+        InlineData("a | 0", "a"),
+        InlineData("a | 1", "1"),
+        InlineData("a & 0", "0"),
+        InlineData("a & 1", "a"),
+        InlineData("a % 1", "!a"),
+        InlineData("a % 0", "a"),
+        InlineData("0 | 0", "0"),
+        InlineData("0 | 1", "1"),
+        InlineData("1 | 0", "1"),
+        InlineData("1 | 1", "1"),
+        InlineData("0 & 0", "0"),
+        InlineData("0 & 1", "0"),
+        InlineData("1 & 0", "0"),
+        InlineData("1 & 1", "1"),
+        InlineData("0 % 0", "0"),
+        InlineData("0 % 1", "1"),
+        InlineData("1 % 0", "1"),
+        InlineData("1 % 1", "0"),
+
+        InlineData("(a | b) & (a | c) & (c | d) & (a | f) & (c | d | e) & f", "(a | b) & (a | c) & (c | d) & f"),
+        InlineData("a & b | a & c | c & d | a & f | c & d & e | f", "a & b | a & c | a & f | c & d & e")
+    ]
+    public void Reduce_Correct(string input, string expected) => Reduce(BooleanAlgebraParser.Parse(input)).ToString().Should().Be(expected);
 }
