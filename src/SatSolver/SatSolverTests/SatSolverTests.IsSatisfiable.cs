@@ -24,6 +24,16 @@ public sealed partial class SatSolverTests
         Assert.False(SatSolver.IsSatisfiable(problem));
     }
 
-    public static IEnumerable<object[]> ScanSatFiles() => Directory.EnumerateFiles("SAT").Select(file => new object[] { Path.GetFileName(file) });
-    public static IEnumerable<object[]> ScanUnsatFiles() => Directory.EnumerateFiles("UNSAT").Select(file => new object[] { Path.GetFileName(file) });
+    public static TheoryData<string> ScanSatFiles()
+    {
+        var data = new TheoryData<string>();
+        data.AddRange(Directory.EnumerateFiles("SAT").Select(file => Path.GetFileName(file)).ToArray());
+        return data;
+    }
+    public static TheoryData<string> ScanUnsatFiles()
+    {
+        var data = new TheoryData<string>();
+        data.AddRange(Directory.EnumerateFiles("UNSAT").Select(file => Path.GetFileName(file)).ToArray());
+        return data;
+    }
 }

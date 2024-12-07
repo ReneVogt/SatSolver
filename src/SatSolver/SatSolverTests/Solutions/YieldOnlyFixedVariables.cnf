@@ -6,14 +6,7 @@ c ==============================================
 p cnf 4 1
 1 0
 
-c The eight solutions (counting through 3 bits)
+c Only one solution/varaible needed.
 c ================================================
-p cnf 4 8
-1 2 3 4 0
-1 2 3 -4 0
-1 2 -3 4 0
-1 2 -3 -4 0
-1 -2 3 4 0
-1 -2 3 -4 0
-1 -2 -3 4 0
-1 -2 -3 -4 0
+p cnf 4 1
+1 0

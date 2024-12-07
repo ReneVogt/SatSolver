@@ -16,7 +16,7 @@ public sealed partial class SatSolverTests
         AssertSameSolutions(problems[1].Clauses.Select(clause => clause.Literals).ToArray(), solutions);
     }
 
-    void AssertSameSolutions(ImmutableArray<Literal>[] expectedSolutions, Literal[][] actualSolutions)
+    static void AssertSameSolutions(ImmutableArray<Literal>[] expectedSolutions, Literal[][] actualSolutions)
     {
         if (expectedSolutions.Length != actualSolutions.Length)
             Assert.Fail($"Different number of solutions: {expectedSolutions.Length} expected, actual {actualSolutions.Length}.");
@@ -25,6 +25,11 @@ public sealed partial class SatSolverTests
         var actualString = string.Join(Environment.NewLine, actualSolutions.Select(solution => string.Join(" ", solution.Select(literal => literal.Sense ? literal.Id : -literal.Id).OrderBy(l => l))).OrderBy(s => s));
         Assert.Equal(expectedString, actualString);
     }
-    public static IEnumerable<object[]> ScanSolutionFiles() => Directory.EnumerateFiles("Solutions").Select(file => new object[] { Path.GetFileName(file) });
+    public static TheoryData<string> ScanSolutionFiles()
+    {
+        var data = new TheoryData<string>();
+        data.AddRange(Directory.EnumerateFiles("Solutions").Select(file => Path.GetFileName(file)).ToArray());
+        return data;
+    }
 
 }
