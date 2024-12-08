@@ -16,7 +16,10 @@ public class RedundancyReducerTests
         Theory,
         InlineData("0", "0"),
         InlineData("1", "1"),
+        InlineData("!1", "0"),
+        InlineData("!0", "1"),
         InlineData("a", "a"),
+        InlineData("!!a", "a"),
         InlineData("a | b", "a | b"),
         InlineData("a & b", "a & b"),
         InlineData("a % b", "a % b"),
@@ -26,6 +29,15 @@ public class RedundancyReducerTests
         InlineData("a & 1", "a"),
         InlineData("a % 1", "!a"),
         InlineData("a % 0", "a"),
+        InlineData("a | a", "a"),
+        InlineData("a | !a", "1"),
+        InlineData("!a | a", "1"),
+        InlineData("a & a", "a"),
+        InlineData("a & !a", "0"),
+        InlineData("!a & a", "0"),
+        InlineData("a % a", "0"),
+        InlineData("a % !a", "1"),
+        InlineData("!a % a", "1"),
         InlineData("0 | 0", "0"),
         InlineData("0 | 1", "1"),
         InlineData("1 | 0", "1"),
@@ -38,6 +50,19 @@ public class RedundancyReducerTests
         InlineData("0 % 1", "1"),
         InlineData("1 % 0", "1"),
         InlineData("1 % 1", "0"),
+
+        InlineData("(a | b) % (a & c)", "(a | b) % a & c"),
+
+        InlineData("a & (b | 1)", "a"),
+        InlineData("(b & 0) | a", "a"),
+
+        InlineData("a & (b | c | b)", "a & (b | c)"),
+        InlineData("a | (b & c & b & d)", "a | b & c & d"),
+        InlineData("a & b & c & !b & d", "0"),
+        InlineData("a | b | c | !b | d", "1"),
+
+        InlineData("a | !!(b & !b)", "a"),
+        InlineData("a & b & (c | a | b | !c)", "a & b & c"),
 
         InlineData("(a | b) & (a | c) & (c | d) & (a | f) & (c | d | e) & f", "(a | b) & (a | c) & (c | d) & f"),
         InlineData("a & b | a & c | c & d | a & f | c & d & e | f", "a & b | a & c | a & f | c & d & e")
