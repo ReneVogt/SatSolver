@@ -8,7 +8,7 @@
 public sealed class ConstantExpression(bool sense) : BooleanExpression
 {
     /// <inheritdoc/>
-    public override ExpressionKind Kind => ExpressionKind.Literal;
+    public override ExpressionKind Kind => ExpressionKind.Constant;
 
     /// <summary>
     /// The boolean value of this expression..
