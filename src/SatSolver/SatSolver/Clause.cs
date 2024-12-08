@@ -48,7 +48,7 @@ public sealed class Clause : IComparable<Clause>, IEquatable<Clause>
         return 0;
     }
 
-    public override string ToString() => string.Join(" ", Literals) + " 0";
+    public override string ToString() => string.Join(" ", Literals) + (Literals.Length > 0 ? " 0" : "0");
 
     public static implicit operator Clause(Literal[] literals) => new(literals);
     public static implicit operator Clause(int[] literals) => new(literals.Select(i => (Literal)i).ToArray());
