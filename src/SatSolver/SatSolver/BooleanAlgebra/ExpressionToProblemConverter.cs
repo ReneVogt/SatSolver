@@ -38,16 +38,24 @@ public sealed class ExpressionToProblemConverter : BooleanExpressionRewriter
         _positives.Clear();
         _negatives.Clear();
         var left = Rewrite(expression.Left);
-        if (left.Kind != ExpressionKind.Binary || ((BinaryExpression)left).Operator != BinaryOperator.And)        
-            _clauses.Add(new(_positives.Select(p => new Literal(p, true)).Concat(_negatives.Select(n => new Literal(n, false)))));
+        if (left.Kind != ExpressionKind.Binary || ((BinaryExpression)left).Operator != BinaryOperator.And) 
+            CompileClause();
 
         _positives.Clear();
         _negatives.Clear();
         var right = Rewrite(expression.Right);
         if (right.Kind != ExpressionKind.Binary || ((BinaryExpression)right).Operator != BinaryOperator.And)
-            _clauses.Add(new(_positives.Select(p => new Literal(p, true)).Concat(_negatives.Select(n => new Literal(n, false)))));
+            CompileClause();
 
         return expression;
+    }
+
+    void CompileClause()
+    {     
+        if (_positives.Count + _negatives.Count <= 0) return;
+        _clauses.Add(new(_positives.Select(p => new Literal(p, true)).Concat(_negatives.Select(n => new Literal(n, false)))));
+        _positives.Clear();
+        _negatives.Clear();
     }
 
     int GetLiteralId(string name)
@@ -108,6 +116,7 @@ public sealed class ExpressionToProblemConverter : BooleanExpressionRewriter
 
         var converter = new ExpressionToProblemConverter();        
         converter.Rewrite(reduced);
+        converter.CompileClause();
         literalMapping = converter._literalMapping.AsReadOnly();
         return new (converter._literalMapping.Count, converter._clauses);
     }
