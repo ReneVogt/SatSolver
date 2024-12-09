@@ -51,7 +51,6 @@ public class ConjunctiveNormalFormTransformerTests
         const string input = "a & b & !c | a&!b&c | !a&b&c";
         var expression = BooleanAlgebraParser.Parse(input);
         var transformed = Transform(expression);
-        transformed.ToString().Should().Be("(a | a | !a) & (a | !b | !a) & (b | a | !a) & (b | !b | !a) & (a | c | !a) & (b | c | !a) & (a | a | b) & (a | !b | b) & (b | a | b) & (b | !b | b) & (a | c | b) & (b | c | b) & (!c | a | !a) & (!c | !b | !a) & (!c | a | b) & (!c | !b | b) & (a | a | c) & (a | !b | c) & (b | a | c) & (b | !b | c) & (a | c | c) & (b | c | c) & (!c | a | c) & (!c | !b | c) & (!c | c | !a) & (!c | c | b) & (!c | c | c)");
-        Assert.Fail("Just to remember to forward this test to the redundancy reducer.");
+        transformed.ToString().Should().Be("(a | a | !a) & (a | !b | !a) & (b | a | !a) & (b | !b | !a) & (a | c | !a) & (b | c | !a) & (a | a | b) & (a | !b | b) & (b | a | b) & (b | !b | b) & (a | c | b) & (b | c | b) & (!c | a | !a) & (!c | !b | !a) & (!c | a | b) & (!c | !b | b) & (a | a | c) & (a | !b | c) & (b | a | c) & (b | !b | c) & (a | c | c) & (b | c | c) & (!c | a | c) & (!c | !b | c) & (!c | c | !a) & (!c | c | b) & (!c | c | c)");       
     }
 }

@@ -62,7 +62,7 @@ public class RedundancyReducerTests
         InlineData("a | b | c | !b | d", "1"),
 
         InlineData("a | !!(b & !b)", "a"),
-        InlineData("a & b & (c | a | b | !c)", "a & b & c"),
+        InlineData("a & b & (c | a | b | !c)", "a & b"),
 
         InlineData("(a | b) & (a | c) & (c | d) & (a | f) & (c | d | e) & f", "(a | b) & (a | c) & (c | d) & f"),
         InlineData("a & b | a & c | c & d | a & f | c & d & e | f", "a & b | a & c | a & f | c & d & e")
