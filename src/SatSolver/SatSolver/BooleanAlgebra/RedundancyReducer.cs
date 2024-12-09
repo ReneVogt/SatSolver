@@ -1,16 +1,42 @@
-﻿using System.Security.AccessControl;
-using static Revo.SatSolver.BooleanAlgebra.ExpressionFactory;
+﻿using static Revo.SatSolver.BooleanAlgebra.ExpressionFactory;
 
 namespace Revo.SatSolver.BooleanAlgebra;
 
 /// <summary>
 /// Reduces redundancies in <see cref="BooleanExpression"/>s.
 /// </summary>
+/// <remarks>
+/// We collect child expressions along OR and AND expressions.
+/// Literals that occure more than once in either expression
+/// type are removed. If they occure in different senses
+/// (negated and not negated), a containing OR expression
+/// is autmatically true and a containing AND expression
+/// is automatically false.
+/// For AND expressions we collect the information about
+/// which literals are contained in the child expressions
+/// so that we can remove parts (OR expressions) that 
+/// contain a superset of literals in another OR expression
+/// that has no other nested expressions.
+/// E.g.: (a | b) & (a | b | c) => a | b
+/// but (a | b | (c % d)) & (a | b | c) cannot be reduced./// 
+/// </remarks>
 public class RedundancyReducer : BooleanExpressionRewriter
 {
-    HashSet<string> _positives = [];
-    HashSet<string> _negatives = [];
-    HashSet<BooleanExpression> _nestedExpressions = [];
+    class State
+    {
+        public List<OrChild> OrChildren { get; } = [];
+        public List<AndChild> AndChildren { get; } = [];
+        public string? Literal { get; set; }
+        public bool Sense { get; set; }
+    }
+
+    State _state = new();
+
+    record OrChild(BooleanExpression Expression, string? Literal, bool Sense);
+    record AndChild(BooleanExpression Expression, HashSet<string> Positives, HashSet<string> Negatives, bool HasNestedExpressions)
+    {
+        public bool HasLiterals => Positives.Count + Negatives.Count > 0;
+    }
 
     RedundancyReducer() { }
 
@@ -18,50 +44,32 @@ public class RedundancyReducer : BooleanExpressionRewriter
     {
         if (expression.Operator != UnaryOperator.Not) return base.RewriteUnaryExpression(expression);
 
-        //
-        // Early out for double negations.
-        //
-        if (expression.Expression.Kind == ExpressionKind.Unary && expression.Expression is UnaryExpression { Operator: UnaryOperator.Not, Expression: var doubleNegatedExpression })
-            return Rewrite(doubleNegatedExpression);
-
-        var savedPositives = _positives;
-        var savedNegatives = _negatives;
-        var savedNestedExpressions = _nestedExpressions;
-        var currentPositives = _positives = [];
-        var currentNegatives = _negatives = [];
-        var currentNestedExpression = _nestedExpressions = [];
-        var innerExpression = Rewrite(expression.Expression);
-        _positives = savedPositives;
-        _negatives = savedNegatives;
-        _nestedExpressions = savedNestedExpressions;
-
-        //
-        // Early out for constants.
-        //
-        if (innerExpression.Kind == ExpressionKind.Constant)
-            return ((ConstantExpression)innerExpression).Sense ? Zero : One;
-
-        var resultingExpression = innerExpression == expression.Expression ? expression : Not(innerExpression);
+        var innerExpression = Rewrite(expression.Expression, out var innerState);
 
         //
         // Handle the inner expression.
         // 
         switch (innerExpression.Kind)
         {
+            case ExpressionKind.Constant:                
+                return ((ConstantExpression)innerExpression).Sense ? Zero : One;
+
             case ExpressionKind.Literal:
                 //
                 // The literal is negated, add it to the _negatives.
                 // 
-                _negatives.UnionWith(currentPositives);
+                _state.Literal = innerState.Literal;
+                _state.Sense = !innerState.Sense;
                 break;
 
             case ExpressionKind.Unary:
                 //
-                // Double negations were already filtered out, so
-                // this can only happen for a negated literal.
-                // Add it to _positives, because this is a NOT, too.
-                _positives.UnionWith(currentNegatives);
-                break;
+                // Double negation return rewritten 
+                // inner expression.
+                //
+                if (((UnaryExpression)innerExpression).Operator != UnaryOperator.Not)
+                    break;
+                return ((UnaryExpression)innerExpression).Expression;
 
             default:
                 //
@@ -70,11 +78,10 @@ public class RedundancyReducer : BooleanExpressionRewriter
                 // stay as a nested expression and not
                 // add to the literal sets.
                 //
-                _nestedExpressions.Add(resultingExpression);
                 break;
         }
 
-        return resultingExpression;
+        return innerExpression == expression.Expression ? expression : Not(innerExpression);
     }
     public override BooleanExpression RewriteBinaryExpression(BinaryExpression expression) => expression.Operator switch
     {
@@ -87,229 +94,267 @@ public class RedundancyReducer : BooleanExpressionRewriter
     BooleanExpression RewriteAndExpression(BinaryExpression expression)
     {
         //
-        // Rewrite children.
+        // Rewrite left child.
         //
-        var savedPositives = _positives;
-        var savedNegatives = _negatives;
-        var savedNestedExpressions = _nestedExpressions;
-        var leftPositives = _positives = [];
-        var leftNegatives = _negatives = [];
-        var leftNestedExpressions = _nestedExpressions = [];
-        var left = Rewrite(expression.Left);
-        var rightPositives = _positives = [];
-        var rightNegatives = _negatives = [];
-        var rightNestedExpressions = _nestedExpressions = [];
-        var right = Rewrite(expression.Right);
-        _positives = savedPositives;
-        _negatives = savedNegatives;
-        _nestedExpressions = savedNestedExpressions;
-
-        //
-        // If one of the children is a different binary expression, add it to _nestedExpressions.
-        //
-        var leftIsDifferentBinary = left.Kind == ExpressionKind.Binary && left is BinaryExpression { Operator: not BinaryOperator.And };
-        if (leftIsDifferentBinary)
-            _nestedExpressions.Add(left);
-        var rightIsDifferentBinary = right.Kind == ExpressionKind.Binary && right is BinaryExpression { Operator: not BinaryOperator.And };
-        if (rightIsDifferentBinary)
-            _nestedExpressions.Add(right);
+        var left = Rewrite(expression.Left, out var leftState);
 
         //
         // Check for constants.
         //
         if (left.Kind == ExpressionKind.Constant)
-        {
-            if (!((ConstantExpression)left).Sense)
-                return Zero;
-            if (!rightIsDifferentBinary)
-            {
-                _positives.UnionWith(rightPositives);
-                _negatives.UnionWith(rightNegatives);
-                _nestedExpressions.UnionWith(rightNestedExpressions);
-            }
-            return right;
-        }
+            return ((ConstantExpression)left).Sense
+                ? Rewrite(expression.Right)
+                : Zero;
+        //
+        // Rewrite right child.
+        //
+        var right = Rewrite(expression.Right, out var rightState);
+
+        //
+        // Check for constants.
+        //
         if (right.Kind == ExpressionKind.Constant)
         {
             if (!((ConstantExpression)right).Sense)
                 return Zero;
-            if (!leftIsDifferentBinary)
-            {
-                _positives.UnionWith(leftPositives);
-                _negatives.UnionWith(leftNegatives);
-                _nestedExpressions.UnionWith(leftNestedExpressions);
-            }
+            _state = leftState;
             return left;
         }
 
-        if (!leftIsDifferentBinary)
-        {
-            _positives.UnionWith(leftPositives);
-            _negatives.UnionWith(leftNegatives);
-            _nestedExpressions.UnionWith(leftNestedExpressions);
-        }
-        if (!rightIsDifferentBinary)
-        {
-            _positives.UnionWith(rightPositives);
-            _negatives.UnionWith(rightNegatives);
-            _nestedExpressions.UnionWith(rightNestedExpressions);
-        }
+        //
+        // Merge expressions into state.
+        //
+        if (MergeAndChildren(left, leftState)) return Zero;
+        if (MergeAndChildren(right, rightState)) return Zero;
 
-        if (_positives.Intersect(_negatives).Any())
+        //
+        // Regenerate optimized AND expression from state.
+        //
+        var resultingExpression = _state.AndChildren.Select(child => child.Expression).Aggregate((e1, e2) => e1.And(e2));
+        if (_state.AndChildren.Count == 1)
         {
-            _positives.Clear();
-            _negatives.Clear();
-            _nestedExpressions.Clear();
-            return Zero;
+            //
+            // We optimized so heavily that
+            // this is no longer an AND expression
+            // and the caller expects different
+            // states for that.
+            // 
+            _state = new();
+            return Rewrite(resultingExpression);
         }
-
-        return _positives.Select(name => (BooleanExpression)Literal(name))
-            .Concat(_negatives.Select(name => Not(Literal(name))))
-            .Concat(_nestedExpressions).Aggregate((e1, e2) => e1.And(e2));
+        return resultingExpression;
     }
+    bool MergeAndChildren(BooleanExpression expression, State state)
+    {
+        foreach (var addedChild in state.AndChildren)
+            if (CombineAndExpression(addedChild)) return true;
+
+        if (expression.Kind != ExpressionKind.Binary)
+        {
+            var child = new AndChild(expression, [], [], state.Literal is null);
+            if (state.Literal is not null)
+            {
+                if (state.Sense)
+                    child.Positives.Add(state.Literal);
+                else
+                    child.Negatives.Add(state.Literal);
+            }
+
+            return CombineAndExpression(child);
+        }
+
+        var binary = (BinaryExpression)expression;
+
+        if (binary.Operator == BinaryOperator.And) return false;
+        if (binary.Operator != BinaryOperator.Or)
+            return CombineAndExpression(new(expression, [], [], true));
+
+        var nestedOrChild = new AndChild(expression, [], [], state.OrChildren.Any(orChild => orChild.Literal is null));
+        foreach (var pos in state.OrChildren.Where(orc => orc.Literal is not null && orc.Sense).Select(orc => orc.Literal!))
+            nestedOrChild.Positives.Add(pos);
+        foreach (var neg in state.OrChildren.Where(orc => orc.Literal is not null && !orc.Sense).Select(orc => orc.Literal!))
+            nestedOrChild.Negatives.Add(neg);
+        return CombineAndExpression(nestedOrChild);
+    }
+    bool CombineAndExpression(AndChild child)
+    {
+        //
+        // We check for single literal expressions that
+        // contradict each other and return true if we
+        // found one, making the whole expression Zero.
+        //
+        if (!child.HasNestedExpressions && 
+            (child.Negatives.Count == 0 && child.Positives.Count == 1 && _state.AndChildren.Any(previousChild => !previousChild.HasNestedExpressions && previousChild.Positives.Count == 0 && previousChild.Negatives.SetEquals(child.Positives))) ||
+            (child.Negatives.Count == 1 && child.Positives.Count == 0 && _state.AndChildren.Any(previousChild => !previousChild.HasNestedExpressions && previousChild.Negatives.Count == 0 && previousChild.Positives.SetEquals(child.Negatives))))
+            return true;
+
+        //
+        // Check if the new expression is a superset
+        // of an already existing one.
+        // 
+        if (child.HasLiterals && _state.AndChildren.Any(previousChild => !previousChild.HasNestedExpressions && child.Positives.IsSupersetOf(previousChild.Positives) && child.Negatives.IsSupersetOf(previousChild.Negatives)))
+            return false;
+
+        //
+        // Now we remove existing supersets of the
+        // new expression before adding it.
+        //
+        if (!child.HasNestedExpressions)
+            _state.AndChildren.RemoveAll(previousChild => previousChild.Positives.IsSupersetOf(child.Positives) && previousChild.Negatives.IsSupersetOf(child.Negatives));
+        _state.AndChildren.Add(child);
+        return false;
+    }
+
     BooleanExpression RewriteXorExpression(BinaryExpression expression)
     {
-        var savedPositives = _positives;
-        var savedNegatives = _negatives;
-        var savedNestedExpressions = _nestedExpressions;
-        var leftPositives = _positives = [];
-        var leftNegatives = _negatives = [];
-        _nestedExpressions = [];
-        var left = Rewrite(expression.Left);
-        var rightPositives = _positives = [];
-        var rightNegatives = _negatives = [];
-        _nestedExpressions = [];
-        var right = Rewrite(expression.Right);
-        _positives = savedPositives;
-        _negatives = savedNegatives;
-        _nestedExpressions = savedNestedExpressions;
-
+        //
+        // Rewrite left child.
+        //
+        var left = Rewrite(expression.Left, out var leftState);
         //
         // Check for constants.
         //
-        if (left.Kind == ExpressionKind.Constant)
-            return ((ConstantExpression)left).Sense ? Rewrite(Not(right)) : Rewrite(right);
+        if (left.Kind == ExpressionKind.Constant)        
+            return ((ConstantExpression)left).Sense ? Rewrite(Not(expression.Right)) : Rewrite(expression.Right);
+
+        //
+        // Rewrite right child.
+        //
+        var right = Rewrite(expression.Right, out var rightState);
+        //
+        // Check for constants.
+        //
         if (right.Kind == ExpressionKind.Constant)
-            return ((ConstantExpression)right).Sense ? Rewrite(Not(left)) : Rewrite(left);
+        {
+            if (((ConstantExpression)right).Sense)
+                return Rewrite(Not(expression.Left));
+            _state = leftState;
+            return left;
+        }
 
         //
         // Check for XOR between simple or negated literals
         //
-        switch ((leftPositives.Count, leftNegatives.Count, rightPositives.Count, rightNegatives.Count))
-        {
-            case (1, 0, 1, 0):
-                if (leftPositives.SetEquals(rightPositives)) return Zero;
-                break;
-            case (1, 0, 0, 1):
-                if (leftPositives.SetEquals(rightNegatives)) return One;
-                break;
-            case (0, 1, 1, 0):
-                if (leftNegatives.SetEquals(rightPositives)) return One;
-                break;
-            case (0, 1, 0, 1):
-                if (leftNegatives.SetEquals(rightNegatives)) return Zero;
-                break;
-        }
+        if (leftState.Literal is not null && leftState.Literal == rightState.Literal)
+            return leftState.Sense == rightState.Sense ? Zero : One;
 
         //
-        // Nothing to do.
+        // Return Xor.
         //
         return left == expression.Left && right == expression.Right
             ? expression
             : left.Xor(right);
     }
-
     BooleanExpression RewriteOrExpression(BinaryExpression expression)
     {
         //
-        // Rewrite children.
+        // Rewrite left child.
         //
-        var savedPositives = _positives;
-        var savedNegatives = _negatives;
-        var savedNestedExpressions = _nestedExpressions;
-        var leftPositives = _positives = [];
-        var leftNegatives = _negatives = [];
-        var leftNestedExpressions = _nestedExpressions = [];
-        var left = Rewrite(expression.Left);
-        var rightPositives = _positives = [];
-        var rightNegatives = _negatives = [];
-        var rightNestedExpressions = _nestedExpressions = [];
-        var right = Rewrite(expression.Right);
-        _positives = savedPositives;
-        _negatives = savedNegatives;
-        _nestedExpressions = savedNestedExpressions;
-
-        //
-        // If one of the children is a different binary expression, add it to _nestedExpressions.
-        //
-        var leftIsDifferentBinary = left.Kind == ExpressionKind.Binary && left is BinaryExpression { Operator: not BinaryOperator.Or };
-        if (leftIsDifferentBinary)
-            _nestedExpressions.Add(left);
-        var rightIsDifferentBinary = right.Kind == ExpressionKind.Binary && right is BinaryExpression { Operator: not BinaryOperator.Or };
-        if (rightIsDifferentBinary)
-            _nestedExpressions.Add(right);
+        var left = Rewrite(expression.Left, out var leftState);        
 
         //
         // Check for constants.
         //
         if (left.Kind == ExpressionKind.Constant)
-        {
-            if (((ConstantExpression)left).Sense)
-                return One;
-            if (!rightIsDifferentBinary)
-            {
-                _positives.UnionWith(rightPositives);
-                _negatives.UnionWith(rightNegatives);
-                _nestedExpressions.UnionWith(rightNestedExpressions);
-            }
-            return right;
-        }
+            return ((ConstantExpression)left).Sense
+                ? One
+                : Rewrite(expression.Right);
+
+        //
+        // Rewrite right child.
+        //
+        var right = Rewrite(expression.Right, out var rightState);
+
+        //
+        // Check for constants.
+        //
         if (right.Kind == ExpressionKind.Constant)
         {
             if (((ConstantExpression)right).Sense)
                 return One;
-            if (!leftIsDifferentBinary)
-            {
-                _positives.UnionWith(leftPositives);
-                _negatives.UnionWith(leftNegatives);
-                _nestedExpressions.UnionWith(leftNestedExpressions);
-            }
+            _state = leftState;
             return left;
         }
 
-        if (!leftIsDifferentBinary)
-        {
-            _positives.UnionWith(leftPositives);
-            _negatives.UnionWith(leftNegatives);
-            _nestedExpressions.UnionWith(leftNestedExpressions);
-        }
-        if (!rightIsDifferentBinary)
-        {
-            _positives.UnionWith(rightPositives);
-            _negatives.UnionWith(rightNegatives);
-            _nestedExpressions.UnionWith(rightNestedExpressions);
-        }
 
-        if (_positives.Intersect(_negatives).Any())
-        {
-            _positives.Clear();
-            _negatives.Clear();
-            _nestedExpressions.Clear();
+        //
+        // Merge expressions into _orChildren.
+        //
+        foreach (var child in leftState.OrChildren)
+            if (CombineOrExpression(child)) return One;
+        if ((left.Kind != ExpressionKind.Binary || ((BinaryExpression)left).Operator != BinaryOperator.Or) &&
+            CombineOrExpression(new(left, leftState.Literal, leftState.Sense)))
             return One;
+        foreach (var child in rightState.OrChildren)
+            if (CombineOrExpression(child)) return One;
+        if ((right.Kind != ExpressionKind.Binary || ((BinaryExpression)right).Operator != BinaryOperator.Or) &&
+            CombineOrExpression(new(right, rightState.Literal, rightState.Sense)))
+            return One;
+
+        //
+        // Regenerate optimized OR expression from state.
+        //
+        var resultingExpression = _state.OrChildren.Select(child => child.Expression).Aggregate((e1, e2) => e1.Or(e2));
+        if (_state.OrChildren.Count == 1)
+        {
+            //
+            // We optimized so heavily that
+            // this is no longer an OR expression
+            // and the caller expects different
+            // states for that.
+            // 
+            _state = new();
+            return Rewrite(resultingExpression);
+        }
+        return resultingExpression;
+    }
+
+    bool CombineOrExpression(OrChild child) 
+    {
+        //
+        // If the expression is complex,
+        // we simply add it to our collection.
+        //
+        if (child.Literal is null)
+        {
+            _state.OrChildren.Add(child);
+            return false;
         }
 
-        return _positives.Select(name => (BooleanExpression)Literal(name))
-            .Concat(_negatives.Select(name => Not(Literal(name))))
-            .Concat(_nestedExpressions).Aggregate((e1, e2) => e1.Or(e2));
+        //
+        // We check if we already know this literal (so
+        // we don't add it twice) or if we know it in
+        // a different sense which would lead to an
+        // immediate true.
+        //
+        var knowingExpression = _state.OrChildren.FirstOrDefault(previousExpression => previousExpression.Literal == child.Literal);
+        if (knowingExpression is { Sense: var sense }) return sense != child.Sense;
+
+        _state.OrChildren.Add(child);
+        return false;
     }
 
     public override BooleanExpression RewriteLiteralExpression(LiteralExpression expression)
     {
-        _positives.Add(expression.Name);
+        _state.Literal = expression.Name;
+        _state.Sense = true;
         return expression;
     }
 
-
+    BooleanExpression Rewrite(BooleanExpression expression, out State state)
+    {
+        var savedState = _state;
+        _state = new();
+        try
+        {
+            return Rewrite(expression);
+        }
+        finally
+        {
+            state = _state;
+            _state = savedState;
+        }
+    }
 
     /// <summary>
     /// Removes redundancies from a boolean <paramref name="expression"/> expression.

@@ -28,10 +28,18 @@ public class ExpressionToProblemConverterTests
         data.Add("0", "p cnf 0 1\r\n0", []);
         data.Add("1", "p cnf 0 0\r\n", []);
         data.Add("a", "p cnf 1 1\r\n1 0", ["a"]);
+        data.Add("a | b", "p cnf 2 1\r\n1 2 0", ["a", "b"]);
+        data.Add("a | b | c", "p cnf 3 1\r\n1 2 3 0", ["a", "b", "c"]);
         data.Add("a & b", "p cnf 2 2\r\n1 0\r\n2 0", ["a", "b"]);
         data.Add("(a | b) & (!a | c) & (b | !c)", "p cnf 3 3\r\n-1 3 0\r\n1 2 0\r\n2 -3 0", ["a", "b", "c"]);
 
-        // TODO: add tests that actually involve cnf-conversion and reducing
+        // 2o3
+        data.Add("a & b & !c | a & !b & c | !a & b & c", @"p cnf 3 4
+1 2 0
+1 3 0
+2 3 0
+-1 -2 -3 0", ["a", "b", "c"]);
+
         return data;
     }
 }
