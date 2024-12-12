@@ -124,6 +124,7 @@ c End comment.
         yield return ["", CnfParserException.Reason.InvalidProblemLine, 0, 0, "Missing or invalid problem definition in line 0."];
         yield return ["\n", CnfParserException.Reason.InvalidProblemLine, 1, 0, "Missing or invalid problem definition in line 1."];
         yield return ["p  nocnf 2 5", CnfParserException.Reason.InvalidProblemFormat, 0, 3, "Invalid problem format 'nocnf' in line 0, position 3. Expected format 'cnf'."];
+        yield return ["p ", CnfParserException.Reason.InvalidProblemLine, 0, 2, "Missing or invalid problem definition in line 0."];
         yield return ["p cnf 3 5", CnfParserException.Reason.MissingLiteral, 0, 9, "Missing literal or clause termination ('0') for clause 1 of 5 in line 0, position 9."];
         yield return ["p cnf 0 5", CnfParserException.Reason.InvalidProblemLine, 0, 6, "Missing or invalid problem definition in line 0."];
         yield return ["p cnf 5 0", CnfParserException.Reason.InvalidProblemLine, 0, 8, "Missing or invalid problem definition in line 0."];
