@@ -45,14 +45,16 @@ public sealed class DimacsCnfParser
         _position++;
 
         SkipWhiteSpacesOnLine();
-        var start = _position++;
+        var start = _position;
         while (!EndReached && !char.IsWhiteSpace(Current)) _position++;
+        if (start == _position) throw InvalidProblemLine(_lineNumber, start-_lineStart);
         var format = _input[start.._position];
         if (format != "cnf") throw InvalidProblemFormat(format, _lineNumber, start-_lineStart);
 
         SkipWhiteSpacesOnLine();
         start = _position;
         while (!EndReached && !char.IsWhiteSpace(Current)) _position++;
+        if (start == _position) throw InvalidProblemLine(_lineNumber, start-_lineStart);
         var text = _input[start.._position];
         if (!uint.TryParse(text, CultureInfo.InvariantCulture, out _numberOfLiterals) || _numberOfLiterals < 1)
             throw InvalidProblemLine(_lineNumber, start-_lineStart);
@@ -60,6 +62,7 @@ public sealed class DimacsCnfParser
         SkipWhiteSpacesOnLine();
         start = _position;
         while (!EndReached && !char.IsWhiteSpace(Current)) _position++;
+        if (start == _position) throw InvalidProblemLine(_lineNumber, start-_lineStart);
         text = _input[start.._position];
         if (!uint.TryParse(text, CultureInfo.InvariantCulture, out _numberOfClauses) || _numberOfClauses < 1)
             throw InvalidProblemLine(_lineNumber, start-_lineStart);
@@ -92,6 +95,7 @@ public sealed class DimacsCnfParser
     {
         var start = _position;
         while (!EndReached && !char.IsWhiteSpace(Current)) _position++;
+        if (start == _position) throw MissingLiteral(_clauses.Count+1, (int)_numberOfClauses, _lineNumber, start-_lineStart);
         if (!int.TryParse(_input[start.._position], CultureInfo.InvariantCulture, out var literal))
             throw MissingLiteral(_clauses.Count+1, (int)_numberOfClauses, _lineNumber, start-_lineStart);
         SkipWhiteSpacesOnLine();
