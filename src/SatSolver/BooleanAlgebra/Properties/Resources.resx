@@ -117,22 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="DimacsParserException_InvalidProblemFormat" xml:space="preserve">
-    <value>Invalid problem format '{0}' in line {1}, position {2}. Expected format 'cnf'.</value>
+  <data name="InvalidBooleanAlgebraException_InvalidCharacter" xml:space="preserve">
+    <value>Invalid or unexpected character at position {0}.</value>
   </data>
-  <data name="DimacsParserException_InvalidProblemLine" xml:space="preserve">
-    <value>Missing or invalid problem definition in line {0}.</value>
-  </data>
-  <data name="DimacsParserException_LiteralOutOfRange" xml:space="preserve">
-    <value>Literal '{0}' out of range (1 - {1}) in line {2}, position {3}.</value>
-  </data>
-  <data name="DimacsParserException_MissingLiteral" xml:space="preserve">
-    <value>Missing literal or clause termination ('0') for clause {0} of {1} in line {2}, position {3}.</value>
-  </data>
-  <data name="SatSolverArgumentException_InvalidLiterals" xml:space="preserve">
-    <value>The problem contains invalid literal IDs.</value>
-  </data>
-  <data name="SatSolverArgumentException_NumberOfLiterals" xml:space="preserve">
-    <value>The problem does not contain literals.</value>
+  <data name="InvalidBooleanAlgebraException_UnexpectedEnd" xml:space="preserve">
+    <value>The boolean expression was incomplete and ended unexpectedly at position {0}.</value>
   </data>
 </root>

@@ -11,7 +11,7 @@ public sealed partial class SatSolverTests
     public void Solve_Solutions(string fileName)
     {
         string cnf = File.ReadAllText(Path.Combine("Solutions", fileName));
-        var problems = DimacsCnfParser.Parse(cnf);
+        var problems = DimacsParser.Parse(cnf);
         var solutions = SatSolver.Solve(problems[0]).ToArray();
         AssertSameSolutions(problems[1].Clauses.Select(clause => clause.Literals).ToArray(), solutions);
     }

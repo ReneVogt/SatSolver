@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Revo.SatSolver.Properties {
+namespace Revo.BooleanAlgebra.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace Revo.SatSolver.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Revo.SatSolver.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Revo.BooleanAlgebra.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -61,56 +61,20 @@ namespace Revo.SatSolver.Properties {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Invalid problem format &apos;{0}&apos; in line {1}, position {2}. Expected format &apos;cnf&apos;. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die Invalid or unexpected character at position {0}. ähnelt.
         /// </summary>
-        internal static string DimacsParserException_InvalidProblemFormat {
+        internal static string InvalidBooleanAlgebraException_InvalidCharacter {
             get {
-                return ResourceManager.GetString("DimacsParserException_InvalidProblemFormat", resourceCulture);
+                return ResourceManager.GetString("InvalidBooleanAlgebraException_InvalidCharacter", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Missing or invalid problem definition in line {0}. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die The boolean expression was incomplete and ended unexpectedly at position {0}. ähnelt.
         /// </summary>
-        internal static string DimacsParserException_InvalidProblemLine {
+        internal static string InvalidBooleanAlgebraException_UnexpectedEnd {
             get {
-                return ResourceManager.GetString("DimacsParserException_InvalidProblemLine", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Literal &apos;{0}&apos; out of range (1 - {1}) in line {2}, position {3}. ähnelt.
-        /// </summary>
-        internal static string DimacsParserException_LiteralOutOfRange {
-            get {
-                return ResourceManager.GetString("DimacsParserException_LiteralOutOfRange", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Missing literal or clause termination (&apos;0&apos;) for clause {0} of {1} in line {2}, position {3}. ähnelt.
-        /// </summary>
-        internal static string DimacsParserException_MissingLiteral {
-            get {
-                return ResourceManager.GetString("DimacsParserException_MissingLiteral", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The problem contains invalid literal IDs. ähnelt.
-        /// </summary>
-        internal static string SatSolverArgumentException_InvalidLiterals {
-            get {
-                return ResourceManager.GetString("SatSolverArgumentException_InvalidLiterals", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The problem does not contain literals. ähnelt.
-        /// </summary>
-        internal static string SatSolverArgumentException_NumberOfLiterals {
-            get {
-                return ResourceManager.GetString("SatSolverArgumentException_NumberOfLiterals", resourceCulture);
+                return ResourceManager.GetString("InvalidBooleanAlgebraException_UnexpectedEnd", resourceCulture);
             }
         }
     }

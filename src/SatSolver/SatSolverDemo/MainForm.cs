@@ -1,5 +1,6 @@
+using Revo.BooleanAlgebra.Parsing;
+using Revo.BooleanAlgebra.Transformers;
 using Revo.SatSolver;
-using Revo.SatSolver.BooleanAlgebra;
 using Revo.SatSolver.Parsing;
 using System.Text;
 
@@ -90,7 +91,7 @@ namespace SatSolverDemo
                 }
                 else
                 {
-                    problem = DimacsCnfParser.Parse(input).First();
+                    problem = DimacsParser.Parse(input).First();
                     BeginInvoke(ClearSyntaxErrors);
                 }
 
@@ -179,7 +180,7 @@ namespace SatSolverDemo
             switch (exception)
             {
                 case OperationCanceledException: return;
-                case CnfParserException { Line: var line, Position: var position }: SetCnfSyntaxError(line, position, exception.Message); return;
+                case DimacsException { Line: var line, Position: var position }: SetCnfSyntaxError(line, position, exception.Message); return;
                 case InvalidBooleanAlgebraException { Position: var position }: SetSyntaxError(position, exception.Message); return;
                 default: MessageBox.Show($"Unexpected error: {exception}", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error); return;
             }
