@@ -1,4 +1,7 @@
-﻿namespace Revo.SatSolver.BooleanAlgebra;
+﻿using Revo.BooleanAlgebra.Expressions;
+
+namespace Revo.SatSolver.Parsing;
+
 public static class ExpressionExtensions
 {
     /// <summary>

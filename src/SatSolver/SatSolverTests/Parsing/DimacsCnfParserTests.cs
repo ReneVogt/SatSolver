@@ -11,22 +11,22 @@ public sealed class DimacsCnfParserTests
     [Fact]
     public void Parse_Null_ArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => DimacsCnfParser.Parse(null!));
+        Assert.Throws<ArgumentNullException>(() => DimacsParser.Parse(null!));
     }
 
     [Theory]
     [MemberData(nameof(SuccessfulTestCases))]
     public void Parse_Success(string input, Problem[] problems)
     {
-        var result = DimacsCnfParser.Parse(input);
+        var result = DimacsParser.Parse(input);
         result.Should().Equal(problems);
     }
 
     [Theory]
     [MemberData(nameof(FailingTestCases))]
-    public void Parse_Exception(string input, CnfParserException.Reason reason, int line, int position, string message)
+    public void Parse_Exception(string input, DimacsException.Reason reason, int line, int position, string message)
     {
-        var exception = Assert.Throws<CnfParserException>(() => DimacsCnfParser.Parse(input).ToArray());
+        var exception = Assert.Throws<DimacsException>(() => DimacsParser.Parse(input).ToArray());
         Assert.Equal(reason, exception.Error);
         Assert.Equal(line, exception.Line);
         Assert.Equal(position, exception.Position);
@@ -121,25 +121,25 @@ c End comment.
     }
     public static IEnumerable<object[]> FailingTestCases()
     {
-        yield return ["", CnfParserException.Reason.InvalidProblemLine, 0, 0, "Missing or invalid problem definition in line 0."];
-        yield return ["\n", CnfParserException.Reason.InvalidProblemLine, 1, 0, "Missing or invalid problem definition in line 1."];
-        yield return ["p  nocnf 2 5", CnfParserException.Reason.InvalidProblemFormat, 0, 3, "Invalid problem format 'nocnf' in line 0, position 3. Expected format 'cnf'."];
-        yield return ["p ", CnfParserException.Reason.InvalidProblemLine, 0, 2, "Missing or invalid problem definition in line 0."];
-        yield return ["p cnf 3 5", CnfParserException.Reason.MissingLiteral, 0, 9, "Missing literal or clause termination ('0') for clause 1 of 5 in line 0, position 9."];
-        yield return ["p cnf 0 5", CnfParserException.Reason.InvalidProblemLine, 0, 6, "Missing or invalid problem definition in line 0."];
-        yield return ["p cnf 5 0", CnfParserException.Reason.InvalidProblemLine, 0, 8, "Missing or invalid problem definition in line 0."];
+        yield return ["", DimacsException.Reason.InvalidProblemLine, 0, 0, "Missing or invalid problem definition in line 0."];
+        yield return ["\n", DimacsException.Reason.InvalidProblemLine, 1, 0, "Missing or invalid problem definition in line 1."];
+        yield return ["p  nocnf 2 5", DimacsException.Reason.InvalidProblemFormat, 0, 3, "Invalid problem format 'nocnf' in line 0, position 3. Expected format 'cnf'."];
+        yield return ["p ", DimacsException.Reason.InvalidProblemLine, 0, 2, "Missing or invalid problem definition in line 0."];
+        yield return ["p cnf 3 5", DimacsException.Reason.MissingLiteral, 0, 9, "Missing literal or clause termination ('0') for clause 1 of 5 in line 0, position 9."];
+        yield return ["p cnf 0 5", DimacsException.Reason.InvalidProblemLine, 0, 6, "Missing or invalid problem definition in line 0."];
+        yield return ["p cnf 5 0", DimacsException.Reason.InvalidProblemLine, 0, 8, "Missing or invalid problem definition in line 0."];
         yield return [@"
 
 % 
 p cnf 5 1
 1 2 3 0
-", CnfParserException.Reason.InvalidProblemLine, 2, 0, "Missing or invalid problem definition in line 2."];
+", DimacsException.Reason.InvalidProblemLine, 2, 0, "Missing or invalid problem definition in line 2."];
 
         yield return [@"p cnf 5 3
 1 -1 0
 1 2 3 4 5 0
 1 ab 2 3 4 0
-", CnfParserException.Reason.MissingLiteral, 3, 2, "Missing literal or clause termination ('0') for clause 3 of 3 in line 3, position 2."];
+", DimacsException.Reason.MissingLiteral, 3, 2, "Missing literal or clause termination ('0') for clause 3 of 3 in line 3, position 2."];
 
         yield return [@"p cnf 5 3
 1 -1 0
@@ -153,7 +153,7 @@ p cnf 3 3
 c for completeness
 p cnf 7 1
 1 2 3 4 5 6 7 0
-", CnfParserException.Reason.MissingLiteral, 10, 0, "Missing literal or clause termination ('0') for clause 3 of 3 in line 10, position 0."];
+", DimacsException.Reason.MissingLiteral, 10, 0, "Missing literal or clause termination ('0') for clause 3 of 3 in line 10, position 0."];
 
         yield return [@"p cnf 5 3
 1 -1 0
@@ -168,7 +168,7 @@ p cnf 3 3
 c for completeness
 p cnf 7 1
 1 2 3 4 5 6 7 0
-", CnfParserException.Reason.MissingLiteral, 7, 9, "Missing literal or clause termination ('0') for clause 2 of 3 in line 7, position 9."];
+", DimacsException.Reason.MissingLiteral, 7, 9, "Missing literal or clause termination ('0') for clause 2 of 3 in line 7, position 9."];
 
         yield return [@"p cnf 5 3
 1 -1 0
@@ -183,7 +183,7 @@ p cnf 3 3
 c for completeness
 p cnf 7 1
 1 2 3 4 5 6 7 0
-", CnfParserException.Reason.MissingLiteral, 7, 0, "Missing literal or clause termination ('0') for clause 2 of 3 in line 7, position 0."];
+", DimacsException.Reason.MissingLiteral, 7, 0, "Missing literal or clause termination ('0') for clause 2 of 3 in line 7, position 0."];
 
         yield return [@"p cnf 5 3
 1 -1 0
@@ -198,7 +198,7 @@ p cnf 10 3
 c for completeness
 p cnf 7 1
 1 2 3 4 5 6 7 0
-", CnfParserException.Reason.LiteralOutOfRange, 7, 2, "Literal '17' out of range (1 - 10) in line 7, position 2."];
+", DimacsException.Reason.LiteralOutOfRange, 7, 2, "Literal '17' out of range (1 - 10) in line 7, position 2."];
 
         yield return [@"p cnf 5 3
 1 -1 0
@@ -213,14 +213,14 @@ p cnf 10 3
 c for completeness
 p cnf 7 1
 1 2 3 4 5 6 7 0
-", CnfParserException.Reason.LiteralOutOfRange, 7, 2, "Literal '17' out of range (1 - 10) in line 7, position 2."];
+", DimacsException.Reason.LiteralOutOfRange, 7, 2, "Literal '17' out of range (1 - 10) in line 7, position 2."];
 
         yield return [@"p cnf 5 3
 1 -1 0
 1 2 3 4 5 0
  %
 4 -2 0
-", CnfParserException.Reason.MissingLiteral, 3, 1, "Missing literal or clause termination ('0') for clause 3 of 3 in line 3, position 1."];
+", DimacsException.Reason.MissingLiteral, 3, 1, "Missing literal or clause termination ('0') for clause 3 of 3 in line 3, position 1."];
 
     }
 

@@ -10,7 +10,7 @@ public sealed partial class SatSolverTests
     public void Solve_SAT(string fileName)
     {
         string cnf = File.ReadAllText(Path.Combine("SAT", fileName));
-        var problem = DimacsCnfParser.Parse(cnf).Single();
+        var problem = DimacsParser.Parse(cnf).Single();
         Assert.True(SatSolver.IsSatisfiable(problem, out var solutions));        
         SolutionValidator.Validate(problem, solutions);
     }
@@ -20,7 +20,7 @@ public sealed partial class SatSolverTests
     public void Solve_UNSAT(string fileName)
     {
         string cnf = File.ReadAllText(Path.Combine("UNSAT", fileName));
-        var problem = DimacsCnfParser.Parse(cnf).Single();
+        var problem = DimacsParser.Parse(cnf).Single();
         Assert.False(SatSolver.IsSatisfiable(problem));
     }
 

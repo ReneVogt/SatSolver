@@ -1,8 +1,8 @@
 ﻿using FluentAssertions;
-using Revo.SatSolver.BooleanAlgebra;
+using Revo.BooleanAlgebra.Parsing;
 using Revo.SatSolver.Parsing;
 
-namespace SatSolverTests.BooleanAlgebra;
+namespace SatSolverTests.Parsing;
 
 public class ExpressionToProblemConverterTests
 {
@@ -24,21 +24,23 @@ public class ExpressionToProblemConverterTests
 
     public static TheoryData<string, string, string[]> ProvideCases()
     {
-        var data = new TheoryData<string, string, string[]>();
-        data.Add("0", "p cnf 0 1\r\n0", []);
-        data.Add("1", "p cnf 0 0\r\n", []);
-        data.Add("a", "p cnf 1 1\r\n1 0", ["a"]);
-        data.Add("a | b", "p cnf 2 1\r\n1 2 0", ["a", "b"]);
-        data.Add("a | b | c", "p cnf 3 1\r\n1 2 3 0", ["a", "b", "c"]);
-        data.Add("a & b", "p cnf 2 2\r\n1 0\r\n2 0", ["a", "b"]);
-        data.Add("(a | b) & (!a | c) & (b | !c)", "p cnf 3 3\r\n-1 3 0\r\n1 2 0\r\n2 -3 0", ["a", "b", "c"]);
+        var data = new TheoryData<string, string, string[]>
+        {
+            { "0", "p cnf 0 1\r\n0", [] },
+            { "1", "p cnf 0 0\r\n", [] },
+            { "a", "p cnf 1 1\r\n1 0", ["a"] },
+            { "a | b", "p cnf 2 1\r\n1 2 0", ["a", "b"] },
+            { "a | b | c", "p cnf 3 1\r\n1 2 3 0", ["a", "b", "c"] },
+            { "a & b", "p cnf 2 2\r\n1 0\r\n2 0", ["a", "b"] },
+            { "(a | b) & (!a | c) & (b | !c)", "p cnf 3 3\r\n-1 3 0\r\n1 2 0\r\n2 -3 0", ["a", "b", "c"] },
 
-        // 2o3
-        data.Add("a & b & !c | a & !b & c | !a & b & c", @"p cnf 3 4
+            // 2o3
+            { "a & b & !c | a & !b & c | !a & b & c", @"p cnf 3 4
 1 2 0
 1 3 0
 2 3 0
--1 -2 -3 0", ["a", "b", "c"]);
+-1 -2 -3 0", ["a", "b", "c"] }
+        };
 
         return data;
     }

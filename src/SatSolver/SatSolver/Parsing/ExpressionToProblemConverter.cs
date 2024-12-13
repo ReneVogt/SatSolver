@@ -1,8 +1,7 @@
-﻿using System.Collections.ObjectModel;
-using System.Linq.Expressions;
-using System.Net.Http.Headers;
+﻿using Revo.BooleanAlgebra.Expressions;
+using Revo.BooleanAlgebra.Transformers;
 
-namespace Revo.SatSolver.BooleanAlgebra;
+namespace Revo.SatSolver.Parsing;
 
 /// <summary>
 /// Converts a <see cref="BooleanExpression"/> into a
@@ -38,7 +37,7 @@ public sealed class ExpressionToProblemConverter : BooleanExpressionRewriter
         _positives.Clear();
         _negatives.Clear();
         var left = Rewrite(expression.Left);
-        if (left.Kind != ExpressionKind.Binary || ((BinaryExpression)left).Operator != BinaryOperator.And) 
+        if (left.Kind != ExpressionKind.Binary || ((BinaryExpression)left).Operator != BinaryOperator.And)
             CompileClause();
 
         _positives.Clear();
@@ -51,7 +50,7 @@ public sealed class ExpressionToProblemConverter : BooleanExpressionRewriter
     }
 
     void CompileClause()
-    {     
+    {
         if (_positives.Count + _negatives.Count <= 0) return;
         _clauses.Add(new(_positives.Select(p => new Literal(p, true)).Concat(_negatives.Select(n => new Literal(n, false)))));
         _positives.Clear();
@@ -114,10 +113,10 @@ public sealed class ExpressionToProblemConverter : BooleanExpressionRewriter
             return new(1, [new Clause([-1])]);
         }
 
-        var converter = new ExpressionToProblemConverter();        
+        var converter = new ExpressionToProblemConverter();
         converter.Rewrite(reduced);
         converter.CompileClause();
         literalMapping = converter._literalMapping.AsReadOnly();
-        return new (converter._literalMapping.Count, converter._clauses);
+        return new(converter._literalMapping.Count, converter._clauses);
     }
 }

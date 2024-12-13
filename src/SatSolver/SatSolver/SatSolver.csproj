@@ -8,7 +8,7 @@
 	<AnalysisMode>default</AnalysisMode>
 	<RootNamespace>Revo.SatSolver</RootNamespace>
 	<PackageLicenseFile>LICENSE</PackageLicenseFile>
-	<NeutralLanguage>el-GR</NeutralLanguage>
+	<NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +16,10 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BooleanAlgebra\BooleanAlgebra.csproj" />
   </ItemGroup>
 
   <ItemGroup>

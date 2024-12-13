@@ -63,54 +63,36 @@ namespace Revo.SatSolver.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Invalid problem format &apos;{0}&apos; in line {1}, position {2}. Expected format &apos;cnf&apos;. ähnelt.
         /// </summary>
-        internal static string CnfParserException_InvalidProblemFormat {
+        internal static string DimacsParserException_InvalidProblemFormat {
             get {
-                return ResourceManager.GetString("CnfParserException_InvalidProblemFormat", resourceCulture);
+                return ResourceManager.GetString("DimacsParserException_InvalidProblemFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Missing or invalid problem definition in line {0}. ähnelt.
         /// </summary>
-        internal static string CnfParserException_InvalidProblemLine {
+        internal static string DimacsParserException_InvalidProblemLine {
             get {
-                return ResourceManager.GetString("CnfParserException_InvalidProblemLine", resourceCulture);
+                return ResourceManager.GetString("DimacsParserException_InvalidProblemLine", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Literal &apos;{0}&apos; out of range (1 - {1}) in line {2}, position {3}. ähnelt.
         /// </summary>
-        internal static string CnfParserException_LiteralOutOfRange {
+        internal static string DimacsParserException_LiteralOutOfRange {
             get {
-                return ResourceManager.GetString("CnfParserException_LiteralOutOfRange", resourceCulture);
+                return ResourceManager.GetString("DimacsParserException_LiteralOutOfRange", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Missing literal or clause termination (&apos;0&apos;) for clause {0} of {1} in line {2}, position {3}. ähnelt.
         /// </summary>
-        internal static string CnfParserException_MissingLiteral {
+        internal static string DimacsParserException_MissingLiteral {
             get {
-                return ResourceManager.GetString("CnfParserException_MissingLiteral", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Invalid or unexpected character at position {0}. ähnelt.
-        /// </summary>
-        internal static string InvalidBooleanAlgebraException_InvalidCharacter {
-            get {
-                return ResourceManager.GetString("InvalidBooleanAlgebraException_InvalidCharacter", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The boolean expression was incomplete and ended unexpectedly at position {0}. ähnelt.
-        /// </summary>
-        internal static string InvalidBooleanAlgebraException_UnexpectedEnd {
-            get {
-                return ResourceManager.GetString("InvalidBooleanAlgebraException_UnexpectedEnd", resourceCulture);
+                return ResourceManager.GetString("DimacsParserException_MissingLiteral", resourceCulture);
             }
         }
         

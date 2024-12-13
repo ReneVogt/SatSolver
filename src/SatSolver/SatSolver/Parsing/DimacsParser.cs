@@ -1,5 +1,5 @@
 ﻿using System.Globalization;
-using static Revo.SatSolver.Parsing.CnfParserException;
+using static Revo.SatSolver.Parsing.DimacsException;
 
 namespace Revo.SatSolver.Parsing;
 
@@ -7,7 +7,7 @@ namespace Revo.SatSolver.Parsing;
 /// Parses SATisfiability problems written in
 /// conjunctive normal form in DIMACS standard.
 /// </summary>
-public sealed class DimacsCnfParser
+public sealed class DimacsParser
 {
     readonly List<Problem> _problems = [];
     readonly List<Clause> _clauses = [];
@@ -21,7 +21,7 @@ public sealed class DimacsCnfParser
     bool EndReached => _position >= _input.Length || _input[_position] == '%';
     int Column => _position - _lineStart;
 
-    DimacsCnfParser(string input) => _input = input;
+    DimacsParser(string input) => _input = input;
 
     void Parse()
     {
@@ -135,10 +135,10 @@ public sealed class DimacsCnfParser
     /// <param name="input">The input string in DIMACS conjunctive normal form.</param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException">The <paramref name="input"/> string was <c>null</c>.</exception>
-    /// <exception cref="CnfParserException">The input string could not be parsed successfully.</exception>
+    /// <exception cref="DimacsException">The input string could not be parsed successfully.</exception>
     public static Problem[] Parse(string input)
     {
-        var parser = new DimacsCnfParser(input ?? throw new ArgumentNullException(nameof(input)));
+        var parser = new DimacsParser(input ?? throw new ArgumentNullException(nameof(input)));
         parser.Parse();
         return [.. parser._problems];
     }
