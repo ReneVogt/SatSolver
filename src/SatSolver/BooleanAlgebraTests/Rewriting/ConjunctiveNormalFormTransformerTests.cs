@@ -46,4 +46,35 @@ public class ConjunctiveNormalFormTransformerTests
         expression.ToString().Should().Be(input);
         Transform(expression).ToString().Should().Be(expected);
     }
+
+    [Fact]
+    public void Transform_2of4_Correct()
+    {
+        const string input = @"
+a & b & !c & !d |
+a & !b & c & !d |
+!a & b & c & !d |
+a & !b & !c & d |
+!a & b & !c & d |
+!a & !b & c & d";
+        Transform(BooleanAlgebraParser.Parse(input)).Should().NotBeNull();
+        Assert.Fail("Test against correct result.");
+    }
+
+    [Fact]
+    public void Transform_2of5_ShouldTerminate()
+    {
+        const string input = @"
+a & b & c & !d & !e |
+a & b & !c & d & !e |
+a & !b & c & d & !e |
+!a & b & c & d & !e |
+a & b & !c & !d & e |
+a & !b & c & !d & e |
+!a & b & c & !d & e |
+a & !b & !c & d & e |
+!a & b & !c & d & e |
+!a & !b & c & d & e";
+        Transform(BooleanAlgebraParser.Parse(input)).Should().NotBeNull();
+    }
 }
