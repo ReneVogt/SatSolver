@@ -93,7 +93,7 @@ public sealed class ExpressionToProblemConverter : BooleanExpressionRewriter
     public static Problem ToProblem(BooleanExpression expression, out IReadOnlyDictionary<string, int> literalMapping)
     {
         _ = expression ?? throw new ArgumentNullException(nameof(expression));
-        var normalized = ConjunctiveNormalFormTransformer.Transform(expression);
+        var normalized = TseitinTransformer.Transform(expression);
         var reduced = RedundancyReducer.Reduce(normalized);
         if (reduced.Kind == ExpressionKind.Constant)
         {
