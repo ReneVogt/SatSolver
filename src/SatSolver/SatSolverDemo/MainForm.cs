@@ -74,7 +74,7 @@ namespace SatSolverDemo
                 {
                     var expression = BooleanAlgebraParser.Parse(input);
                     if (cancellationToken.IsCancellationRequested) return;
-                    expression = ConjunctiveNormalFormTransformer.Transform(expression);
+                    expression = TseitinTransformer.Transform(expression);
                     if (cancellationToken.IsCancellationRequested) return;
                     expression = RedundancyReducer.Reduce(expression);
                     if (cancellationToken.IsCancellationRequested) return;
