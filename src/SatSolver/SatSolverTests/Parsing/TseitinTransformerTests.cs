@@ -1,10 +1,10 @@
 ﻿using FluentAssertions;
 using Revo.BooleanAlgebra.Parsing;
-using static Revo.BooleanAlgebra.Transformers.ConjunctiveNormalFormTransformer;
+using static Revo.SatSolver.Parsing.TseitinTransformer;
 
-namespace BooleanAlgebraTests.Rewriting;
+namespace SatSolverTests.Parsing;
 
-public class ConjunctiveNormalFormTransformerTests
+public class TseitinTransformerTests
 {
     [Fact]
     public void Transform_Null_ArgumentNullException()
