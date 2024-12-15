@@ -32,7 +32,10 @@ public class LowererTests
         InlineData("a % b", "(a | b) & (!a | !b)"),
         InlineData("a & b | (c % !!d)", "a & b | (c | d) & (!c | !d)"),
         InlineData("a & b | c & 1", "a & b | c"),
-        InlineData("a & b | c & 0", "a & b")
+        InlineData("a & b | c & 0", "a & b"),
+
+        InlineData("a = b", "(!a | b) & (a | !b)"),
+        InlineData("a | b = c & d", "(!(a | b) | c & d) & (a | b | !(c & d))")
     ]
     public void Lower_CorrectTransformation(string input, string expected)
     {

@@ -3,6 +3,7 @@
 public static class ExpressionFactory
 {
     public static UnaryExpression Not(BooleanExpression expression) => new(UnaryOperator.Not, expression);
+    public static BinaryExpression Equal(this BooleanExpression left, BooleanExpression right) => new(left, BinaryOperator.Equal, right);
     public static BinaryExpression Or(this BooleanExpression left, BooleanExpression right) => new(left, BinaryOperator.Or, right);
     public static BinaryExpression Xor(this BooleanExpression left, BooleanExpression right) => new(left, BinaryOperator.Xor, right);
     public static BinaryExpression And(this BooleanExpression left, BooleanExpression right) => new(left, BinaryOperator.And, right);

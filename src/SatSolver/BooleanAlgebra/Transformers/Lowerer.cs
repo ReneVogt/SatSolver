@@ -8,6 +8,7 @@ namespace Revo.BooleanAlgebra.Transformers;
 /// This transformer takes a <see cref="BooleanExpression"/> and removes
 /// all operations "higher" than AND, OR and NOT.
 /// So for the moment, a % b will be lowererd to (a | b) & (!a | !b).
+/// a = b will be lowered to (!a | b) & (a | !b).
 /// Double negations will be removed.
 /// Constant expressions will be propagated.
 /// </summary>
@@ -53,6 +54,13 @@ public class Lowerer : BooleanExpressionRewriter
         //
         if (expression.Operator == BinaryOperator.Xor)
             return Rewrite(expression.Left.Or(expression.Right).And(Not(expression.Left).Or(Not(expression.Right))));
+
+        //
+        // Equality expressions like a = b are rewritten as (!a | b) & (a | !b)
+        //
+        if (expression.Operator == BinaryOperator.Equal)
+            return Rewrite(Not(expression.Left).Or(expression.Right).And(expression.Left.Or(Not(expression.Right))));
+
 
         if (expression.Operator != BinaryOperator.Or && expression.Operator != BinaryOperator.And) throw UnsupportedBinaryOperator(expression.Operator);
 

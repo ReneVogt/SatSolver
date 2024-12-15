@@ -1,5 +1,6 @@
 ﻿using Revo.BooleanAlgebra.Expressions;
 using static Revo.BooleanAlgebra.Expressions.ExpressionFactory;
+using static Revo.BooleanAlgebra.Expressions.BooleanExpressionException;
 
 namespace Revo.BooleanAlgebra.Parsing;
 
@@ -62,7 +63,9 @@ public sealed class BooleanAlgebraParser
             {
                 BinaryOperator.And => left.And(right),
                 BinaryOperator.Xor => left.Xor(right),
-                _ => left.Or(right)
+                BinaryOperator.Or => left.Or(right),
+                BinaryOperator.Equal => left.Equal(right),
+                _ => throw UnsupportedBinaryOperator(binaryOperator)
             };
         }
     }

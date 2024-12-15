@@ -26,6 +26,7 @@ static class SyntaxFacts
         BinaryOperator.And => '&',
         BinaryOperator.Xor => '%',
         BinaryOperator.Or => '|',
+        BinaryOperator.Equal => '=',
         _ => throw UnsupportedBinaryOperator(op)
     };
     public static BinaryOperator ParseBinaryOperator(char c) => c switch
@@ -33,16 +34,18 @@ static class SyntaxFacts
         '&' => BinaryOperator.And,
         '%' => BinaryOperator.Xor,
         '|' => BinaryOperator.Or,
+        '=' => BinaryOperator.Equal,
         _ => BinaryOperator.Unknown
     };
     public static int GetPrecedence(this BinaryOperator op) => op switch
     {
-        BinaryOperator.And => 10,
-        BinaryOperator.Xor => 5,
-        BinaryOperator.Or => 1,
+        BinaryOperator.And => 15,
+        BinaryOperator.Xor => 10,
+        BinaryOperator.Or => 5,
+        BinaryOperator.Equal => 1,
         _ => 0
     };
 
-    const string SpecialCharacters = "()!|&10%";
+    const string SpecialCharacters = "()!|&10%=";
     public static bool IsSpecialCharacter(this char c) => SpecialCharacters.Contains(c);
 }

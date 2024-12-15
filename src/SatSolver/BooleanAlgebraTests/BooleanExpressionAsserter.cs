@@ -78,6 +78,19 @@ sealed class BooleanExpressionAsserter(BooleanExpression expression) : IDisposab
             throw;
         }
     }
+    public void AssertEqual()
+    {
+        try
+        {
+            Assert.True(enumerator.MoveNext());
+            var binaryExpression = Assert.IsType<BinaryExpression>(enumerator.Current);
+            Assert.Equal(BinaryOperator.Equal, binaryExpression.Operator);
+        }
+        catch when (Markfailed())
+        {
+            throw;
+        }
+    }
     public void AssertXor()
     {
         try

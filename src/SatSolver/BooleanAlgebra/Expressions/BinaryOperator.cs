@@ -23,5 +23,10 @@ public enum BinaryOperator
     /// <summary>
     /// XOR operator (%).
     /// </summary>
-    Xor
+    Xor,
+
+    /// <summary>
+    /// Equality operator (=).
+    /// </summary>
+    Equal
 }

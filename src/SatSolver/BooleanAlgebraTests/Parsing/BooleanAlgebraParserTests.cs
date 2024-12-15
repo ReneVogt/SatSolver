@@ -146,6 +146,22 @@ public class BooleanAlgebraParserTests()
         e.AssertNot();
         e.AssertConstant(false);
     }
+    [Fact]
+    public void Parse_Equality()
+    {
+        const string input = "a | b = c & d";
+        var expression = BooleanAlgebraParser.Parse(input);
+        using var e = new BooleanExpressionAsserter(expression);
+
+        e.AssertEqual();
+        e.AssertOr();
+        e.AssertLiteral("a");
+        e.AssertLiteral("b");
+
+        e.AssertAnd();
+        e.AssertLiteral("c");
+        e.AssertLiteral("d");
+    }
 
     [Fact]
     public void Parse_WrongAfterSyntaxFacts_PrecedenceMustBeAtLeastOneForTheParserToWork()
