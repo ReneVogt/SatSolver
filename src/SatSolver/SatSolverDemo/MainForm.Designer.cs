@@ -43,6 +43,7 @@
             pbSolving = new ProgressBar();
             outerContainer = new SplitContainer();
             innerContainer = new SplitContainer();
+            cbTseitin = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)outerContainer).BeginInit();
             outerContainer.Panel1.SuspendLayout();
             outerContainer.Panel2.SuspendLayout();
@@ -88,7 +89,7 @@
             rtbInput.Margin = new Padding(2);
             rtbInput.Name = "rtbInput";
             rtbInput.ScrollBars = RichTextBoxScrollBars.Vertical;
-            rtbInput.Size = new Size(659, 86);
+            rtbInput.Size = new Size(659, 84);
             rtbInput.TabIndex = 3;
             rtbInput.Text = "";
             rtbInput.TextChanged += OnInputChanged;
@@ -103,7 +104,7 @@
             tbCnf.Name = "tbCnf";
             tbCnf.ReadOnly = true;
             tbCnf.ScrollBars = ScrollBars.Vertical;
-            tbCnf.Size = new Size(659, 114);
+            tbCnf.Size = new Size(659, 113);
             tbCnf.TabIndex = 4;
             // 
             // label1
@@ -120,20 +121,20 @@
             // 
             tbDimacs.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             tbDimacs.BackColor = SystemColors.Window;
-            tbDimacs.Location = new Point(11, 27);
+            tbDimacs.Location = new Point(11, 30);
             tbDimacs.Margin = new Padding(2);
             tbDimacs.Multiline = true;
             tbDimacs.Name = "tbDimacs";
             tbDimacs.ReadOnly = true;
             tbDimacs.ScrollBars = ScrollBars.Both;
-            tbDimacs.Size = new Size(277, 232);
+            tbDimacs.Size = new Size(277, 227);
             tbDimacs.TabIndex = 6;
             tbDimacs.WordWrap = false;
             // 
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(11, 8);
+            label2.Location = new Point(11, 11);
             label2.Margin = new Padding(2, 0, 2, 0);
             label2.Name = "label2";
             label2.Size = new Size(54, 15);
@@ -143,7 +144,7 @@
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new Point(292, 8);
+            label3.Location = new Point(292, 11);
             label3.Margin = new Padding(2, 0, 2, 0);
             label3.Name = "label3";
             label3.Size = new Size(59, 15);
@@ -156,12 +157,12 @@
             lvSolutions.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lvSolutions.FullRowSelect = true;
             lvSolutions.GridLines = true;
-            lvSolutions.Location = new Point(292, 27);
+            lvSolutions.Location = new Point(292, 30);
             lvSolutions.Margin = new Padding(2);
             lvSolutions.Name = "lvSolutions";
             lvSolutions.OwnerDraw = true;
             lvSolutions.ShowGroups = false;
-            lvSolutions.Size = new Size(387, 232);
+            lvSolutions.Size = new Size(378, 227);
             lvSolutions.TabIndex = 9;
             lvSolutions.UseCompatibleStateImageBehavior = false;
             lvSolutions.View = View.Details;
@@ -176,7 +177,7 @@
             // pbSolving
             // 
             pbSolving.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            pbSolving.Location = new Point(0, 264);
+            pbSolving.Location = new Point(0, 262);
             pbSolving.MarqueeAnimationSpeed = 10;
             pbSolving.Name = "pbSolving";
             pbSolving.Size = new Size(681, 13);
@@ -195,13 +196,14 @@
             // 
             // outerContainer.Panel2
             // 
+            outerContainer.Panel2.Controls.Add(cbTseitin);
             outerContainer.Panel2.Controls.Add(label2);
             outerContainer.Panel2.Controls.Add(pbSolving);
             outerContainer.Panel2.Controls.Add(tbDimacs);
             outerContainer.Panel2.Controls.Add(lvSolutions);
             outerContainer.Panel2.Controls.Add(label3);
-            outerContainer.Size = new Size(681, 568);
-            outerContainer.SplitterDistance = 284;
+            outerContainer.Size = new Size(681, 567);
+            outerContainer.SplitterDistance = 283;
             outerContainer.TabIndex = 11;
             // 
             // innerContainer
@@ -221,20 +223,32 @@
             // 
             innerContainer.Panel2.Controls.Add(label1);
             innerContainer.Panel2.Controls.Add(tbCnf);
-            innerContainer.Size = new Size(681, 284);
-            innerContainer.SplitterDistance = 128;
+            innerContainer.Size = new Size(681, 283);
+            innerContainer.SplitterDistance = 126;
             innerContainer.TabIndex = 0;
+            // 
+            // cbTseitin
+            // 
+            cbTseitin.AutoSize = true;
+            cbTseitin.CheckAlign = ContentAlignment.MiddleRight;
+            cbTseitin.Location = new Point(541, 7);
+            cbTseitin.Name = "cbTseitin";
+            cbTseitin.Size = new Size(129, 19);
+            cbTseitin.TabIndex = 11;
+            cbTseitin.Text = "Show Tseitin literals";
+            cbTseitin.UseVisualStyleBackColor = true;
+            cbTseitin.CheckedChanged += OnShowTseitinChanged;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(681, 568);
+            ClientSize = new Size(681, 567);
             Controls.Add(outerContainer);
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             MinimizeBox = false;
-            MinimumSize = new Size(500, 400);
+            MinimumSize = new Size(498, 393);
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "SatSolver Demo";
@@ -266,5 +280,6 @@
         private ProgressBar pbSolving;
         private SplitContainer outerContainer;
         private SplitContainer innerContainer;
+        private CheckBox cbTseitin;
     }
 }

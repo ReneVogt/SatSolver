@@ -1,20 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <ApplicationIcon>lightbulb.ico</ApplicationIcon>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<ApplicationIcon>lightbulb.ico</ApplicationIcon>
+		<ApplicationHighDpiMode>DpiUnaware</ApplicationHighDpiMode>
+		<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Content Include="lightbulb.ico" />
-  </ItemGroup>
+	<ItemGroup>
+		<Content Include="lightbulb.ico" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\SatSolver\SatSolver.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\SatSolver\SatSolver.csproj" />
+	</ItemGroup>
 
 </Project>
