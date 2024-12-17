@@ -212,7 +212,8 @@ public class BooleanAlgebraParserTests()
         InlineData("(a0 & b)", 2, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
         InlineData("(0a & b)", 2, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
         InlineData("a ^ b", 2, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
-        InlineData("!(a ^ b)", 4, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter)
+        InlineData("!(a ^ b)", 4, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter),
+        InlineData("!(.a & b)", 2, InvalidBooleanAlgebraException.Reason.InvalidOrUnexpectedCharacter)
     ]
     public void Parse_InvalidSyntax_Exception(string input, int position, InvalidBooleanAlgebraException.Reason reason)
     {

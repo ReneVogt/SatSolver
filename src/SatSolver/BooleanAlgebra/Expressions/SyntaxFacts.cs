@@ -45,7 +45,4 @@ static class SyntaxFacts
         BinaryOperator.Equal => 1,
         _ => 0
     };
-
-    const string SpecialCharacters = "()!|&10%=";
-    public static bool IsSpecialCharacter(this char c) => SpecialCharacters.Contains(c);
 }

@@ -101,7 +101,7 @@ public sealed class BooleanAlgebraParser
             return Zero;
         }
 
-        while (!(EndReached || Current.IsSpecialCharacter() || char.IsWhiteSpace(Current))) _position++;
+        while (!(EndReached || !char.IsLetter(Current) || char.IsWhiteSpace(Current))) _position++;
         if (start == _position)
             throw InvalidBooleanAlgebraException.InvalidCharacter(_position);
 
