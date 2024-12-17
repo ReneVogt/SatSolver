@@ -63,8 +63,8 @@ namespace SatSolverDemo
                 IReadOnlyDictionary<string, int>? mapping = null;
 
                 BeginInvoke(ClearSyntaxErrors);
-                BeginInvoke(UpdateCnf, string.Empty);
-                BeginInvoke(UpdateDimacs, string.Empty);
+                BeginInvoke(() => UpdateCnf(string.Empty));
+                BeginInvoke(() => UpdateDimacs(string.Empty));
                 BeginInvoke(() => { lvSolutions.Items.Clear(); lvSolutions.Columns.Clear(); });
 
                 if (string.IsNullOrWhiteSpace(input))
@@ -74,20 +74,15 @@ namespace SatSolverDemo
                 {
                     var expression = BooleanAlgebraParser.Parse(input);
                     if (cancellationToken.IsCancellationRequested) return;
-                    expression = TseitinTransformer.Transform(expression);
-                    if (cancellationToken.IsCancellationRequested) return;
-                    expression = RedundancyReducer.Reduce(expression);
-                    if (cancellationToken.IsCancellationRequested) return;
-
                     problem = expression.ToProblem(out expression, out mapping);
-                    BeginInvoke(UpdateCnf, expression.ToString());
+                    BeginInvoke(() => UpdateCnf(expression.ToString()));
                     if (cancellationToken.IsCancellationRequested) return;
                     var dimacsBuilder = new StringBuilder(problem.ToString());
                     dimacsBuilder.AppendLine();
                     dimacsBuilder.AppendLine();
                     foreach (var kvp in mapping)
                         dimacsBuilder.AppendLine($"c {kvp.Value:D5}: {kvp.Key}");
-                    BeginInvoke(UpdateDimacs, dimacsBuilder.ToString());
+                    BeginInvoke(() => UpdateDimacs(dimacsBuilder.ToString()));
                 }
                 else
                 {
@@ -97,33 +92,58 @@ namespace SatSolverDemo
 
                 if (cancellationToken.IsCancellationRequested) return;
 
-                BeginInvoke(InitializeSolutionList, problem, mapping);
+                BeginInvoke(() => InitializeSolutionList(problem, mapping));
                 foreach (var solution in SatSolver.Solve(problem, cancellationToken))
-                    BeginInvoke(AddSolution, solution, mapping);
+                    BeginInvoke(() => AddSolution(solution));
             }
             catch (Exception exception)
             {
-                BeginInvoke(HandleProcessException, exception);
+                BeginInvoke(() => HandleProcessException(exception));
             }
+        }
+
+        sealed class LiteralNameComparer : IComparer<string?>
+        {
+            public int Compare(string? x, string? y)
+            {
+                if (x is null) return y is null ? 0 : -1;
+                if (y is null) return 1;
+
+                if (!(x.StartsWith('.') || y.StartsWith('.'))) return x.CompareTo(y);
+                if (!x.StartsWith('.')) return -1;
+                if (!y.StartsWith('.')) return 1;
+
+                return int.Parse(x[2..]).CompareTo(int.Parse(y[2..])); 
+            }
+            public static LiteralNameComparer Default { get; } = new();
         }
 
         void InitializeSolutionList(Problem problem, IReadOnlyDictionary<string, int>? mapping)
         {
+            lvSolutions.BeginUpdate();
             lvSolutions.SuspendLayout();
             lvSolutions.Columns.Clear();
-            lvSolutions.Items.Clear();
-            var columnNames = mapping?.Keys.OrderBy(k => k.StartsWith('.')).ThenBy(k => k).ToArray() ?? Enumerable.Range(1, problem.NumberOfLiterals).Select(i => i.ToString()).ToArray();
+            lvSolutions.Items.Clear();            
+
+            var columnNames = mapping?.Keys.OrderBy(name => mapping[name]).ToArray() ?? Enumerable.Range(1, problem.NumberOfLiterals).Select(i => i.ToString()).ToArray();
             foreach (var name in columnNames) lvSolutions.Columns.Add(name);
+            foreach (var (column, displayIndex) in lvSolutions.Columns.Cast<ColumnHeader>().OrderBy(column => column.Text, LiteralNameComparer.Default).Select((column, index) => (column, index))) column.DisplayIndex = displayIndex;
             lvSolutions.Columns.Add(string.Empty);
             lvSolutions.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
             ShowOrHideTseitinColumns();
-            lvSolutions.ResumeLayout();
+            lvSolutions.ResumeLayout(true);
+            lvSolutions.EndUpdate();
         }
-        void AddSolution(Literal[] solution, IReadOnlyDictionary<string, int>? mapping)
+        void AddSolution(Literal[] solution)
         {
+            lvSolutions.BeginUpdate();
+            lvSolutions.SuspendLayout();
             tbDimacs.AppendText($"{Environment.NewLine}s {string.Join(" ", solution.Select(literal => literal.Sense ? literal.Id : -literal.Id))} 0");
             var literals = solution.ToDictionary(l => l.Id, l => l.Sense);
             lvSolutions.Items.Add(new ListViewItem(Enumerable.Range(1, lvSolutions.Columns.Count).Select(i => new ListViewItem.ListViewSubItem { BackColor = literals.TryGetValue(i, out var sense) ? sense ? Color.Green : Color.Red : DefaultBackColor }).ToArray(), -1));
+            lvSolutions.ResumeLayout(true);
+            lvSolutions.EndUpdate();
+
         }
 
         void UpdateCnf(string cnf)
@@ -193,7 +213,7 @@ namespace SatSolverDemo
         {
             if (e is not { SubItem.BackColor: var color }) return;
             using var brush = new SolidBrush(color);
-            e.Graphics.FillRectangle(brush, e.Bounds);
+            e.Graphics.FillRectangle(brush, e.SubItem.Bounds);
         }
         private void OnDrawSolutionColumn(object sender, DrawListViewColumnHeaderEventArgs e)
         {

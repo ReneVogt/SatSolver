@@ -153,10 +153,10 @@
             // 
             // lvSolutions
             // 
-            lvSolutions.AllowColumnReorder = true;
             lvSolutions.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lvSolutions.FullRowSelect = true;
             lvSolutions.GridLines = true;
+            lvSolutions.HeaderStyle = ColumnHeaderStyle.Nonclickable;
             lvSolutions.Location = new Point(292, 30);
             lvSolutions.Margin = new Padding(2);
             lvSolutions.Name = "lvSolutions";
@@ -229,6 +229,7 @@
             // 
             // cbTseitin
             // 
+            cbTseitin.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             cbTseitin.AutoSize = true;
             cbTseitin.CheckAlign = ContentAlignment.MiddleRight;
             cbTseitin.Location = new Point(541, 7);
