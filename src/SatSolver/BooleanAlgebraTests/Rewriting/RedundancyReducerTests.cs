@@ -77,6 +77,8 @@ public class RedundancyReducerTests
         InlineData("a & b & !c | a & !b & c | !a & b | c", "a & b & !c | a & !b & c | !a & b | c"),
         InlineData("a & b & !c | a & !b & c | !a & b & c", "a & b & !c | a & !b & c | !a & b & c"),
 
+        InlineData("t & (!t | !a | !b) & (t | a) & (t | b)", "t & (!t | !a | !b)"),
+
         // The CNF result of 2o3
         InlineData("(a | a | !a) & (a | !b | !a) & (b | a | !a) & (b | !b | !a) & (a | c | !a) & (b | c | !a) & (a | a | b) & (a | !b | b) & (b | a | b) & (b | !b | b) & (a | c | b) & (b | c | b) & (!c | a | !a) & (!c | !b | !a) & (!c | a | b) & (!c | !b | b) & (a | a | c) & (a | !b | c) & (b | a | c) & (b | !b | c) & (a | c | c) & (b | c | c) & (!c | a | c) & (!c | !b | c) & (!c | c | !a) & (!c | c | b) & (!c | c | c)", "(a | b) & (b | c) & (!c | !b | !a) & (a | c)"),
         InlineData("(((((((((((a | a) | !a) & ((a | !b) | !a)) & ((b | a) | !a)) & ((b | !b) | !a)) & (((a | c) | !a) & ((b | c) | !a))) & ((((((a | a) | b) & ((a | !b) | b)) & ((b | a) | b)) & ((b | !b) | b)) & (((a | c) | b) & ((b | c) | b)))) & (((!c | a) | !a) & ((!c | !b) | !a))) & (((!c | a) | b) & ((!c | !b) | b))) & (((((((a | a) | c) & ((a | !b) | c)) & ((b | a) | c)) & ((b | !b) | c)) & (((a | c) | c) & ((b | c) | c))) & (((!c | a) | c) & ((!c | !b) | c)))) & (((!c | c) | !a) & ((!c | c) | b))) & ((!c | c) | c)", "(a | b) & (b | c) & (!c | !b | !a) & (a | c)")

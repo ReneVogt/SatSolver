@@ -18,7 +18,7 @@ public class ExpressionToProblemConverterTests
     {
         BooleanAlgebraParser.Parse(input).ToProblem(literalMapping: out var mapping).ToString().Should().Be(expected);
         mapping.Count.Should().Be(literals.Length);
-        for (var i = 0; i< literals.Length; i++)
+        for (var i = 0; i < literals.Length; i++)
             mapping[literals[i]].Should().Be(i+1);
     }
 
@@ -33,6 +33,9 @@ public class ExpressionToProblemConverterTests
             { "a | b | c", "p cnf 3 1\r\n1 2 3 0", ["a", "b", "c"] },
             { "a & b", "p cnf 2 2\r\n1 0\r\n2 0", ["a", "b"] },
             { "(a | b) & (!a | c) & (b | !c)", "p cnf 3 3\r\n-1 3 0\r\n1 2 0\r\n2 -3 0", ["a", "b", "c"] },
+
+            // cnf -> .t0 & (!.t0 | !a | !b) & (.t0 | a) & (.t0 | b) -> reduced .t0 & (!.t0 | !a | !b)
+            { "!a | !b", "p cnf 3 2\r\n1 0\r\n-1 -2 -3 0", [".t0", "a", "b"] },
 
             // 2o3
             { "a & b & !c | a & !b & c | !a & b & c", @"p cnf 3 4
