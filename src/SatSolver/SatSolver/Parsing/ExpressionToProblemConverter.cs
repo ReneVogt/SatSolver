@@ -77,7 +77,7 @@ public sealed class ExpressionToProblemConverter : BooleanExpressionRewriter
     /// <returns>A <see cref="Problem"/> representation of the <paramref name="expression"/>
     /// that can be processed by the <see cref="SatSolver"/>.</returns>
     /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
-    public static Problem ToProblem(BooleanExpression expression) => ToProblem(expression, out _);
+    public static Problem ToProblem(BooleanExpression expression) => ToProblem(expression, out _, out _);
 
     /// <summary>
     /// Converts a <see cref="BooleanExpression"/> into a
@@ -90,31 +90,58 @@ public sealed class ExpressionToProblemConverter : BooleanExpressionRewriter
     /// <returns>A <see cref="Problem"/> representation of the <paramref name="expression"/>
     /// that can be processed by the <see cref="SatSolver"/>.</returns>
     /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
-    public static Problem ToProblem(BooleanExpression expression, out IReadOnlyDictionary<string, int> literalMapping)
+    public static Problem ToProblem(BooleanExpression expression, out IReadOnlyDictionary<string, int> literalMapping) => ToProblem(expression, out _, out literalMapping);
+
+    /// <summary>
+    /// Converts a <see cref="BooleanExpression"/> into a
+    /// conjunctive normal form, tries to reduce redundancies
+    /// and returns the expression as a <see cref="Problem"/>
+    /// to be processed the <see cref="SatSolver"/>.
+    /// </summary>
+    /// <param name="expression">The <see cref="BooleanExpression"/> to transform.</param>
+    /// <param name="transformedExpression">Receives the expression after transforming it into a conjunctive normal form.</param>
+    /// <returns>A <see cref="Problem"/> representation of the <paramref name="expression"/>
+    /// that can be processed by the <see cref="SatSolver"/>.</returns>
+    /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
+    public static Problem ToProblem(BooleanExpression expression, out BooleanExpression transformedExpression) => ToProblem(expression, out transformedExpression, out _);
+
+    /// <summary>
+    /// Converts a <see cref="BooleanExpression"/> into a
+    /// conjunctive normal form, tries to reduce redundancies
+    /// and returns the expression as a <see cref="Problem"/>
+    /// to be processed the <see cref="SatSolver"/>.
+    /// </summary>
+    /// <param name="expression">The <see cref="BooleanExpression"/> to transform.</param>
+    /// <param name="transformedExpression">Receives the expression after transforming it into a conjunctive normal form.</param>
+    /// <param name="literalMapping">Receives the mapping from variable names to literal IDs.</param>
+    /// <returns>A <see cref="Problem"/> representation of the <paramref name="expression"/>
+    /// that can be processed by the <see cref="SatSolver"/>.</returns>
+    /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
+    public static Problem ToProblem(BooleanExpression expression, out BooleanExpression transformedExpression, out IReadOnlyDictionary<string, int> literalMapping)
     {
         _ = expression ?? throw new ArgumentNullException(nameof(expression));
         var normalized = TseitinTransformer.Transform(expression);
-        var reduced = RedundancyReducer.Reduce(normalized);
-        if (reduced.Kind == ExpressionKind.Constant)
+        transformedExpression = RedundancyReducer.Reduce(normalized);
+        if (transformedExpression.Kind == ExpressionKind.Constant)
         {
             literalMapping = new Dictionary<string, int>().AsReadOnly();
-            return ((ConstantExpression)reduced).Sense
+            return ((ConstantExpression)transformedExpression).Sense
                 ? new(0, Enumerable.Empty<Clause>())
                 : new(0, [new Clause(Enumerable.Empty<Literal>())]);
         }
-        if (reduced.Kind == ExpressionKind.Literal)
+        if (transformedExpression.Kind == ExpressionKind.Literal)
         {
-            literalMapping = new Dictionary<string, int>() { [((LiteralExpression)reduced).Name] = 1 }.AsReadOnly();
+            literalMapping = new Dictionary<string, int>() { [((LiteralExpression)transformedExpression).Name] = 1 }.AsReadOnly();
             return new(1, [new Clause([1])]);
         }
-        if (reduced.Kind == ExpressionKind.Unary)
+        if (transformedExpression.Kind == ExpressionKind.Unary)
         {
-            literalMapping = new Dictionary<string, int>() { [((LiteralExpression)((UnaryExpression)reduced).Expression).Name] = 1 }.AsReadOnly();
+            literalMapping = new Dictionary<string, int>() { [((LiteralExpression)((UnaryExpression)transformedExpression).Expression).Name] = 1 }.AsReadOnly();
             return new(1, [new Clause([-1])]);
         }
 
         var converter = new ExpressionToProblemConverter();
-        converter.Rewrite(reduced);
+        converter.Rewrite(transformedExpression);
         converter.CompileClause();
         literalMapping = converter._literalMapping.AsReadOnly();
         return new(converter._literalMapping.Count, converter._clauses);
