@@ -16,7 +16,7 @@ public class ExpressionToProblemConverterTests
     [MemberData(nameof(ProvideCases))]
     public void ToProblem_Correct(string input, string expected, string[] literals)
     {
-        BooleanAlgebraParser.Parse(input).ToProblem(out var mapping).ToString().Should().Be(expected);
+        BooleanAlgebraParser.Parse(input).ToProblem(literalMapping: out var mapping).ToString().Should().Be(expected);
         mapping.Count.Should().Be(literals.Length);
         for (var i = 0; i< literals.Length; i++)
             mapping[literals[i]].Should().Be(i+1);
