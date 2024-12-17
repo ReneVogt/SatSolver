@@ -111,10 +111,11 @@ namespace SatSolverDemo
         {
             lvSolutions.Columns.Clear();
             lvSolutions.Items.Clear();
-            var columnNames = mapping?.Keys.OrderBy(k => mapping[k]).ToArray() ?? Enumerable.Range(1, problem.NumberOfLiterals).Select(i => i.ToString()).ToArray();
+            var columnNames = mapping?.Keys.OrderBy(k => k.StartsWith('.')).ThenBy(k => k).ToArray() ?? Enumerable.Range(1, problem.NumberOfLiterals).Select(i => i.ToString()).ToArray();
             foreach (var name in columnNames) lvSolutions.Columns.Add(name);
             lvSolutions.Columns.Add(string.Empty);
             lvSolutions.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+            ShowOrHideTseitinColumns();
         }
         void AddSolution(Literal[] solution, IReadOnlyDictionary<string, int>? mapping)
         {
@@ -195,6 +196,22 @@ namespace SatSolverDemo
         private void OnDrawSolutionColumn(object sender, DrawListViewColumnHeaderEventArgs e)
         {
             e.DrawDefault = true;
+        }
+
+        private void OnShowTseitinChanged(object sender, EventArgs e)
+        {
+            ShowOrHideTseitinColumns();
+        }
+        void ShowOrHideTseitinColumns()
+        {
+            if (cbTseitin.Checked)
+            {
+                lvSolutions.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+                return;
+            }
+
+            foreach (var column in lvSolutions.Columns.Cast<ColumnHeader>().Where(column => column.Text.StartsWith('.')))
+                column.Width = 0;
         }
     }
 }
