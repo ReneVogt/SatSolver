@@ -78,9 +78,9 @@ namespace SatSolverDemo
                     if (cancellationToken.IsCancellationRequested) return;
                     expression = RedundancyReducer.Reduce(expression);
                     if (cancellationToken.IsCancellationRequested) return;
-                    BeginInvoke(UpdateCnf, expression.ToString());
 
-                    problem = expression.ToProblem(out mapping);
+                    problem = expression.ToProblem(out expression, out mapping);
+                    BeginInvoke(UpdateCnf, expression.ToString());
                     if (cancellationToken.IsCancellationRequested) return;
                     var dimacsBuilder = new StringBuilder(problem.ToString());
                     dimacsBuilder.AppendLine();
@@ -109,6 +109,7 @@ namespace SatSolverDemo
 
         void InitializeSolutionList(Problem problem, IReadOnlyDictionary<string, int>? mapping)
         {
+            lvSolutions.SuspendLayout();
             lvSolutions.Columns.Clear();
             lvSolutions.Items.Clear();
             var columnNames = mapping?.Keys.OrderBy(k => k.StartsWith('.')).ThenBy(k => k).ToArray() ?? Enumerable.Range(1, problem.NumberOfLiterals).Select(i => i.ToString()).ToArray();
@@ -116,6 +117,7 @@ namespace SatSolverDemo
             lvSolutions.Columns.Add(string.Empty);
             lvSolutions.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
             ShowOrHideTseitinColumns();
+            lvSolutions.ResumeLayout();
         }
         void AddSolution(Literal[] solution, IReadOnlyDictionary<string, int>? mapping)
         {
@@ -210,8 +212,10 @@ namespace SatSolverDemo
                 return;
             }
 
+            lvSolutions.SuspendLayout();
             foreach (var column in lvSolutions.Columns.Cast<ColumnHeader>().Where(column => column.Text.StartsWith('.')))
                 column.Width = 0;
+            lvSolutions.ResumeLayout();
         }
     }
 }
