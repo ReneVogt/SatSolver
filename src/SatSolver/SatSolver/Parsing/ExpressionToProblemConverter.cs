@@ -120,8 +120,7 @@ public sealed class ExpressionToProblemConverter : BooleanExpressionRewriter
     public static Problem ToProblem(BooleanExpression expression, out BooleanExpression transformedExpression, out IReadOnlyDictionary<string, int> literalMapping)
     {
         _ = expression ?? throw new ArgumentNullException(nameof(expression));
-        var normalized = TseitinTransformer.Transform(expression);
-        transformedExpression = RedundancyReducer.Reduce(normalized);
+        transformedExpression = TseitinTransformer.Transform(expression);
         if (transformedExpression.Kind == ExpressionKind.Constant)
         {
             literalMapping = new Dictionary<string, int>().AsReadOnly();
