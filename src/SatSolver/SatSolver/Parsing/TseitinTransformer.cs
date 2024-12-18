@@ -14,6 +14,7 @@ namespace Revo.SatSolver.Parsing;
 public class TseitinTransformer : BooleanExpressionRewriter
 {
     readonly List<(HashSet<string> positives, HashSet<string> negatives)> _clauses = [];
+    
     int _tseitinCount;
 
     LiteralExpression GetNextTseitin() => Literal($".t{_tseitinCount++}");
@@ -87,34 +88,32 @@ public class TseitinTransformer : BooleanExpressionRewriter
         var rightName = rightSense ? ((LiteralExpression)right).Name : ((LiteralExpression)((UnaryExpression)right).Expression).Name;
 
         //
-        // Transformation as follows:
-        // x = (a | b)  ====>
-        //      (!x | a | b) & (x | !a) & (x | !b)
-        //      -- clause1 --- clause2 --- clause3
-        // x = (a & b)  ====>
-        //      (x | !a | !b) & (!x | a) & (!x | b)
-        //      -- clause1 --- clause2 --- clause3
+        // We use De Morgan's law for negations, so our
+        // polarity is always positive here. Hence, a
+        // simple implication is enough.
+        // 
 
-
-        var isAnd = expression.Operator == BinaryOperator.And;
-        var positives = new HashSet<string>();
-        var negatives = new HashSet<string>();
-        if (isAnd) positives.Add(tseitin.Name); else negatives.Add(tseitin.Name); 
-        if (leftSense != isAnd) positives.Add(leftName); else negatives.Add(leftName);
-        if (rightSense != isAnd) positives.Add(rightName); else negatives.Add(rightName);
-        AddClause(positives, negatives);
-
-        positives = [];
-        negatives = [];
-        if (!isAnd) positives.Add(tseitin.Name); else negatives.Add(tseitin.Name);
-        if (leftSense == isAnd) positives.Add(leftName); else negatives.Add(leftName);
-        AddClause(positives, negatives);
-
-        positives = [];
-        negatives = [];
-        if (!isAnd) positives.Add(tseitin.Name); else negatives.Add(tseitin.Name);
-        if (rightSense == isAnd) positives.Add(rightName); else negatives.Add(rightName);
-        AddClause(positives, negatives);
+        if (expression.Operator == BinaryOperator.Or)
+        {
+            // x -> (a | b)  ==> !x | a | b
+            var positives = new HashSet<string>();
+            var negatives = new HashSet<string> { tseitin.Name };
+            if (leftSense) positives.Add(leftName); else negatives.Add(leftName);
+            if (rightSense) positives.Add(rightName); else negatives.Add(rightName);
+            AddClause(positives, negatives);
+        }
+        else // AND 
+        {
+            // x -> (a & b)  ==> !x | (a & b) ==> (!x | a) & (!x | b)
+            var positives = new HashSet<string>();
+            var negatives = new HashSet<string> { tseitin.Name };
+            if (leftSense) positives.Add(leftName); else negatives.Add(leftName);
+            AddClause(positives, negatives);
+            positives = [];
+            negatives = [tseitin.Name];
+            if (rightSense) positives.Add(rightName); else negatives.Add(rightName);
+            AddClause(positives, negatives);
+        }
 
         return tseitin;
     }

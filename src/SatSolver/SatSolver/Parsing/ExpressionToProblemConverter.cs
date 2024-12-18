@@ -121,6 +121,14 @@ public sealed class ExpressionToProblemConverter : BooleanExpressionRewriter
     {
         _ = expression ?? throw new ArgumentNullException(nameof(expression));
         transformedExpression = TseitinTransformer.Transform(expression);
+        return ToProblemInternal(transformedExpression, out literalMapping);
+    }
+
+    //
+    // This exists only for unit testing.
+    //
+    internal static Problem ToProblemInternal(BooleanExpression transformedExpression, out IReadOnlyDictionary<string, int> literalMapping)
+    {
         if (transformedExpression.Kind == ExpressionKind.Constant)
         {
             literalMapping = new Dictionary<string, int>().AsReadOnly();
