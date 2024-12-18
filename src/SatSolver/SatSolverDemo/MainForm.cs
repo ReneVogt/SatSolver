@@ -36,6 +36,7 @@ namespace SatSolverDemo
             tmSolve.Stop();
             _ = StartSolve();
         }
+        
         async Task StartSolve()
         {
             _cancellationTokenSource?.Cancel();
@@ -65,7 +66,7 @@ namespace SatSolverDemo
                 BeginInvoke(ClearSyntaxErrors);
                 BeginInvoke(() => UpdateCnf(string.Empty));
                 BeginInvoke(() => UpdateDimacs(string.Empty));
-                BeginInvoke(() => { lvSolutions.Items.Clear(); lvSolutions.Columns.Clear(); });
+                BeginInvoke(() => { dgvSolutions.Rows.Clear(); dgvSolutions.Columns.Clear(); });
 
                 if (string.IsNullOrWhiteSpace(input))
                     return;
@@ -75,6 +76,7 @@ namespace SatSolverDemo
                     var expression = BooleanAlgebraParser.Parse(input);
                     if (cancellationToken.IsCancellationRequested) return;
                     problem = expression.ToProblem(out expression, out mapping);
+                    if (cancellationToken.IsCancellationRequested) return;
                     BeginInvoke(() => UpdateCnf(expression.ToString()));
                     if (cancellationToken.IsCancellationRequested) return;
                     var dimacsBuilder = new StringBuilder(problem.ToString());
@@ -120,30 +122,33 @@ namespace SatSolverDemo
 
         void InitializeSolutionList(Problem problem, IReadOnlyDictionary<string, int>? mapping)
         {
-            lvSolutions.BeginUpdate();
-            lvSolutions.SuspendLayout();
-            lvSolutions.Columns.Clear();
-            lvSolutions.Items.Clear();            
+            dgvSolutions.SuspendLayout();
+            dgvSolutions.Rows.Clear();
+            dgvSolutions.Columns.Clear();
 
             var columnNames = mapping?.Keys.OrderBy(name => mapping[name]).ToArray() ?? Enumerable.Range(1, problem.NumberOfLiterals).Select(i => i.ToString()).ToArray();
-            foreach (var name in columnNames) lvSolutions.Columns.Add(name);
-            foreach (var (column, displayIndex) in lvSolutions.Columns.Cast<ColumnHeader>().OrderBy(column => column.Text, LiteralNameComparer.Default).Select((column, index) => (column, index))) column.DisplayIndex = displayIndex;
-            lvSolutions.Columns.Add(string.Empty);
-            lvSolutions.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
-            ShowOrHideTseitinColumns();
-            lvSolutions.ResumeLayout(true);
-            lvSolutions.EndUpdate();
+            foreach (var name in columnNames)
+                dgvSolutions.Columns.Add(new DataGridViewColumn { HeaderText = name });
+            foreach (var (column, displayIndex) in dgvSolutions.Columns.Cast<DataGridViewColumn>().OrderBy(column => column.HeaderText, LiteralNameComparer.Default).Select((column, index) => (column, index))) column.DisplayIndex = displayIndex;
+            dgvSolutions.ResumeLayout(true);
         }
         void AddSolution(Literal[] solution)
         {
-            lvSolutions.BeginUpdate();
-            lvSolutions.SuspendLayout();
             tbDimacs.AppendText($"{Environment.NewLine}s {string.Join(" ", solution.Select(literal => literal.Sense ? literal.Id : -literal.Id))} 0");
             var literals = solution.ToDictionary(l => l.Id, l => l.Sense);
-            lvSolutions.Items.Add(new ListViewItem(Enumerable.Range(1, lvSolutions.Columns.Count).Select(i => new ListViewItem.ListViewSubItem { BackColor = literals.TryGetValue(i, out var sense) ? sense ? Color.Green : Color.Red : DefaultBackColor }).ToArray(), -1));
-            lvSolutions.ResumeLayout(true);
-            lvSolutions.EndUpdate();
-
+            var row = new DataGridViewRow();
+            foreach (var color in Enumerable.Range(1, dgvSolutions.Columns.Count)
+                .Select(i => literals.TryGetValue(i, out var sense) ? sense ? Color.Green : Color.Red : Color.FromKnownColor(KnownColor.Window)))
+                row.Cells.Add(new DataGridViewTextBoxCell
+                {
+                    Style = new DataGridViewCellStyle
+                    {
+                        BackColor = color,
+                        SelectionBackColor = color,
+                        SelectionForeColor = color
+                    }
+                });
+            dgvSolutions.Rows.Add(row);
         }
 
         void UpdateCnf(string cnf)
@@ -207,35 +212,6 @@ namespace SatSolverDemo
                 case InvalidBooleanAlgebraException { Position: var position }: SetSyntaxError(position, exception.Message); return;
                 default: MessageBox.Show($"Unexpected error: {exception}", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error); return;
             }
-        }
-
-        private void OnDrawSolutionSubItem(object sender, DrawListViewSubItemEventArgs e)
-        {
-            if (e is not { SubItem.BackColor: var color }) return;
-            using var brush = new SolidBrush(color);
-            e.Graphics.FillRectangle(brush, e.SubItem.Bounds);
-        }
-        private void OnDrawSolutionColumn(object sender, DrawListViewColumnHeaderEventArgs e)
-        {
-            e.DrawDefault = true;
-        }
-
-        private void OnShowTseitinChanged(object sender, EventArgs e)
-        {
-            ShowOrHideTseitinColumns();
-        }
-        void ShowOrHideTseitinColumns()
-        {
-            if (cbTseitin.Checked)
-            {
-                lvSolutions.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
-                return;
-            }
-
-            lvSolutions.SuspendLayout();
-            foreach (var column in lvSolutions.Columns.Cast<ColumnHeader>().Where(column => column.Text.StartsWith('.')))
-                column.Width = 0;
-            lvSolutions.ResumeLayout();
         }
     }
 }

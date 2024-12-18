@@ -38,12 +38,11 @@
             tbDimacs = new TextBox();
             label2 = new Label();
             label3 = new Label();
-            lvSolutions = new ListView();
             tmSolve = new System.Windows.Forms.Timer(components);
             pbSolving = new ProgressBar();
             outerContainer = new SplitContainer();
             innerContainer = new SplitContainer();
-            cbTseitin = new CheckBox();
+            dgvSolutions = new DataGridView();
             ((System.ComponentModel.ISupportInitialize)outerContainer).BeginInit();
             outerContainer.Panel1.SuspendLayout();
             outerContainer.Panel2.SuspendLayout();
@@ -52,6 +51,7 @@
             innerContainer.Panel1.SuspendLayout();
             innerContainer.Panel2.SuspendLayout();
             innerContainer.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvSolutions).BeginInit();
             SuspendLayout();
             // 
             // rbtBooleanAlgebra
@@ -151,24 +151,6 @@
             label3.TabIndex = 8;
             label3.Text = "Solutions:";
             // 
-            // lvSolutions
-            // 
-            lvSolutions.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lvSolutions.FullRowSelect = true;
-            lvSolutions.GridLines = true;
-            lvSolutions.HeaderStyle = ColumnHeaderStyle.Nonclickable;
-            lvSolutions.Location = new Point(292, 30);
-            lvSolutions.Margin = new Padding(2);
-            lvSolutions.Name = "lvSolutions";
-            lvSolutions.OwnerDraw = true;
-            lvSolutions.ShowGroups = false;
-            lvSolutions.Size = new Size(378, 227);
-            lvSolutions.TabIndex = 9;
-            lvSolutions.UseCompatibleStateImageBehavior = false;
-            lvSolutions.View = View.Details;
-            lvSolutions.DrawColumnHeader += OnDrawSolutionColumn;
-            lvSolutions.DrawSubItem += OnDrawSolutionSubItem;
-            // 
             // tmSolve
             // 
             tmSolve.Interval = 500;
@@ -196,11 +178,10 @@
             // 
             // outerContainer.Panel2
             // 
-            outerContainer.Panel2.Controls.Add(cbTseitin);
+            outerContainer.Panel2.Controls.Add(dgvSolutions);
             outerContainer.Panel2.Controls.Add(label2);
             outerContainer.Panel2.Controls.Add(pbSolving);
             outerContainer.Panel2.Controls.Add(tbDimacs);
-            outerContainer.Panel2.Controls.Add(lvSolutions);
             outerContainer.Panel2.Controls.Add(label3);
             outerContainer.Size = new Size(681, 567);
             outerContainer.SplitterDistance = 283;
@@ -227,18 +208,27 @@
             innerContainer.SplitterDistance = 126;
             innerContainer.TabIndex = 0;
             // 
-            // cbTseitin
+            // dgvSolutions
             // 
-            cbTseitin.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            cbTseitin.AutoSize = true;
-            cbTseitin.CheckAlign = ContentAlignment.MiddleRight;
-            cbTseitin.Location = new Point(541, 7);
-            cbTseitin.Name = "cbTseitin";
-            cbTseitin.Size = new Size(129, 19);
-            cbTseitin.TabIndex = 11;
-            cbTseitin.Text = "Show Tseitin literals";
-            cbTseitin.UseVisualStyleBackColor = true;
-            cbTseitin.CheckedChanged += OnShowTseitinChanged;
+            dgvSolutions.AllowUserToAddRows = false;
+            dgvSolutions.AllowUserToDeleteRows = false;
+            dgvSolutions.AllowUserToResizeColumns = false;
+            dgvSolutions.AllowUserToResizeRows = false;
+            dgvSolutions.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dgvSolutions.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.ColumnHeader;
+            dgvSolutions.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgvSolutions.Location = new Point(292, 30);
+            dgvSolutions.Name = "dgvSolutions";
+            dgvSolutions.ReadOnly = true;
+            dgvSolutions.RowHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+            dgvSolutions.RowHeadersVisible = false;
+            dgvSolutions.SelectionMode = DataGridViewSelectionMode.CellSelect;
+            dgvSolutions.ShowCellErrors = false;
+            dgvSolutions.ShowCellToolTips = false;
+            dgvSolutions.ShowEditingIcon = false;
+            dgvSolutions.ShowRowErrors = false;
+            dgvSolutions.Size = new Size(378, 227);
+            dgvSolutions.TabIndex = 11;
             // 
             // MainForm
             // 
@@ -264,6 +254,7 @@
             innerContainer.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)innerContainer).EndInit();
             innerContainer.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)dgvSolutions).EndInit();
             ResumeLayout(false);
         }
 
@@ -276,11 +267,10 @@
         private TextBox tbDimacs;
         private Label label2;
         private Label label3;
-        private ListView lvSolutions;
         private System.Windows.Forms.Timer tmSolve;
         private ProgressBar pbSolving;
         private SplitContainer outerContainer;
         private SplitContainer innerContainer;
-        private CheckBox cbTseitin;
+        private DataGridView dgvSolutions;
     }
 }
