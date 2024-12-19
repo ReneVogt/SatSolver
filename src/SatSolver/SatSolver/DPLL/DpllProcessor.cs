@@ -12,10 +12,13 @@ sealed class DpllProcessor
     }
 
     readonly CancellationToken _cancellationToken;
-    readonly DpllMode _mode;
 
     readonly Variable[] _variables;
     readonly Constraint[] _constraints;
+
+    public bool UnitPropagation { get; init; } = true;
+    public bool PureLiteralElimination { get; init; } = true;
+    public bool RemoveSupersets { get; init; } = true;
 
 
     /// <summary>
@@ -71,10 +74,9 @@ sealed class DpllProcessor
     /// </summary>
     int _numberOfActiveConstraints;
 
-    public DpllProcessor(Problem problem, DpllMode mode, CancellationToken cancellationToken)
+    public DpllProcessor(Problem problem, CancellationToken cancellationToken)
     {
         _cancellationToken = cancellationToken;
-        _mode = mode;
 
         // Note that literals are actually 1-indexed. We switch to 0-indexing here
         // and need to restore that when yielding solutions.
@@ -131,7 +133,7 @@ sealed class DpllProcessor
 
         _constraints = [.. constraints];
         _numberOfActiveConstraints = _constraints.Length;
-        _pureLiterals = _mode == DpllMode.DecisionOnly ? new(_variables.Where(variable => variable.NumberOfActiveNegatives + variable.NumberOfActivePositives == 1)) : [];
+        _pureLiterals = PureLiteralElimination ? new(_variables.Where(variable => variable.NumberOfActiveNegatives + variable.NumberOfActivePositives == 1)) : [];
     }
 
     /// <summary>
@@ -155,8 +157,8 @@ sealed class DpllProcessor
                 var reason = _currentCandidate is null ? StackReason.FirstGuess : StackReason.SecondGuess;
                 _currentCandidate = null;
                 Propagate(variable, reason);
-                UnitPropagation();
-                PureLiteralElimination();
+                PerformUnitPropagation();
+                PerformPureLiteralElimination();
             }
 
             if (_numberOfActiveConstraints == 0)
@@ -252,12 +254,12 @@ sealed class DpllProcessor
             //
             foreach (var v in constraint.Positives.Where(v => !v.Fixed))
             {
-                if (--v.NumberOfActivePositives == 0 && _mode == DpllMode.DecisionOnly)
+                if (--v.NumberOfActivePositives == 0 && PureLiteralElimination)
                     _pureLiterals.Enqueue(v);
             }
             foreach (var v in constraint.Negatives.Where(v => !v.Fixed))
             {
-                if (--v.NumberOfActiveNegatives == 0 && _mode == DpllMode.DecisionOnly)
+                if (--v.NumberOfActiveNegatives == 0 && PureLiteralElimination)
                     _pureLiterals.Enqueue(v);
             }
 
@@ -361,7 +363,7 @@ sealed class DpllProcessor
     /// sense can be removed from the respective clauses.
     /// </summary>
     /// <returns><c>true</c> if changes were made, <c>false</c> if not.</returns>
-    void UnitPropagation()
+    void PerformUnitPropagation()
     {
         while(!(_foundEmptyConstraint || _numberOfActiveConstraints == 0) && _unitConstraints.TryDequeue(out var constraint))
         {
@@ -384,9 +386,9 @@ sealed class DpllProcessor
     /// safely set it to its sense to satisfy the clauses it's contained in.
     /// </summary>
     /// <returns><c>true</c> if clauses were changed, <c>false</c> if not (or clauses were removed).</returns>
-    void PureLiteralElimination()
+    void PerformPureLiteralElimination()
     {
-        if (_mode != DpllMode.DecisionOnly) return;
+        if (!PureLiteralElimination) return;
 
         while (!(_foundEmptyConstraint || _numberOfActiveConstraints == 0) && _pureLiterals.TryDequeue(out var variable))
         {

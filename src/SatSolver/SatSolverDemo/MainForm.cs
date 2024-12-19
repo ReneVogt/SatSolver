@@ -95,7 +95,7 @@ namespace SatSolverDemo
                 if (cancellationToken.IsCancellationRequested) return;
 
                 BeginInvoke(() => InitializeSolutionList(problem, mapping));
-                foreach (var solution in SatSolver.Solve(problem, cancellationToken))
+                foreach (var solution in SatSolver.Solve(problem, cancellationToken: cancellationToken))
                     BeginInvoke(() => AddSolution(solution));
             }
             catch (Exception exception)
