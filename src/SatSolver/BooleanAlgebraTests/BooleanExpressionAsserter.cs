@@ -65,6 +65,45 @@ sealed class BooleanExpressionAsserter(BooleanExpression expression) : IDisposab
             throw;
         }
     }
+    public void AssertEquivalence()
+    {
+        try
+        {
+            Assert.True(enumerator.MoveNext());
+            var binaryExpression = Assert.IsType<BinaryExpression>(enumerator.Current);
+            Assert.Equal(BinaryOperator.Equivalence, binaryExpression.Operator);
+        }
+        catch when (Markfailed())
+        {
+            throw;
+        }
+    }
+    public void AssertImplication()
+    {
+        try
+        {
+            Assert.True(enumerator.MoveNext());
+            var binaryExpression = Assert.IsType<BinaryExpression>(enumerator.Current);
+            Assert.Equal(BinaryOperator.Implication, binaryExpression.Operator);
+        }
+        catch when (Markfailed())
+        {
+            throw;
+        }
+    }
+    public void AssertReverseImplication()
+    {
+        try
+        {
+            Assert.True(enumerator.MoveNext());
+            var binaryExpression = Assert.IsType<BinaryExpression>(enumerator.Current);
+            Assert.Equal(BinaryOperator.ReverseImplication, binaryExpression.Operator);
+        }
+        catch when (Markfailed())
+        {
+            throw;
+        }
+    }
     public void AssertOr()
     {
         try
@@ -72,19 +111,6 @@ sealed class BooleanExpressionAsserter(BooleanExpression expression) : IDisposab
             Assert.True(enumerator.MoveNext());
             var binaryExpression = Assert.IsType<BinaryExpression>(enumerator.Current);
             Assert.Equal(BinaryOperator.Or, binaryExpression.Operator);
-        }
-        catch when (Markfailed())
-        {
-            throw;
-        }
-    }
-    public void AssertEqual()
-    {
-        try
-        {
-            Assert.True(enumerator.MoveNext());
-            var binaryExpression = Assert.IsType<BinaryExpression>(enumerator.Current);
-            Assert.Equal(BinaryOperator.Equal, binaryExpression.Operator);
         }
         catch when (Markfailed())
         {

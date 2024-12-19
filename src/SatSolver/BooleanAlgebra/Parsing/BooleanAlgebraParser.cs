@@ -64,7 +64,9 @@ public sealed class BooleanAlgebraParser
                 BinaryOperator.And => left.And(right),
                 BinaryOperator.Xor => left.Xor(right),
                 BinaryOperator.Or => left.Or(right),
-                BinaryOperator.Equal => left.Equal(right),
+                BinaryOperator.Implication => left.Implies(right),
+                BinaryOperator.ReverseImplication => left.ImpliedBy(right),
+                BinaryOperator.Equivalence => left.Equal(right),
                 _ => throw UnsupportedBinaryOperator(binaryOperator)
             };
         }

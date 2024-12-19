@@ -56,10 +56,22 @@ public class Lowerer : BooleanExpressionRewriter
             return Rewrite(expression.Left.Or(expression.Right).And(Not(expression.Left).Or(Not(expression.Right))));
 
         //
-        // Equality expressions like a = b are rewritten as (!a | b) & (a | !b)
+        // Equivalence expressions like a = b are rewritten as (!a | b) & (a | !b).
         //
-        if (expression.Operator == BinaryOperator.Equal)
+        if (expression.Operator == BinaryOperator.Equivalence)
             return Rewrite(Not(expression.Left).Or(expression.Right).And(expression.Left.Or(Not(expression.Right))));
+
+        //
+        // Implication expressions like a > b are rewritten as !a | b.
+        //
+        if (expression.Operator == BinaryOperator.Implication)
+            return Rewrite(Not(expression.Left)).Or(expression.Right);
+
+        //
+        // Reverse implication expressions like a < b are rewritten as a | !b.
+        //
+        if (expression.Operator == BinaryOperator.ReverseImplication)
+            return Rewrite(expression.Left.Or(Not(expression.Right)));
 
 
         if (expression.Operator != BinaryOperator.Or && expression.Operator != BinaryOperator.And) throw UnsupportedBinaryOperator(expression.Operator);

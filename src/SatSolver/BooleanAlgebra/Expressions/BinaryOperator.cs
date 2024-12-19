@@ -26,7 +26,17 @@ public enum BinaryOperator
     Xor,
 
     /// <summary>
+    /// Implication (>).
+    /// </summary>
+    Implication,
+
+    /// <summary>
+    /// Reverse implication (<)
+    /// </summary>
+    ReverseImplication,
+
+    /// <summary>
     /// Equality operator (=).
     /// </summary>
-    Equal
+    Equivalence
 }

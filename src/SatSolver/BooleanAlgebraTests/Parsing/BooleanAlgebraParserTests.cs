@@ -153,7 +153,7 @@ public class BooleanAlgebraParserTests()
         var expression = BooleanAlgebraParser.Parse(input);
         using var e = new BooleanExpressionAsserter(expression);
 
-        e.AssertEqual();
+        e.AssertEquivalence();
         e.AssertOr();
         e.AssertLiteral("a");
         e.AssertLiteral("b");
@@ -161,6 +161,26 @@ public class BooleanAlgebraParserTests()
         e.AssertAnd();
         e.AssertLiteral("c");
         e.AssertLiteral("d");
+    }
+    [Fact]
+    public void Parse_ImplicationPrecedence()
+    {
+        const string input = "a | b > c = c < d & e";
+        var expression = BooleanAlgebraParser.Parse(input);
+        using var e = new BooleanExpressionAsserter(expression);
+
+        e.AssertEquivalence();
+        e.AssertImplication();
+        e.AssertOr();
+        e.AssertLiteral("a");
+        e.AssertLiteral("b");
+        e.AssertLiteral("c");
+
+        e.AssertReverseImplication();
+        e.AssertLiteral("c");
+        e.AssertAnd();
+        e.AssertLiteral("d");
+        e.AssertLiteral("e");
     }
 
     [Fact]
