@@ -1,3 +1,4 @@
+using Accessibility;
 using Revo.BooleanAlgebra.Parsing;
 using Revo.BooleanAlgebra.Transformers;
 using Revo.SatSolver;
@@ -8,6 +9,39 @@ namespace SatSolverDemo
 {
     public partial class MainForm : Form
     {
+        class Options
+        {
+            bool _unitPropagation = true, _pureLiteralElimination = false, _removeSupersets = true;
+
+            public event EventHandler? OptionsChanged;
+
+            public bool UnitPropagation
+            {
+                get => _unitPropagation;
+                set => Change(ref _unitPropagation, value);
+            }
+            public bool PureLiteralElimination
+            {
+                get => _pureLiteralElimination;
+                set => Change(ref _pureLiteralElimination, value);
+            }
+            public bool RemoveSupersets
+            {
+                get => _removeSupersets;
+                set => Change(ref _removeSupersets, value);
+            }
+
+            public SatSolverOptions ToOptions() => new SatSolverOptions(UnitPropagation, PureLiteralElimination, RemoveSupersets);
+
+            void Change(ref bool field, bool value)
+            {
+                if (field == value) return;
+                field = value;
+                OptionsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        readonly Options _options = new();
         readonly ToolTip _toolTip = new() { InitialDelay = 0 };
 
         bool _updating;
@@ -17,6 +51,8 @@ namespace SatSolverDemo
         {
             InitializeComponent();
             rtbInput.Select();
+            optionsGrid.SelectedObject = _options;
+            _options.OptionsChanged += (_, _) => _ = StartSolve();
         }
 
         private void OnInputModeChanged(object sender, EventArgs e)
@@ -36,7 +72,7 @@ namespace SatSolverDemo
             tmSolve.Stop();
             _ = StartSolve();
         }
-        
+
         async Task StartSolve()
         {
             _cancellationTokenSource?.Cancel();
@@ -46,9 +82,10 @@ namespace SatSolverDemo
             {
                 pbSolving.Style = ProgressBarStyle.Marquee;
                 var input = rtbInput.Text;
+                var options = _options.ToOptions();
                 var cancellationToken = _cancellationTokenSource.Token;
                 var isAlgebra = rbtBooleanAlgebra.Checked;
-                await Task.Run(() => ProcessInput(input, isAlgebra, cancellationToken), cancellationToken);
+                await Task.Run(() => ProcessInput(input, options, isAlgebra, cancellationToken), cancellationToken);
                 pbSolving.Style = ProgressBarStyle.Blocks;
             }
             catch (OperationCanceledException)
@@ -56,7 +93,7 @@ namespace SatSolverDemo
                 // cancelled
             }
         }
-        void ProcessInput(string input, bool isAlgebra, CancellationToken cancellationToken)
+        void ProcessInput(string input, SatSolverOptions options, bool isAlgebra, CancellationToken cancellationToken)
         {
             try
             {
@@ -95,7 +132,7 @@ namespace SatSolverDemo
                 if (cancellationToken.IsCancellationRequested) return;
 
                 BeginInvoke(() => InitializeSolutionList(problem, mapping));
-                foreach (var solution in SatSolver.Solve(problem, cancellationToken: cancellationToken))
+                foreach (var solution in SatSolver.Solve(problem, options: options, cancellationToken: cancellationToken))
                     BeginInvoke(() => AddSolution(solution));
             }
             catch (Exception exception)
@@ -115,7 +152,7 @@ namespace SatSolverDemo
                 if (!x.StartsWith('.')) return -1;
                 if (!y.StartsWith('.')) return 1;
 
-                return int.Parse(x[2..]).CompareTo(int.Parse(y[2..])); 
+                return int.Parse(x[2..]).CompareTo(int.Parse(y[2..]));
             }
             public static LiteralNameComparer Default { get; } = new();
         }

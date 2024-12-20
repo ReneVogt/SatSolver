@@ -42,6 +42,7 @@
             pbSolving = new ProgressBar();
             outerContainer = new SplitContainer();
             innerContainer = new SplitContainer();
+            optionsGrid = new PropertyGrid();
             dgvSolutions = new DataGridView();
             ((System.ComponentModel.ISupportInitialize)outerContainer).BeginInit();
             outerContainer.Panel1.SuspendLayout();
@@ -104,7 +105,7 @@
             tbCnf.Name = "tbCnf";
             tbCnf.ReadOnly = true;
             tbCnf.ScrollBars = ScrollBars.Vertical;
-            tbCnf.Size = new Size(659, 113);
+            tbCnf.Size = new Size(417, 113);
             tbCnf.TabIndex = 4;
             // 
             // label1
@@ -202,11 +203,24 @@
             // 
             // innerContainer.Panel2
             // 
+            innerContainer.Panel2.Controls.Add(optionsGrid);
             innerContainer.Panel2.Controls.Add(label1);
             innerContainer.Panel2.Controls.Add(tbCnf);
             innerContainer.Size = new Size(681, 283);
             innerContainer.SplitterDistance = 126;
             innerContainer.TabIndex = 0;
+            // 
+            // optionsGrid
+            // 
+            optionsGrid.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            optionsGrid.CommandsVisibleIfAvailable = false;
+            optionsGrid.HelpVisible = false;
+            optionsGrid.Location = new Point(433, 28);
+            optionsGrid.Name = "optionsGrid";
+            optionsGrid.PropertySort = PropertySort.Alphabetical;
+            optionsGrid.Size = new Size(237, 113);
+            optionsGrid.TabIndex = 6;
+            optionsGrid.ToolbarVisible = false;
             // 
             // dgvSolutions
             // 
@@ -272,5 +286,6 @@
         private SplitContainer outerContainer;
         private SplitContainer innerContainer;
         private DataGridView dgvSolutions;
+        private PropertyGrid optionsGrid;
     }
 }
