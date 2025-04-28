@@ -8,8 +8,7 @@ namespace Revo.SatSolver.Parsing;
 /// This transformer takes a <see cref="BooleanExpression"/> and converts
 /// it into a conjunctive normal form using Tseitin transformation.
 /// And while we're at it, we reduce redundancies like tautologies,
-/// contradictions, redundant literals and redundant supersets of
-/// literals.
+/// contradictions and redundant literals.
 /// </summary>
 public class TseitinTransformer : BooleanExpressionRewriter
 {
@@ -81,11 +80,17 @@ public class TseitinTransformer : BooleanExpressionRewriter
         // We now add the appropriate clauses and return a new
         // Tseitin literal.
         //
-        var tseitin = GetNextTseitin();
+
         var leftSense = left.Kind == ExpressionKind.Literal;
         var leftName = leftSense ? ((LiteralExpression)left).Name : ((LiteralExpression)((UnaryExpression)left).Expression).Name;
         var rightSense = right.Kind == ExpressionKind.Literal;
         var rightName = rightSense ? ((LiteralExpression)right).Name : ((LiteralExpression)((UnaryExpression)right).Expression).Name;
+        if (leftName == rightName)
+            return expression.Operator == BinaryOperator.Or
+                ? leftSense == rightSense ? left : One
+                : leftSense == rightSense ? left : Zero;
+
+        var tseitin = GetNextTseitin();
 
         //
         // We use De Morgan's law for negations, so our
@@ -100,7 +105,7 @@ public class TseitinTransformer : BooleanExpressionRewriter
             var negatives = new HashSet<string> { tseitin.Name };
             if (leftSense) positives.Add(leftName); else negatives.Add(leftName);
             if (rightSense) positives.Add(rightName); else negatives.Add(rightName);
-            AddClause(positives, negatives);
+            _clauses.Add((positives, negatives));
         }
         else // AND 
         {
@@ -108,35 +113,14 @@ public class TseitinTransformer : BooleanExpressionRewriter
             var positives = new HashSet<string>();
             var negatives = new HashSet<string> { tseitin.Name };
             if (leftSense) positives.Add(leftName); else negatives.Add(leftName);
-            AddClause(positives, negatives);
+            _clauses.Add((positives, negatives));
             positives = [];
             negatives = [tseitin.Name];
             if (rightSense) positives.Add(rightName); else negatives.Add(rightName);
-            AddClause(positives, negatives);
+            _clauses.Add((positives, negatives));             
         }
 
         return tseitin;
-    }
-
-    void AddClause(HashSet<string> positives, HashSet<string> negatives)
-    {
-        //
-        // Ignore tautologies.
-        // 
-        if (positives.Intersect(negatives).Any()) return;
-
-        //
-        // Remove supersets from the clauses.
-        // 
-        _clauses.RemoveAll(clause => clause.positives.IsSubsetOf(positives) && clause.negatives.IsSubsetOf(negatives));
-
-        //
-        // Ignore this clause if there is already
-        // one with a superset.
-        //
-        if (_clauses.Any(clause => positives.IsSupersetOf(clause.positives) && negatives.IsSupersetOf(clause.negatives))) return;
-
-        _clauses.Add((positives, negatives));
     }
 
     /// <summary>
