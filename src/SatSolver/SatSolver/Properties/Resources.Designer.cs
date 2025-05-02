@@ -97,20 +97,20 @@ namespace Revo.SatSolver.Properties {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The problem contains invalid literal IDs. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die The number of literals must not be negative. ähnelt.
         /// </summary>
-        internal static string SatSolverArgumentException_InvalidLiterals {
+        internal static string ProblemArgumentException_NumberOfLiterals {
             get {
-                return ResourceManager.GetString("SatSolverArgumentException_InvalidLiterals", resourceCulture);
+                return ResourceManager.GetString("ProblemArgumentException_NumberOfLiterals", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The problem does not contain literals. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die The clauses contain invalid literal IDs. ähnelt.
         /// </summary>
-        internal static string SatSolverArgumentException_NumberOfLiterals {
+        internal static string ProblemrArgumentException_InvalidLiterals {
             get {
-                return ResourceManager.GetString("SatSolverArgumentException_NumberOfLiterals", resourceCulture);
+                return ResourceManager.GetString("ProblemrArgumentException_InvalidLiterals", resourceCulture);
             }
         }
     }
