@@ -21,10 +21,12 @@ public sealed class Clause : IComparable<Clause>, IEquatable<Clause>
     /// <param name="literals">A sequence of <see cref="Literal"/>s. These will
     /// be sorted by <see cref="Literal.Id"/> and then <see cref="Literal.Sense"/>. Duplicate literals (same ID and sense) are removed.</param>
     /// <exception cref="ArgumentNullException"><paramref name="literals"/> is <c>null</c>.</exception>    
+    /// <exception cref="ArgumentException"><paramref name="literals"/> is empty.</exception>    
     public Clause(IEnumerable<Literal> literals)
     {
         _ = literals ?? throw new ArgumentNullException(nameof(literals));
-        Literals = literals.Distinct().OrderBy(literal => literal.Id).ThenBy(literal => literal.Sense).ToImmutableArray();
+        Literals = [.. literals.Distinct().OrderBy(literal => literal.Id).ThenBy(literal => literal.Sense)];
+        if (Literals.Length == 0) throw new ArgumentException(paramName: nameof(literals), message: "Empty clauses are not supported.");
     }
 
     public override int GetHashCode() =>  Literals.Aggregate(Literals.Length.GetHashCode(), (hash, literal) => hash * 371 + literal.GetHashCode());
@@ -51,7 +53,7 @@ public sealed class Clause : IComparable<Clause>, IEquatable<Clause>
     public override string ToString() => string.Join(" ", Literals) + (Literals.Length > 0 ? " 0" : "0");
 
     public static implicit operator Clause(Literal[] literals) => new(literals);
-    public static implicit operator Clause(int[] literals) => new(literals.Select(i => (Literal)i).ToArray());
+    public static implicit operator Clause(int[] literals) => new([.. literals.Select(i => (Literal)i)]);
 
     public static bool operator ==(Clause left, Clause right) => left is null ? right is null : left.Equals(right);
     public static bool operator !=(Clause left, Clause right) => left is null ? right is not null : !left.Equals(right);

@@ -3,45 +3,13 @@ using Revo.BooleanAlgebra.Parsing;
 using Revo.BooleanAlgebra.Transformers;
 using Revo.SatSolver;
 using Revo.SatSolver.Parsing;
+using System.Diagnostics;
 using System.Text;
 
 namespace SatSolverDemo
 {
     public partial class MainForm : Form
     {
-        class Options
-        {
-            bool _unitPropagation = true, _pureLiteralElimination = false, _removeSupersets = true;
-
-            public event EventHandler? OptionsChanged;
-
-            public bool UnitPropagation
-            {
-                get => _unitPropagation;
-                set => Change(ref _unitPropagation, value);
-            }
-            public bool PureLiteralElimination
-            {
-                get => _pureLiteralElimination;
-                set => Change(ref _pureLiteralElimination, value);
-            }
-            public bool RemoveSupersets
-            {
-                get => _removeSupersets;
-                set => Change(ref _removeSupersets, value);
-            }
-
-            public SatSolverOptions ToOptions() => new SatSolverOptions(UnitPropagation, PureLiteralElimination, RemoveSupersets);
-
-            void Change(ref bool field, bool value)
-            {
-                if (field == value) return;
-                field = value;
-                OptionsChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
-
-        readonly Options _options = new();
         readonly ToolTip _toolTip = new() { InitialDelay = 0 };
 
         bool _updating;
@@ -51,8 +19,6 @@ namespace SatSolverDemo
         {
             InitializeComponent();
             rtbInput.Select();
-            optionsGrid.SelectedObject = _options;
-            _options.OptionsChanged += (_, _) => _ = StartSolve();
         }
 
         private void OnInputModeChanged(object sender, EventArgs e)
@@ -82,10 +48,9 @@ namespace SatSolverDemo
             {
                 pbSolving.Style = ProgressBarStyle.Marquee;
                 var input = rtbInput.Text;
-                var options = _options.ToOptions();
                 var cancellationToken = _cancellationTokenSource.Token;
                 var isAlgebra = rbtBooleanAlgebra.Checked;
-                await Task.Run(() => ProcessInput(input, options, isAlgebra, cancellationToken), cancellationToken);
+                await Task.Run(() => ProcessInput(input, isAlgebra, cancellationToken), cancellationToken);
                 pbSolving.Style = ProgressBarStyle.Blocks;
             }
             catch (OperationCanceledException)
@@ -93,7 +58,7 @@ namespace SatSolverDemo
                 // cancelled
             }
         }
-        void ProcessInput(string input, SatSolverOptions options, bool isAlgebra, CancellationToken cancellationToken)
+        void ProcessInput(string input, bool isAlgebra, CancellationToken cancellationToken)
         {
             try
             {
@@ -132,9 +97,13 @@ namespace SatSolverDemo
                 if (cancellationToken.IsCancellationRequested) return;
 
                 BeginInvoke(() => InitializeSolutionList(problem, mapping));
-                if (problem.NumberOfLiterals > 0)
-                    foreach (var solution in SatSolver.Solve(problem, options: options, cancellationToken: cancellationToken))
-                        BeginInvoke(() => AddSolution(solution));
+                if (problem.NumberOfLiterals == 0) return;
+
+                var watch = Stopwatch.StartNew();
+                var solution = SatSolver.Solve(problem, cancellationToken: cancellationToken);
+                var elapsed = watch.Elapsed;
+                if (solution is not null)
+                    BeginInvoke(() => AddSolution(solution, elapsed));
             }
             catch (Exception exception)
             {
@@ -164,14 +133,15 @@ namespace SatSolverDemo
             dgvSolutions.Rows.Clear();
             dgvSolutions.Columns.Clear();
 
-            var columnNames = mapping?.Keys.OrderBy(name => mapping[name]).ToArray() ?? Enumerable.Range(1, problem.NumberOfLiterals).Select(i => i.ToString()).ToArray();
+            var columnNames = mapping?.Keys.OrderBy(name => mapping[name]).ToArray() ?? [.. Enumerable.Range(1, problem.NumberOfLiterals).Select(i => i.ToString())];
             foreach (var name in columnNames)
                 dgvSolutions.Columns.Add(new DataGridViewColumn { HeaderText = name });
             foreach (var (column, displayIndex) in dgvSolutions.Columns.Cast<DataGridViewColumn>().OrderBy(column => column.HeaderText, LiteralNameComparer.Default).Select((column, index) => (column, index))) column.DisplayIndex = displayIndex;
             dgvSolutions.ResumeLayout(true);
         }
-        void AddSolution(Literal[] solution)
+        void AddSolution(Literal[] solution, TimeSpan elapsed)
         {
+            tbDimacs.AppendText($"{Environment.NewLine}c Solved after {elapsed}:");
             tbDimacs.AppendText($"{Environment.NewLine}s {string.Join(" ", solution.Select(literal => literal.Sense ? literal.Id : -literal.Id))} 0");
             var literals = solution.ToDictionary(l => l.Id, l => l.Sense);
             var row = new DataGridViewRow();

@@ -129,10 +129,10 @@
   <data name="DimacsParserException_MissingLiteral" xml:space="preserve">
     <value>Missing literal or clause termination ('0') for clause {0} of {1} in line {2}, position {3}.</value>
   </data>
-  <data name="SatSolverArgumentException_InvalidLiterals" xml:space="preserve">
-    <value>The problem contains invalid literal IDs.</value>
+  <data name="ProblemArgumentException_NumberOfLiterals" xml:space="preserve">
+    <value>The number of literals must not be negative.</value>
   </data>
-  <data name="SatSolverArgumentException_NumberOfLiterals" xml:space="preserve">
-    <value>The problem does not contain literals.</value>
+  <data name="ProblemrArgumentException_InvalidLiterals" xml:space="preserve">
+    <value>The clauses contain invalid literal IDs.</value>
   </data>
 </root>

@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using Revo.SatSolver.Properties;
+using System.Collections.Immutable;
 
 namespace Revo.SatSolver;
 
@@ -32,8 +33,13 @@ public sealed class Problem : IEquatable<Problem>
     public Problem(int numberOfLiterals, IEnumerable<Clause> clauses)
     {
         _ = clauses ?? throw new ArgumentNullException(nameof(clauses));
+        if (numberOfLiterals < 0)
+            throw new ArgumentException(message: Resources.ProblemArgumentException_NumberOfLiterals, paramName: nameof(numberOfLiterals));
+        if (clauses.SelectMany(clause => clause.Literals.Select(literal => literal.Id)).Any(id => id < 1 || id > numberOfLiterals))
+            throw new ArgumentException(Resources.ProblemrArgumentException_InvalidLiterals, nameof(clauses));
+
         NumberOfLiterals = numberOfLiterals;
-        Clauses = clauses.OrderBy(clause => clause).ToImmutableArray();
+        Clauses = [.. clauses.OrderBy(clause => clause)];
     }
 
     public override int GetHashCode() => Clauses.Aggregate(NumberOfLiterals.GetHashCode(), (hash, clause) => hash * 371 + clause.GetHashCode());

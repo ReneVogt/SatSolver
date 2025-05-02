@@ -14,10 +14,4 @@ public sealed partial class SatSolverTests
     {
         Assert.Throws<ArgumentException>(() => SatSolver.Solve(new(0, [new([])])));
     }
-    [Fact]
-    public void Solve_InvalidLiterals_ArgumentException()
-    {
-        var problem = new Problem(5, [new([new Literal(1, true), new Literal(2, false), new Literal(17, true)])]);
-        Assert.Throws<ArgumentException>(() => SatSolver.Solve(problem));
-    }
 }

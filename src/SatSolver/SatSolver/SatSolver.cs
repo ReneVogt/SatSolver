@@ -1,95 +1,259 @@
-﻿using Revo.SatSolver.DPLL;
-using Revo.SatSolver.Properties;
+﻿using Revo.SatSolver.Properties;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Revo.SatSolver;
 
 /// <summary>
-/// Finds variable configurations that satisfy all
-/// clauses in a SATisfiability problem.
+/// Finds a variable configuration that 
+/// satisfies all clauses in a SATisfiability 
+/// problem.
 /// </summary>
 public sealed class SatSolver
 {
+    struct Variable
+    {
+        public bool? Sense { get; set; }
+        public double Score { get; set; }
+        public int OrderdIndex { get; set; }
+
+        List<int>? _watchers;
+        public List<int> Watchers => _watchers ??= [];
+
+        public override readonly string ToString() => $"Sense: {Sense?.ToString() ?? "null"} Score: {Score}";
+    }
+    record Constraint(int[] Literals)
+    {
+        public int Watched1 { get; set; } = -1;
+        public int Watched2 { get; set; } = -1;
+    }
+
     readonly CancellationToken _cancellationToken;
-    readonly DpllProcessor _state;
+    
+    readonly Variable[] _literals;
+    readonly (int Variable, bool Sense)[] _orderedCandidates;
+    readonly Constraint[] _constraints;
 
-    SatSolver(Problem problem, SatSolverOptions options, CancellationToken cancellationToken)
-    { 
-        _ = problem ?? throw new ArgumentNullException(nameof(problem));
+    readonly Queue<int> _unitLiterals = [];
+
+    readonly Stack<(int trailIndex, bool first)> _decisionLevels = [];
+    readonly int[] _trail;
+
+    int _trailSize, _candidateStartIndex;
+
+    SatSolver(Problem problem, CancellationToken cancellationToken)
+    {
         _cancellationToken = cancellationToken;
+        _literals = new Variable[problem.NumberOfLiterals << 1];
+        _trail = new int[problem.NumberOfLiterals];
+        _constraints = [.. BuildConstraints(problem.Clauses)];
 
-        if (problem.NumberOfLiterals < 1)
-            throw new ArgumentException(Resources.SatSolverArgumentException_NumberOfLiterals, nameof(problem));
-        if (problem.Clauses.SelectMany(clause => clause.Literals.Select(literal => Math.Abs(literal.Id))).Any(id => id < 1 || id > problem.NumberOfLiterals))
-            throw new ArgumentException(Resources.SatSolverArgumentException_InvalidLiterals, nameof(problem));
+        _orderedCandidates = [.. BuildCandidates()];
 
-        _state = new DpllProcessor(problem, _cancellationToken)
-        {
-            UnitPropagation = options.UnitPropagation,
-            PureLiteralElimination = options.PureLiteralElimination,
-            RemoveSupersets = options.RemoveSupersets
-        };
+        for (var i = 0; i< _orderedCandidates.Length; i++) 
+            _literals[_orderedCandidates[i].Variable << 1].OrderdIndex = i;
     }
-
-    IEnumerable<Literal[]> Solve()
+    IEnumerable<Constraint> BuildConstraints(IEnumerable<Clause> clauses)
     {
-        bool done;
-        do
+        var constraintCount = 0;
+        var positives = new HashSet<int>();
+        var negatives = new HashSet<int>();
+        foreach (var clause in clauses)
         {
-            done = !_state.FindNextSolution(out var solution);
-            if (solution is not null)
-                yield return solution;
+            positives.Clear();
+            negatives.Clear();
 
-        } while (!done);
+            foreach (var literal in clause.Literals)
+                if (literal.Sense)
+                    positives.Add(literal.Id-1);
+                else
+                    negatives.Add(literal.Id-1);
+
+            // test for tautology (a | !a)
+            if (positives.Intersect(negatives).Any()) continue;
+
+            var literals = positives.Select(i => i << 1).Concat(negatives.Select(i => (i << 1) + 1)).ToArray();
+            var constraint = new Constraint(literals);
+            constraintCount++;
+            yield return constraint;
+
+            if (literals.Length == 1)
+                _unitLiterals.Enqueue(literals[0]);
+            else
+            {
+                constraint.Watched1 = literals[0];
+                constraint.Watched2 = literals[1];
+                _literals[constraint.Watched1].Watchers.Add(constraintCount - 1);
+                _literals[constraint.Watched2].Watchers.Add(constraintCount - 1);
+            }
+
+            foreach (var literal in literals)
+                _literals[literal].Score += Math.Pow(2, -literals.Length);
+        }
+    }
+    IEnumerable<(int Variable, bool Sense)> BuildCandidates() =>
+        Enumerable.Range(0, _literals.Length >> 1)
+        .Select(i =>
+        {
+            var positiveScore = _literals[i<<1].Score;
+            var negativeScore = _literals[(i<<1)+1].Score;
+            return negativeScore < positiveScore
+            ? (Variable: i, Score: positiveScore, Sense: true)
+            : (Variable: i, Score: negativeScore, Sense: false);
+        })
+        .OrderByDescending(c => c.Score)
+        .Select(c => (c.Variable, c.Sense));
+
+    Literal[]? Solve()
+    {
+        if (!PropagateUnits())
+            return null;
+
+        _trailSize = 0;
+
+        var candidateVariable = -1;
+        var candidateSense = true;
+
+        for(; ; )
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+
+            var firstTry = false;
+            if (candidateVariable < 0)
+            {
+                (candidateVariable, candidateSense) = GetNextCandidate();
+                if (candidateVariable < 0) return BuildSolution();
+                firstTry = true;
+            }
+
+            _decisionLevels.Push((_trailSize, first: firstTry));
+            if (PropagateVariable(candidateVariable, candidateSense) && PropagateUnits())
+            {
+                candidateVariable = -1;
+                continue;
+            }
+
+            (candidateVariable, candidateSense) = Backtrack();
+            if (candidateVariable == -1) return null;
+        }
+    }
+    (int Variable, bool Sense) GetNextCandidate()
+    {
+        for (var i = _candidateStartIndex; i<_orderedCandidates.Length; i++)
+        {
+            var (variable, sense) = _orderedCandidates[i];
+            if (_literals[variable << 1].Sense is not null) continue;            
+            _candidateStartIndex = i+1;
+            return (variable, sense);
+        }
+
+        return (-1, true);
+    }
+    bool PropagateVariable(int variable, bool sense) 
+    {
+        var positiveLiteralIndex = variable << 1;
+        var negativeLiteralIndex = positiveLiteralIndex + 1;
+        _literals[positiveLiteralIndex].Sense = sense;
+        _literals[negativeLiteralIndex].Sense = !sense;
+        _trail[_trailSize++] = variable;
+
+        var watchedLiteral = sense ? negativeLiteralIndex : positiveLiteralIndex;
+        var watchers = _literals[watchedLiteral].Watchers;
+        for(var watcherIndex = 0; watcherIndex<watchers.Count; watcherIndex++)
+        {
+            var constraintIndex = watchers[watcherIndex];
+            var constraint = _constraints[constraintIndex];
+            if (constraint.Watched1 == watchedLiteral)
+            {
+                constraint.Watched1 = constraint.Watched2;
+                constraint.Watched2 = watchedLiteral;
+            }
+
+            var otherWatchedSense = _literals[constraint.Watched1].Sense;
+            if (otherWatchedSense == true) continue;
+
+            var nextLiteral = -1;
+            for (var i = 0; i<constraint.Literals.Length; i++)
+            {
+                var next = constraint.Literals[i];
+                if (next == watchedLiteral || next == constraint.Watched1) continue;
+                var nextSense = _literals[next].Sense;
+                if (nextSense != false) nextLiteral = next;
+                if (nextSense == true) break;
+            }
+
+            if (nextLiteral < 0)
+            {
+                if (otherWatchedSense is not null) return false;
+                _unitLiterals.Enqueue(constraint.Watched1);
+                continue;
+            }
+            
+            constraint.Watched2 = nextLiteral;
+            _literals[nextLiteral].Watchers.Add(constraintIndex);
+            watchers.RemoveAt(watcherIndex);
+            watcherIndex--;
+        }
+
+        return true;
+    }
+    void ResetVariable(int variable)
+    {
+        var positiveLiteral = variable << 1;
+        _literals[positiveLiteral].Sense = null;
+        _literals[positiveLiteral+1].Sense = null;
+        _candidateStartIndex = Math.Min(_candidateStartIndex, _literals[positiveLiteral].OrderdIndex);
+    }
+    bool PropagateUnits() 
+    {
+        while(_unitLiterals.Count > 0)
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+            var literal = _unitLiterals.Dequeue();
+            if (_literals[literal].Sense is not null) continue;
+            if (!PropagateVariable(literal >> 1, (literal & 1) == 0)) return false;
+        }
+        return true;
+    }
+    (int Variable, bool Sense) Backtrack()
+    {
+        _unitLiterals.Clear();
+
+        var first = false;
+        var trailIndex = -1;
+        while (_decisionLevels.Count > 0 && !first) (trailIndex, first) = _decisionLevels.Pop();
+        if (!first) return (-1, true);
+
+        var variable = _trail[trailIndex];
+        var sense = !_literals[variable << 1].Sense!.Value;
+
+        foreach (var trailedVariable in _trail[trailIndex.._trailSize])
+            ResetVariable(trailedVariable);
+
+        _trailSize = trailIndex;
+        return (variable, sense);
     }
 
-    bool IsSatisfiable([NotNullWhen(true)] out Literal[]? solution) => _state.FindNextSolution(out solution);
+    Literal[] BuildSolution() => [.. Enumerable.Range(0, _literals.Length >> 1).Select(i => new Literal(i+1, _literals[i << 1].Sense!.Value))];
 
     /// <summary>
-    /// Finds all variable configurations that satisfy the SATisfiability <paramref name="problem"/>.
-    /// The search is performed while iterating the result sequence.
+    /// Finds a variable configuration that satisfies the SATisfiability <paramref name="problem"/>.
+    /// If there is no solution the method return, <c>null</c>.
     /// </summary>
     /// <param name="problem">The <see cref="Problem"/> to satisfy.</param>
-    /// <param name="options">Options to configure algorithm elements of the <see cref="SatSolver"/>. Note:
-    /// Some options like <see cref="SatSolverOptions.PureLiteralElimination"/> may exclude some
-    /// possible solutions.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>A sequence of solutions. The sequence is empty if no solution was found. The solution search
-    /// is performed deferred and executed when iterating through this sequence.</returns>
+    /// <returns>If a solution was found the method returns an array of <see cref="Literal"/>s indicating
+    /// their senses that solve the problem. If no solution was found the method returns <c>null</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="problem"/> was <c>null</c>.</exception>
     /// <exception cref="ArgumentException">The problem contains either invalid literal IDs or no literals at all.</exception>
-    public static IEnumerable<Literal[]> Solve(Problem problem, SatSolverOptions? options = null, CancellationToken cancellationToken = default)
+    public static Literal[]? Solve(Problem problem, CancellationToken cancellationToken = default)
     {
-        var solver = new SatSolver(problem, options ?? SatSolverOptions.AllSolutions, cancellationToken);
+        _ = problem ?? throw new ArgumentNullException(nameof(problem));
+        if (problem.Clauses.Any(clause => clause.Literals.Length == 0)) return null;
+        if (problem.NumberOfLiterals == 0) return [];
+        if (problem.Clauses.Length == 0) return [.. Enumerable.Range(1, problem.NumberOfLiterals).Select(i => new Literal(i, true))];
+
+        var solver = new SatSolver(problem, cancellationToken);
         return solver.Solve();
-    }
-
-    /// <summary>
-    /// Decides if the given SATisfiability <paramref name="problem"/> can be satisfied.
-    /// </summary>
-    /// <param name="problem">The <see cref="Problem"/> to satisfy.</param>
-    /// <param name="options">Options to configure algorithm elements of the <see cref="SatSolver"/>.</param>
-    /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns><c>true</c> if a variable configuration exists that satisfies the <paramref name="problem"/>, 
-    /// <c>false</c> if no such configuration exists.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="problem"/> was <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">The problem contains either invalid literal IDs or no literals at all.</exception>
-    public static bool IsSatisfiable(Problem problem, SatSolverOptions? options = null, CancellationToken cancellationToken = default) => IsSatisfiable(problem, out _, options, cancellationToken);
-
-    /// <summary>
-    /// Decides if the given SATisfiability <paramref name="problem"/> can be satisfied.
-    /// </summary>
-    /// <param name="problem">The <see cref="Problem"/> to satisfy.</param>
-    /// <param name="solution">When <c>true</c> is returned, this contains the first encountered solution. Otherwise this is <c>null</c>.</param>
-    /// <param name="options">Options to configure algorithm elements of the <see cref="SatSolver"/>.</param>
-    /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns><c>true</c> if a variable configuration exists that satisfies the <paramref name="problem"/>, 
-    /// <c>false</c> if no such configuration exists.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="problem"/> was <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">The problem contains either invalid literal IDs or no literals at all.</exception>
-    public static bool IsSatisfiable(Problem problem, [NotNullWhen(true)] out Literal[]? solution, SatSolverOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        var solver = new SatSolver(problem, options ?? SatSolverOptions.Satisfiability, cancellationToken);
-        return solver.IsSatisfiable(out solution);
     }
 }
