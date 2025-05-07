@@ -1,6 +1,4 @@
-﻿using Revo.SatSolver.Properties;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver;
 
@@ -14,48 +12,44 @@ public sealed class SatSolver
     struct Variable
     {
         public bool? Sense { get; set; }
-        public double Score { get; set; }
-        public int OrderdIndex { get; set; }
+        public double Activity { get; set; }
+        public bool Polarity { get; set; }
 
-        List<int>? _watchers;
-        public List<int> Watchers => _watchers ??= [];
+        List<Constraint>? _watchers;
+        public List<Constraint> Watchers => _watchers ??= [];
 
-        public override readonly string ToString() => $"Sense: {Sense?.ToString() ?? "null"} Score: {Score}";
+        public override readonly string ToString() => $"Sense: {Sense?.ToString() ?? "null"} Activity: {Activity} Polarity: {Polarity}";
     }
-    record Constraint(int[] Literals)
+    class Constraint(int[] _literals)
     {
+        public int[] Literals => _literals;
         public int Watched1 { get; set; } = -1;
         public int Watched2 { get; set; } = -1;
     }
 
+    const double DECAY_FACTOR = 0.97;
+    const int DECAY_INTERVAL = 80;
+
     readonly CancellationToken _cancellationToken;
     
     readonly Variable[] _literals;
-    readonly (int Variable, bool Sense)[] _orderedCandidates;
-    readonly Constraint[] _constraints;
 
     readonly Queue<int> _unitLiterals = [];
 
-    readonly Stack<(int trailIndex, bool first)> _decisionLevels = [];
-    readonly int[] _trail;
+    readonly Stack<(int variableTrailIndex, bool first)> _decisionLevels = [];
+    readonly int[] _variableTrail;
 
-    int _trailSize, _candidateStartIndex;
+    int _variableTrailSize, _conflictCount;
 
     SatSolver(Problem problem, CancellationToken cancellationToken)
     {
         _cancellationToken = cancellationToken;
         _literals = new Variable[problem.NumberOfLiterals << 1];
-        _trail = new int[problem.NumberOfLiterals];
-        _constraints = [.. BuildConstraints(problem.Clauses)];
-
-        _orderedCandidates = [.. BuildCandidates()];
-
-        for (var i = 0; i< _orderedCandidates.Length; i++) 
-            _literals[_orderedCandidates[i].Variable << 1].OrderdIndex = i;
+        _variableTrail = new int[problem.NumberOfLiterals];
+        BuildConstraints(problem.Clauses);
     }
-    IEnumerable<Constraint> BuildConstraints(IEnumerable<Clause> clauses)
+    void BuildConstraints(IEnumerable<Clause> clauses)
     {
-        var constraintCount = 0;
         var positives = new HashSet<int>();
         var negatives = new HashSet<int>();
         foreach (var clause in clauses)
@@ -74,42 +68,29 @@ public sealed class SatSolver
 
             var literals = positives.Select(i => i << 1).Concat(negatives.Select(i => (i << 1) + 1)).ToArray();
             var constraint = new Constraint(literals);
-            constraintCount++;
-            yield return constraint;
 
             if (literals.Length == 1)
+            {
                 _unitLiterals.Enqueue(literals[0]);
+                constraint.Watched1 = constraint.Watched2 = literals[0];
+                _literals[constraint.Watched1].Watchers.Add(constraint);
+            }
             else
             {
                 constraint.Watched1 = literals[0];
                 constraint.Watched2 = literals[1];
-                _literals[constraint.Watched1].Watchers.Add(constraintCount - 1);
-                _literals[constraint.Watched2].Watchers.Add(constraintCount - 1);
+                _literals[constraint.Watched1].Watchers.Add(constraint);
+                _literals[constraint.Watched2].Watchers.Add(constraint);
             }
-
-            foreach (var literal in literals)
-                _literals[literal].Score += Math.Pow(2, -literals.Length);
         }
     }
-    IEnumerable<(int Variable, bool Sense)> BuildCandidates() =>
-        Enumerable.Range(0, _literals.Length >> 1)
-        .Select(i =>
-        {
-            var positiveScore = _literals[i<<1].Score;
-            var negativeScore = _literals[(i<<1)+1].Score;
-            return negativeScore < positiveScore
-            ? (Variable: i, Score: positiveScore, Sense: true)
-            : (Variable: i, Score: negativeScore, Sense: false);
-        })
-        .OrderByDescending(c => c.Score)
-        .Select(c => (c.Variable, c.Sense));
 
     Literal[]? Solve()
     {
         if (!PropagateUnits())
             return null;
 
-        _trailSize = 0;
+        _variableTrailSize = 0;
 
         var candidateVariable = -1;
         var candidateSense = true;
@@ -117,6 +98,8 @@ public sealed class SatSolver
         for(; ; )
         {
             _cancellationToken.ThrowIfCancellationRequested();
+
+            CheckVSIDSDecay();
 
             var firstTry = false;
             if (candidateVariable < 0)
@@ -126,7 +109,7 @@ public sealed class SatSolver
                 firstTry = true;
             }
 
-            _decisionLevels.Push((_trailSize, first: firstTry));
+            _decisionLevels.Push((_variableTrailSize, first: firstTry));
             if (PropagateVariable(candidateVariable, candidateSense) && PropagateUnits())
             {
                 candidateVariable = -1;
@@ -139,15 +122,21 @@ public sealed class SatSolver
     }
     (int Variable, bool Sense) GetNextCandidate()
     {
-        for (var i = _candidateStartIndex; i<_orderedCandidates.Length; i++)
+        var variable = -1;
+        var sense = false;
+        var best = double.MinValue;
+        for (var i = 0; i < _literals.Length; i+=2)
         {
-            var (variable, sense) = _orderedCandidates[i];
-            if (_literals[variable << 1].Sense is not null) continue;            
-            _candidateStartIndex = i+1;
-            return (variable, sense);
+            var literal = _literals[i];
+            if (literal.Sense is null && literal.Activity > best)
+            {
+                variable = i >> 1;
+                sense = literal.Polarity;
+                best = literal.Activity;
+            }
         }
 
-        return (-1, true);
+        return (variable, sense);
     }
     bool PropagateVariable(int variable, bool sense) 
     {
@@ -155,14 +144,13 @@ public sealed class SatSolver
         var negativeLiteralIndex = positiveLiteralIndex + 1;
         _literals[positiveLiteralIndex].Sense = sense;
         _literals[negativeLiteralIndex].Sense = !sense;
-        _trail[_trailSize++] = variable;
+        _variableTrail[_variableTrailSize++] = variable;
 
         var watchedLiteral = sense ? negativeLiteralIndex : positiveLiteralIndex;
         var watchers = _literals[watchedLiteral].Watchers;
         for(var watcherIndex = 0; watcherIndex<watchers.Count; watcherIndex++)
         {
-            var constraintIndex = watchers[watcherIndex];
-            var constraint = _constraints[constraintIndex];
+            var constraint = watchers[watcherIndex];
             if (constraint.Watched1 == watchedLiteral)
             {
                 constraint.Watched1 = constraint.Watched2;
@@ -184,17 +172,22 @@ public sealed class SatSolver
 
             if (nextLiteral < 0)
             {
-                if (otherWatchedSense is not null) return false;
+                if (otherWatchedSense is not null)
+                {
+                    _conflictCount++;
+                    foreach (var literalIndex in constraint.Literals) _literals[literalIndex & -2].Activity += 1;
+                    return false;
+                }
                 _unitLiterals.Enqueue(constraint.Watched1);
                 continue;
             }
             
             constraint.Watched2 = nextLiteral;
-            _literals[nextLiteral].Watchers.Add(constraintIndex);
-            watchers.RemoveAt(watcherIndex);
-            watcherIndex--;
+            _literals[nextLiteral].Watchers.Add(constraint);
+            watchers.RemoveAt(watcherIndex--);
         }
 
+        _literals[positiveLiteralIndex].Polarity = sense;
         return true;
     }
     void ResetVariable(int variable)
@@ -202,7 +195,6 @@ public sealed class SatSolver
         var positiveLiteral = variable << 1;
         _literals[positiveLiteral].Sense = null;
         _literals[positiveLiteral+1].Sense = null;
-        _candidateStartIndex = Math.Min(_candidateStartIndex, _literals[positiveLiteral].OrderdIndex);
     }
     bool PropagateUnits() 
     {
@@ -220,18 +212,26 @@ public sealed class SatSolver
         _unitLiterals.Clear();
 
         var first = false;
-        var trailIndex = -1;
-        while (_decisionLevels.Count > 0 && !first) (trailIndex, first) = _decisionLevels.Pop();
+        var variableTrailIndex = -1;
+        while (_decisionLevels.Count > 0 && !first) (variableTrailIndex, first) = _decisionLevels.Pop();
         if (!first) return (-1, true);
 
-        var variable = _trail[trailIndex];
+        var variable = _variableTrail[variableTrailIndex];
         var sense = !_literals[variable << 1].Sense!.Value;
 
-        foreach (var trailedVariable in _trail[trailIndex.._trailSize])
+        foreach (var trailedVariable in _variableTrail[variableTrailIndex.._variableTrailSize])
             ResetVariable(trailedVariable);
 
-        _trailSize = trailIndex;
+        _variableTrailSize = variableTrailIndex;
         return (variable, sense);
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    void CheckVSIDSDecay()
+    {
+        if (_conflictCount < DECAY_INTERVAL) return;
+        _conflictCount = 0;
+        for (var i = 0; i<_literals.Length; i+=2)
+            _literals[i].Activity *= DECAY_FACTOR;
     }
 
     Literal[] BuildSolution() => [.. Enumerable.Range(0, _literals.Length >> 1).Select(i => new Literal(i+1, _literals[i << 1].Sense!.Value))];
