@@ -31,25 +31,24 @@ public sealed partial class SatSolver
 
         uipLiteral = learnedLiterals.First(l => _literals[l&-2].DecisionLevel == _decisionLevels.Count);
 
-        //MinimizeClause(learnedLiterals, uipLiteral);
+        MinimizeClause(learnedLiterals, uipLiteral);
 
         return new Constraint([.. learnedLiterals]);
     }
-    //void MinimizeClause(HashSet<int> literals, int uipLiteral)
-    //{
-    //    literals.RemoveWhere(l => l != uipLiteral && IsRedundant(l, 0));
-    //    bool IsRedundant(int literal, int depth)
-    //    {
-    //        if (depth > 9) return false;
-    //        var reason = _literals[literal &-2].Reason;
-    //        if (reason is null) return false;
-    //        return reason.Literals.All(r =>
-    //            (r ^ 1) == literal ||
-    //            _literals[r&-2].DecisionLevel < _decisionLevels.Count ||
-    //            !literals.Contains(r) ||
-    //            IsRedundant(r, depth+1));
-    //    }
-    //}
+    void MinimizeClause(HashSet<int> literals, int uipLiteral)
+    {
+        literals.RemoveWhere(l => l != uipLiteral && IsRedundant(l, 0));
+        bool IsRedundant(int literal, int depth)
+        {
+            if (depth > 9) return false;
+            var reason = _literals[literal &-2].Reason;
+            if (reason is null) return false;
+            return reason.Literals.All(r =>
+                (r ^ 1) == literal ||
+                literals.Contains(r) ||
+                IsRedundant(r, depth+1));
+        }
+    }
     void AddLearnedConstraintIfUseful(Constraint learnedConstraint, int uipLiteral)
     {
         if (learnedConstraint.Literals.Length > 3) return;

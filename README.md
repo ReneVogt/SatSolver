@@ -11,9 +11,9 @@ because the are some important concepts missing.
 
 So these are the things we'd like to add:
 - restarts (to use learned constraints and activities/polarities to find better ways)
-- clause minimization (by removing redundant/implicated literals from learned clauses)
+- ~~clause minimization (by removing redundant/implicated literals from learned clauses)~~ ✅
 - clause deletion by smarter criteria
 - maybe an initial calculation for activities and polarities
 
 ---
-Ren� Vogt, Dresden 2025
+René Vogt, Dresden 2025
