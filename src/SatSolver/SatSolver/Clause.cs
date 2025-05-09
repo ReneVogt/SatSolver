@@ -25,8 +25,7 @@ public sealed class Clause : IComparable<Clause>, IEquatable<Clause>
     public Clause(IEnumerable<Literal> literals)
     {
         _ = literals ?? throw new ArgumentNullException(nameof(literals));
-        Literals = [.. literals.Distinct().OrderBy(literal => literal.Id).ThenBy(literal => literal.Sense)];
-        if (Literals.Length == 0) throw new ArgumentException(paramName: nameof(literals), message: "Empty clauses are not supported.");
+        Literals = [.. literals.Distinct().OrderBy(literal => literal.Id).ThenBy(literal => literal.Sense)];        
     }
 
     public override int GetHashCode() =>  Literals.Aggregate(Literals.Length.GetHashCode(), (hash, literal) => hash * 371 + literal.GetHashCode());

@@ -1,6 +1,5 @@
 ﻿using Revo.SatSolver;
 using Revo.SatSolver.Parsing;
-using System.Collections.Immutable;
 
 namespace SatSolverTests;
 
