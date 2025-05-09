@@ -1,6 +1,5 @@
 ﻿using Revo.BooleanAlgebra.Expressions;
 using System.Text;
-using static Revo.BooleanAlgebra.Expressions.BooleanExpressionException;
 
 namespace Revo.BooleanAlgebra.Transformers;
 

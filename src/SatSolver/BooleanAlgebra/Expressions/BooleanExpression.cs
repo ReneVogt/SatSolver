@@ -1,5 +1,4 @@
 ﻿using Revo.BooleanAlgebra.Transformers;
-using System.Text;
 
 namespace Revo.BooleanAlgebra.Expressions;
 
