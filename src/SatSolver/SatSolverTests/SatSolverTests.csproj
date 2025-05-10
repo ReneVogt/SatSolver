@@ -41,16 +41,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Solutions\2of3.cnf">
+    <None Update="SimpleCases\2of3.cnf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Solutions\YieldOnlyFixedVariables.cnf">
+    <None Update="SimpleCases\UnusedLiterals.cnf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Solutions\XOR.cnf">
+    <None Update="SimpleCases\XOR.cnf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Solutions\Or3.cnf">
+    <None Update="SimpleCases\Or3.cnf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
