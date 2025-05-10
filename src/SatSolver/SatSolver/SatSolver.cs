@@ -19,13 +19,16 @@ public sealed partial class SatSolver
     public sealed class Options
     {
         public static Options Default { get; } = new();
+
+        public bool OnlyPoorMansVSIDS { get; init; }
         public double VariableActivityDecayFactor { get; init; } = 0.95;
 
         public double ClauseActivityDecayFactor { get; init; } = 0.99;
         public int LiteralBlockDistanceLimit { get; init; } = 8;
         public int LiteralBlockDistanceToKeep { get; init; } = 2;
-        public int ClauseDeletionInterval { get; init; } = 5000;
         public double ClauseDeletionRatio { get; init; } = 0.5;
+        public double ClauseDeletionFactor { get; init; } = 10;
+        public double ClauseDeletionLiteralBlockDistanceThreshold { get; init; } = 1.3;
 
         public RestartMode RestartMode { get; init; } = RestartMode.MeanLBD;
         public int RestartInterval { get; init; }
@@ -47,7 +50,9 @@ public sealed partial class SatSolver
     readonly LubySequence _lubySequence;
     readonly Queue<int> _lbdQueue = [];
 
-    int _variableTrailSize, _decayCounter, _clauseDeletionCounter;
+    readonly int _originalClauseCount;
+
+    int _variableTrailSize;
     int _restartCounter, _nextRestartThreshold;
     bool _restartRecommended;
 
@@ -61,13 +66,14 @@ public sealed partial class SatSolver
         _literals = new Variable[problem.NumberOfLiterals << 1];
         _variableTrail = new int[problem.NumberOfLiterals];        
         
-        BuildConstraints(problem.Clauses);
+        _originalClauseCount = BuildConstraints(problem.Clauses);
 
         _lubySequence = new(_options.RestartInterval);
         _nextRestartThreshold = _options.RestartMode is RestartMode.Interval or RestartMode.Luby ? (int)_lubySequence.Next() : 0;
     }
-    void BuildConstraints(IEnumerable<Clause> clauses)
+    int BuildConstraints(IEnumerable<Clause> clauses)
     {
+        var clauseCount = 0;
         var scores = new double[_literals.Length];
         var positives = new HashSet<int>();
         var negatives = new HashSet<int>();
@@ -84,6 +90,8 @@ public sealed partial class SatSolver
 
             // test for tautology (a | !a)
             if (positives.Intersect(negatives).Any()) continue;
+
+            clauseCount++;
 
             var literals = positives.Select(i => i << 1).Concat(negatives.Select(i => (i << 1) + 1)).ToHashSet();
             var constraint = new Constraint(literals);
@@ -118,6 +126,8 @@ public sealed partial class SatSolver
             _literals[i].Activity /= maxActivity;
 
         _variableActivityIncrement /= _options.VariableActivityDecayFactor;
+
+        return clauseCount;
     }
 
     Literal[]? Solve()

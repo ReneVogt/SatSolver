@@ -24,6 +24,7 @@ public sealed partial class SatSolver
 
         public int LiteralBlockDistance { get; init; }
         public double Activity { get; set; }
+        public bool IsLearned => LiteralBlockDistance > 0;
     }
 
     bool PropagateVariable(int variable, bool sense, Constraint? reason) 
@@ -97,23 +98,16 @@ public sealed partial class SatSolver
             _restartRecommended = _restartCounter > _nextRestartThreshold;
         }
 
-        if (_options.ClauseDeletionInterval > 0)
+        if (_options.OnlyPoorMansVSIDS)
         {
-            if (++_clauseDeletionCounter == _options.ClauseDeletionInterval)
-            {
-                _clauseDeletionCounter = 0;
-                ReduceClauses();
-            }
+            foreach (var literal in conflictingConstraint.Literals)
+                IncreaseVariableActivity(literal);
+            _variableActivityIncrement /= _options.VariableActivityDecayFactor;
+            return false;
         }
 
         IncreaseClauseActivity(conflictingConstraint);
 
-        // Poor Man's VSIDS
-        //foreach (var literal in conflictingConstraint.Literals)
-        //    _literals[literal&-2].Activity += 1;
-        //return false;
-
-        // CDCL
         if (reason is null || _decisionLevels.Count == 0) return false;
         LearnFromConflict(conflictingConstraint);
         return true;
@@ -133,7 +127,7 @@ public sealed partial class SatSolver
         JumpBack(learnedConstraint, uipLiteral);
 
         if (_options.RestartMode == RestartMode.MeanLBD)
-            CheckLBDforRestart(learnedConstraint.LiteralBlockDistance);
+            CheckLiteralBlockDistanceAverage(learnedConstraint.LiteralBlockDistance);
     }
 
     (int Variable, bool Sense) Backtrack()
