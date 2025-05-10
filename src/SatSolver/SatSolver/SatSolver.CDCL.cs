@@ -74,6 +74,9 @@ public sealed partial class SatSolver
             learnedConstraint.Watched2 = learnedConstraint.Literals.First(l => l != uipLiteral);
             _literals[learnedConstraint.Watched2].Watchers.Add(learnedConstraint);
         }
+
+        if (_learnedConstraints.Count > _options.ClauseDeletionFactor * _originalClauseCount)
+            ReduceClauses();
     }
     void JumpBack(Constraint learnedConstraint, int uipLiteral)
     {
@@ -108,6 +111,8 @@ public sealed partial class SatSolver
 
     void IncreaseClauseActivity(Constraint constraint, double factor = 1)
     {
+        if (!constraint.IsLearned) return;
+
         constraint.Activity += _clauseActivityIncrement * factor;
         if (constraint.Activity < 1e100) return;
         
@@ -124,7 +129,7 @@ public sealed partial class SatSolver
         _variableActivityIncrement *= 1e-100;
     }
 
-    void CheckLBDforRestart(int lbd)
+    void CheckLiteralBlockDistanceAverage(int lbd)
     {
         _lbdQueue.Enqueue(lbd);
         if (_lbdQueue.Count > _options.LiteralBlockDistanceQueueSize)
@@ -132,8 +137,10 @@ public sealed partial class SatSolver
             _lbdQueue.Dequeue();
             _globalLiteralBlockDistanceMean = _options.LiteralBlockDistanceDecay * _globalLiteralBlockDistanceMean + (1 - _options.LiteralBlockDistanceDecay) * lbd;
             var average = _lbdQueue.Average();
-            if (average > _globalLiteralBlockDistanceMean * _options.RestartLiteralBlockDistanceThreshold)
+            if (_options.RestartMode == RestartMode.MeanLBD && average > _globalLiteralBlockDistanceMean * _options.RestartLiteralBlockDistanceThreshold)
                 _restartRecommended = true;
+            if (average > _globalLiteralBlockDistanceMean * _options.ClauseDeletionLiteralBlockDistanceThreshold)
+                ReduceClauses();
 
             return;
         }
