@@ -11,7 +11,12 @@ public sealed partial class SatSolver
     {
         public static Options Default { get; } = new();
         public int ActivityDecayInterval { get; init; } = 1;
-        public double ActivityDecayFactor{ get; init; } = 0.95d;
+        public double ActivityDecayFactor { get; init; } = 0.95d;
+
+        public int LiteralBlockDistanceLimit { get; init; } = 2; // increase when clause deletion will be added?
+
+        public int RestartInterval { get; init; } = 200000;
+        public bool LubyfyRestart { get; init; } = true;
     }
 
     readonly CancellationToken _cancellationToken;
@@ -22,7 +27,9 @@ public sealed partial class SatSolver
     readonly Stack<(int variableTrailIndex, bool first)> _decisionLevels = [];
     readonly int[] _variableTrail;
 
-    int _variableTrailSize, _conflictCounter;
+    int _variableTrailSize, _decayCounter;
+    int _restartCounter, _nextRestartThreshold;
+    bool _restartRecommended;
 
     SatSolver(Problem problem, Options options, CancellationToken cancellationToken)
     {
@@ -31,6 +38,8 @@ public sealed partial class SatSolver
         _literals = new Variable[problem.NumberOfLiterals << 1];
         _variableTrail = new int[problem.NumberOfLiterals];
         BuildConstraints(problem.Clauses);
+
+        _nextRestartThreshold = _options.RestartInterval;
     }
     void BuildConstraints(IEnumerable<Clause> clauses)
     {
@@ -51,25 +60,25 @@ public sealed partial class SatSolver
             // test for tautology (a | !a)
             if (positives.Intersect(negatives).Any()) continue;
 
-            var literals = positives.Select(i => i << 1).Concat(negatives.Select(i => (i << 1) + 1)).ToArray();
+            var literals = positives.Select(i => i << 1).Concat(negatives.Select(i => (i << 1) + 1)).ToHashSet();
             var constraint = new Constraint(literals);
 
-            if (literals.Length == 1)
+            if (literals.Count == 1)
             {
-                constraint.Watched1 = constraint.Watched2 = literals[0];
+                constraint.Watched1 = constraint.Watched2 = literals.First();
                 _literals[constraint.Watched1].Watchers.Add(constraint);
-                _unitLiterals.Enqueue((literals[0], constraint));
+                _unitLiterals.Enqueue((constraint.Watched1, constraint));
             }
             else
             {
-                constraint.Watched1 = literals[0];
-                constraint.Watched2 = literals[1];
+                constraint.Watched1 = literals.First();
+                constraint.Watched2 = literals.Skip(1).First();
                 _literals[constraint.Watched1].Watchers.Add(constraint);
                 _literals[constraint.Watched2].Watchers.Add(constraint);
             }
 
             foreach (var literal in literals)
-                scores[literal] += Math.Pow(2, -literals.Length);
+                scores[literal] += Math.Pow(2, -literals.Count);
         }
 
         for (var i = 0; i<_literals.Length; i+=2)
@@ -102,14 +111,21 @@ public sealed partial class SatSolver
             }
 
             _decisionLevels.Push((_variableTrailSize, first: firstTry));
-            if (PropagateVariable(candidateVariable, candidateSense, null) && PropagateUnits())
+            var success = PropagateVariable(candidateVariable, candidateSense, null) && PropagateUnits();
+
+            candidateVariable = -1;
+
+            if (_restartRecommended)
             {
-                candidateVariable = -1;
+                Restart();
                 continue;
             }
 
-            (candidateVariable, candidateSense) = Backtrack();
-            if (candidateVariable == -1) return null;
+            if (!success)
+            {
+                (candidateVariable, candidateSense) = Backtrack();
+                if (candidateVariable == -1) return null;
+            }
         }
     }
     (int Variable, bool Sense) GetNextCandidate()
@@ -144,6 +160,32 @@ public sealed partial class SatSolver
         }
         
         _variableTrailSize = targetLevelStart;
+    }
+    void IncreaseConflictCount()
+    {
+        if (_options.ActivityDecayInterval > 0)
+        {
+            if (++_decayCounter == _options.ActivityDecayInterval)
+            {
+                _decayCounter = 0;
+                for (var i = 0; i<_literals.Length; i+=2)
+                    _literals[i].Activity *= _options.ActivityDecayFactor;
+            }
+        }
+
+        if (_nextRestartThreshold > 0)
+        {
+            _restartCounter++;
+            _restartRecommended = _restartCounter > _nextRestartThreshold;
+        }
+    }
+    void Restart()
+    {
+        _restartRecommended = false;
+        _restartCounter = 0;
+        _decisionLevels.Clear();
+        ResetVariableTrail(0);
+        _unitLiterals.Clear();
     }
 
     Literal[] BuildSolution() => [.. Enumerable.Range(0, _literals.Length >> 1).Select(i => new Literal(i+1, _literals[i << 1].Sense!.Value))];
