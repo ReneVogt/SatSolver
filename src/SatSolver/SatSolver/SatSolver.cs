@@ -34,7 +34,7 @@ public sealed partial class SatSolver
     }
     void BuildConstraints(IEnumerable<Clause> clauses)
     {
-        var constraintCount = 0;
+        var scores = new double[_literals.Length];
         var positives = new HashSet<int>();
         var negatives = new HashSet<int>();
         foreach (var clause in clauses)
@@ -53,7 +53,6 @@ public sealed partial class SatSolver
 
             var literals = positives.Select(i => i << 1).Concat(negatives.Select(i => (i << 1) + 1)).ToArray();
             var constraint = new Constraint(literals);
-            constraintCount++;
 
             if (literals.Length == 1)
             {
@@ -68,6 +67,15 @@ public sealed partial class SatSolver
                 _literals[constraint.Watched1].Watchers.Add(constraint);
                 _literals[constraint.Watched2].Watchers.Add(constraint);
             }
+
+            foreach (var literal in literals)
+                scores[literal] += Math.Pow(2, -literals.Length);
+        }
+
+        for (var i = 0; i<_literals.Length; i+=2)
+        {
+            _literals[i].Activity = scores[i] + scores[i+1];
+            _literals[i].Polarity = scores[i] > scores[i+1];
         }
     }
 
