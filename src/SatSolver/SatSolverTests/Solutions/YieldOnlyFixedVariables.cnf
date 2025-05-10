@@ -1,7 +1,0 @@
-c This should test that in AllSolutions mode
-c we enumerate all possibilites for the variables
-c that are still free when the clauses are already
-c satisfied.
-c ==============================================
-p cnf 4 1
-1 0
