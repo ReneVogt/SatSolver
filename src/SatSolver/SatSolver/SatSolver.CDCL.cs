@@ -4,8 +4,14 @@ public sealed partial class SatSolver
 {
     Constraint CreateLearnedConstraint(Constraint conflictingConstraint, out int uipLiteral)
     {
-        var learnedLiterals = conflictingConstraint.Literals.ToHashSet();
-        var conflicts = learnedLiterals.Count(l => _literals[l & -2].DecisionLevel == _decisionLevels.Count);
+        var learnedLiterals = new HashSet<int>();
+        var conflicts = 0;
+        
+        foreach(var literal in conflictingConstraint.Literals)
+        {
+            learnedLiterals.Add(literal);
+            if (_literals[literal &-2].DecisionLevel == _decisionLevels.Count) conflicts++;
+        }
 
         for (int trailIndex = _variableTrailSize-1; conflicts > 1; trailIndex--)
         {
@@ -33,7 +39,7 @@ public sealed partial class SatSolver
 
         MinimizeClause(learnedLiterals, uipLiteral);
 
-        return new Constraint([.. learnedLiterals]);
+        return new Constraint([.. learnedLiterals]) { LiteralBlockDistance = learnedLiterals.Select(l => _literals[l&-2].DecisionLevel).ToHashSet().Count };
     }
     void MinimizeClause(HashSet<int> literals, int uipLiteral)
     {
@@ -51,12 +57,11 @@ public sealed partial class SatSolver
     }
     void AddLearnedConstraintIfUseful(Constraint learnedConstraint, int uipLiteral)
     {
-        if (learnedConstraint.Literals.Length > 3) return;
-        if (learnedConstraint.Literals.Select(l => _literals[l & -2].DecisionLevel).Distinct().Count() > 4) return;
+        if (learnedConstraint.LiteralBlockDistance > _options.LiteralBlockDistanceLimit) return;
 
         learnedConstraint.Watched1 = uipLiteral;
         _literals[learnedConstraint.Watched1].Watchers.Add(learnedConstraint);
-        if (learnedConstraint.Literals.Length == 1)
+        if (learnedConstraint.Literals.Count == 1)
             learnedConstraint.Watched2 = uipLiteral;
         else
         {

@@ -16,11 +16,13 @@ public sealed partial class SatSolver
 
         public override readonly string ToString() => $"Sense: {Sense?.ToString() ?? "null"} Activity: {Activity} Polarity: {Polarity}";
     }
-    class Constraint(int[] literals) // not a record to use reference equality!
+    class Constraint(HashSet<int> literals) // not a record to use reference equality!
     {
-        public int[] Literals => literals;
+        public HashSet<int> Literals => literals;
         public int Watched1 { get; set; } = -1;
         public int Watched2 { get; set; } = -1;
+
+        public int LiteralBlockDistance { get; init; }
     }
 
     bool PropagateVariable(int variable, bool sense, Constraint? reason) 
@@ -48,9 +50,8 @@ public sealed partial class SatSolver
             if (otherWatchedSense == true) continue;
 
             var nextLiteral = -1;
-            for (var i = 0; i<constraint.Literals.Length; i++)
+            foreach (var next in constraint.Literals)
             {
-                var next = constraint.Literals[i];
                 if (next == watchedLiteral || next == constraint.Watched1) continue;
                 var nextSense = _literals[next].Sense;
                 if (nextSense != false) nextLiteral = next;
@@ -88,15 +89,8 @@ public sealed partial class SatSolver
 
     bool HandleConflict(Constraint conflictingConstraint, Constraint? reason)
     {
-        if (_options.ActivityDecayInterval > 0)
-        {
-            if (++_conflictCounter == _options.ActivityDecayInterval)
-            {
-                _conflictCounter = 0;
-                for (var i = 0; i<_literals.Length; i+=2)
-                    _literals[i].Activity *= _options.ActivityDecayFactor;
-            }
-        }
+        IncreaseConflictCount();
+        if (_restartRecommended) return false;
 
         // Poor Man's VSIDS
         //foreach (var literal in conflictingConstraint.Literals)
