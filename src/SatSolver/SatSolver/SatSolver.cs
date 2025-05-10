@@ -15,7 +15,7 @@ public sealed partial class SatSolver
 
         public int LiteralBlockDistanceLimit { get; init; } = 2; // increase when clause deletion will be added?
 
-        public int RestartInterval { get; init; } = 200000;
+        public int RestartInterval { get; init; }
         public bool LubyfyRestart { get; init; } = true;
     }
 
