@@ -6,6 +6,15 @@ namespace SatSolverTests;
 
 public sealed partial class SatSolverTests(ITestOutputHelper _output)
 {
+    static readonly SatSolver.Options _testOptions = new()
+    {
+        ActivityDecayInterval = 1,
+        ActivityDecayFactor = 0.95d,
+        LiteralBlockDistanceLimit = 2, // increase when clause deletion will be added?
+        RestartInterval = 0,
+        LubyfyRestart = true
+    };
+
     [Fact]
     public void Solve_Null_ArgumentNullException()
     {
@@ -14,14 +23,14 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
     [Fact]
     public void Solve_NoLiterals_EmptySolution()
     {
-        var solution = SatSolver.Solve(new(0, []));
+        var solution = SatSolver.Solve(new(0, []), _testOptions);
         Assert.NotNull(solution);
         Assert.Empty(solution);
     }
     [Fact]
     public void Solve_EmptyClause_Null()
     {
-        var solution = SatSolver.Solve(new(2, [new([1, 2]), new([1]), new([]), new([2])]));
+        var solution = SatSolver.Solve(new(2, [new([1, 2]), new([1]), new([]), new([2])]), _testOptions);
         Assert.Null(solution);
     }
 
@@ -31,7 +40,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
     {
         string cnf = File.ReadAllText(Path.Combine("SimpleCases", fileName));
         var problem = DimacsParser.Parse(cnf).Single();
-        var solution = SatSolver.Solve(problem);
+        var solution = SatSolver.Solve(problem, _testOptions);
         Assert.NotNull(solution);
         SolutionValidator.Validate(problem, solution);
     }
@@ -43,7 +52,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         string cnf = File.ReadAllText(Path.Combine("SAT", fileName));
         var problem = DimacsParser.Parse(cnf).Single();
         _output?.WriteLine($"{fileName} Literals: {problem.NumberOfLiterals} Clauses: {problem.Clauses.Length}");
-        var solution = SatSolver.Solve(problem);
+        var solution = SatSolver.Solve(problem, _testOptions);
         Assert.NotNull(solution);
         SolutionValidator.Validate(problem, solution);
     }
@@ -55,7 +64,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         string cnf = File.ReadAllText(Path.Combine("UNSAT", fileName));
         var problem = DimacsParser.Parse(cnf).Single();
         _output?.WriteLine($"{fileName} Literals: {problem.NumberOfLiterals} Clauses: {problem.Clauses.Length}");
-        Assert.Null(SatSolver.Solve(problem));
+        Assert.Null(SatSolver.Solve(problem, _testOptions));
     }
 
     public static TheoryData<string> ProvideSatTestCases()

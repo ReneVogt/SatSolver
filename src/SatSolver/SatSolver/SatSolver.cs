@@ -1,4 +1,6 @@
-﻿namespace Revo.SatSolver;
+﻿using System.Diagnostics;
+
+namespace Revo.SatSolver;
 
 /// <summary>
 /// Finds a variable configuration that 
@@ -16,7 +18,7 @@ public sealed partial class SatSolver
         public int LiteralBlockDistanceLimit { get; init; } = 2; // increase when clause deletion will be added?
 
         public int RestartInterval { get; init; }
-        public bool LubyfyRestart { get; init; } = true;
+        public bool LubyfyRestart { get; init; }
     }
 
     readonly CancellationToken _cancellationToken;
@@ -26,6 +28,8 @@ public sealed partial class SatSolver
     readonly Queue<(int Literal, Constraint Reason)> _unitLiterals = [];
     readonly Stack<(int variableTrailIndex, bool first)> _decisionLevels = [];
     readonly int[] _variableTrail;
+
+    readonly LubySequence _lubySequence;
 
     int _variableTrailSize, _decayCounter;
     int _restartCounter, _nextRestartThreshold;
@@ -39,7 +43,8 @@ public sealed partial class SatSolver
         _variableTrail = new int[problem.NumberOfLiterals];
         BuildConstraints(problem.Clauses);
 
-        _nextRestartThreshold = _options.RestartInterval;
+        _lubySequence = new(_options.RestartInterval);
+        _nextRestartThreshold = (int)_lubySequence.Next();
     }
     void BuildConstraints(IEnumerable<Clause> clauses)
     {
@@ -183,6 +188,11 @@ public sealed partial class SatSolver
     {
         _restartRecommended = false;
         _restartCounter = 0;
+        if (_options.LubyfyRestart)
+        {
+            var next = _lubySequence.Next();
+            _nextRestartThreshold = next < int.MaxValue ? (int)next : 0;
+        }
         _decisionLevels.Clear();
         ResetVariableTrail(0);
         _unitLiterals.Clear();

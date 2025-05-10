@@ -90,7 +90,7 @@ public sealed partial class SatSolver
     bool HandleConflict(Constraint conflictingConstraint, Constraint? reason)
     {
         IncreaseConflictCount();
-        if (_restartRecommended) return false;
+        //if (_restartRecommended) return false;
 
         // Poor Man's VSIDS
         //foreach (var literal in conflictingConstraint.Literals)
