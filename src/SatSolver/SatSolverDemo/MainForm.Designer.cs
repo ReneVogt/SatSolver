@@ -73,7 +73,7 @@
             rbtDimacs.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             rbtDimacs.AutoSize = true;
             rbtDimacs.CheckAlign = ContentAlignment.MiddleRight;
-            rbtDimacs.Location = new Point(601, 9);
+            rbtDimacs.Location = new Point(495, 9);
             rbtDimacs.Margin = new Padding(2);
             rbtDimacs.Name = "rbtDimacs";
             rbtDimacs.Size = new Size(69, 19);
@@ -89,7 +89,7 @@
             rtbInput.Margin = new Padding(2);
             rtbInput.Name = "rtbInput";
             rtbInput.ScrollBars = RichTextBoxScrollBars.Vertical;
-            rtbInput.Size = new Size(659, 84);
+            rtbInput.Size = new Size(553, 74);
             rtbInput.TabIndex = 3;
             rtbInput.Text = "";
             rtbInput.TextChanged += OnInputChanged;
@@ -104,7 +104,7 @@
             tbCnf.Name = "tbCnf";
             tbCnf.ReadOnly = true;
             tbCnf.ScrollBars = ScrollBars.Vertical;
-            tbCnf.Size = new Size(659, 113);
+            tbCnf.Size = new Size(553, 102);
             tbCnf.TabIndex = 4;
             // 
             // label1
@@ -119,7 +119,7 @@
             // 
             // tbDimacs
             // 
-            tbDimacs.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            tbDimacs.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             tbDimacs.BackColor = SystemColors.Window;
             tbDimacs.Location = new Point(11, 30);
             tbDimacs.Margin = new Padding(2);
@@ -127,7 +127,7 @@
             tbDimacs.Name = "tbDimacs";
             tbDimacs.ReadOnly = true;
             tbDimacs.ScrollBars = ScrollBars.Both;
-            tbDimacs.Size = new Size(277, 227);
+            tbDimacs.Size = new Size(548, 127);
             tbDimacs.TabIndex = 6;
             tbDimacs.WordWrap = false;
             // 
@@ -143,13 +143,14 @@
             // 
             // label3
             // 
+            label3.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             label3.AutoSize = true;
-            label3.Location = new Point(292, 11);
+            label3.Location = new Point(12, 168);
             label3.Margin = new Padding(2, 0, 2, 0);
             label3.Name = "label3";
-            label3.Size = new Size(59, 15);
+            label3.Size = new Size(54, 15);
             label3.TabIndex = 8;
-            label3.Text = "Solutions:";
+            label3.Text = "Solution:";
             // 
             // tmSolve
             // 
@@ -159,10 +160,10 @@
             // pbSolving
             // 
             pbSolving.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            pbSolving.Location = new Point(0, 262);
+            pbSolving.Location = new Point(0, 242);
             pbSolving.MarqueeAnimationSpeed = 10;
             pbSolving.Name = "pbSolving";
-            pbSolving.Size = new Size(681, 13);
+            pbSolving.Size = new Size(575, 13);
             pbSolving.TabIndex = 10;
             // 
             // outerContainer
@@ -183,8 +184,8 @@
             outerContainer.Panel2.Controls.Add(pbSolving);
             outerContainer.Panel2.Controls.Add(tbDimacs);
             outerContainer.Panel2.Controls.Add(label3);
-            outerContainer.Size = new Size(681, 567);
-            outerContainer.SplitterDistance = 283;
+            outerContainer.Size = new Size(575, 526);
+            outerContainer.SplitterDistance = 262;
             outerContainer.TabIndex = 11;
             // 
             // innerContainer
@@ -204,8 +205,8 @@
             // 
             innerContainer.Panel2.Controls.Add(label1);
             innerContainer.Panel2.Controls.Add(tbCnf);
-            innerContainer.Size = new Size(681, 283);
-            innerContainer.SplitterDistance = 126;
+            innerContainer.Size = new Size(575, 262);
+            innerContainer.SplitterDistance = 116;
             innerContainer.TabIndex = 0;
             // 
             // dgvSolutions
@@ -214,10 +215,10 @@
             dgvSolutions.AllowUserToDeleteRows = false;
             dgvSolutions.AllowUserToResizeColumns = false;
             dgvSolutions.AllowUserToResizeRows = false;
-            dgvSolutions.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dgvSolutions.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dgvSolutions.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.ColumnHeader;
             dgvSolutions.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvSolutions.Location = new Point(292, 30);
+            dgvSolutions.Location = new Point(12, 186);
             dgvSolutions.Name = "dgvSolutions";
             dgvSolutions.ReadOnly = true;
             dgvSolutions.RowHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
@@ -227,14 +228,14 @@
             dgvSolutions.ShowCellToolTips = false;
             dgvSolutions.ShowEditingIcon = false;
             dgvSolutions.ShowRowErrors = false;
-            dgvSolutions.Size = new Size(378, 227);
+            dgvSolutions.Size = new Size(552, 62);
             dgvSolutions.TabIndex = 11;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(681, 567);
+            ClientSize = new Size(575, 526);
             Controls.Add(outerContainer);
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
