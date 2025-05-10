@@ -9,16 +9,29 @@ namespace Revo.SatSolver;
 /// </summary>
 public sealed partial class SatSolver
 {
+    public enum RestartMode
+    {
+        None,
+        Interval,
+        Luby,
+        MeanLBD
+    }
     public sealed class Options
     {
         public static Options Default { get; } = new();
-        public int ActivityDecayInterval { get; init; } = 1;
-        public double ActivityDecayFactor { get; init; } = 0.95d;
+        public double VariableActivityDecayFactor { get; init; } = 0.95;
 
-        public int LiteralBlockDistanceLimit { get; init; } = 2; // increase when clause deletion will be added?
+        public double ClauseActivityDecayFactor { get; init; } = 0.99;
+        public int LiteralBlockDistanceLimit { get; init; } = 8;
+        public int LiteralBlockDistanceToKeep { get; init; } = 2;
+        public int ClauseDeletionInterval { get; init; } = 5000;
+        public double ClauseDeletionRatio { get; init; } = 0.5;
 
+        public RestartMode RestartMode { get; init; } = RestartMode.MeanLBD;
         public int RestartInterval { get; init; }
-        public bool LubyfyRestart { get; init; }
+        public double LiteralBlockDistanceDecay { get; init; } = 0.999;
+        public double LiteralBlockDistanceQueueSize { get; init; } = 100;
+        public double RestartLiteralBlockDistanceThreshold { get; init; } = 1.3;
     }
 
     readonly CancellationToken _cancellationToken;
@@ -29,22 +42,29 @@ public sealed partial class SatSolver
     readonly Stack<(int variableTrailIndex, bool first)> _decisionLevels = [];
     readonly int[] _variableTrail;
 
-    readonly LubySequence _lubySequence;
+    readonly HashSet<Constraint> _learnedConstraints = [];
 
-    int _variableTrailSize, _decayCounter;
+    readonly LubySequence _lubySequence;
+    readonly Queue<int> _lbdQueue = [];
+
+    int _variableTrailSize, _decayCounter, _clauseDeletionCounter;
     int _restartCounter, _nextRestartThreshold;
     bool _restartRecommended;
 
+    double _clauseActivityIncrement = 1, _variableActivityIncrement = 1, _globalLiteralBlockDistanceMean = 2;
+
     SatSolver(Problem problem, Options options, CancellationToken cancellationToken)
     {
+        if (options.VariableActivityDecayFactor == 0 || options.ClauseActivityDecayFactor == 0) throw new ArgumentException(paramName: nameof(options), message: "A decay factor must not be zero.");
         _options = options;
         _cancellationToken = cancellationToken;
         _literals = new Variable[problem.NumberOfLiterals << 1];
-        _variableTrail = new int[problem.NumberOfLiterals];
+        _variableTrail = new int[problem.NumberOfLiterals];        
+        
         BuildConstraints(problem.Clauses);
 
         _lubySequence = new(_options.RestartInterval);
-        _nextRestartThreshold = (int)_lubySequence.Next();
+        _nextRestartThreshold = _options.RestartMode is RestartMode.Interval or RestartMode.Luby ? (int)_lubySequence.Next() : 0;
     }
     void BuildConstraints(IEnumerable<Clause> clauses)
     {
@@ -86,11 +106,18 @@ public sealed partial class SatSolver
                 scores[literal] += Math.Pow(2, -literals.Count);
         }
 
+        var maxActivity = double.MinValue;
         for (var i = 0; i<_literals.Length; i+=2)
         {
-            _literals[i].Activity = scores[i] + scores[i+1];
+            var activity = scores[i] + scores[i+1];
+            if (activity > maxActivity) maxActivity = activity;
+            _literals[i].Activity = activity;
             _literals[i].Polarity = scores[i] > scores[i+1];
         }
+        for (var i = 0; i<_literals.Length; i+=2)        
+            _literals[i].Activity /= maxActivity;
+
+        _variableActivityIncrement /= _options.VariableActivityDecayFactor;
     }
 
     Literal[]? Solve()
@@ -166,29 +193,11 @@ public sealed partial class SatSolver
         
         _variableTrailSize = targetLevelStart;
     }
-    void IncreaseConflictCount()
-    {
-        if (_options.ActivityDecayInterval > 0)
-        {
-            if (++_decayCounter == _options.ActivityDecayInterval)
-            {
-                _decayCounter = 0;
-                for (var i = 0; i<_literals.Length; i+=2)
-                    _literals[i].Activity *= _options.ActivityDecayFactor;
-            }
-        }
-
-        if (_nextRestartThreshold > 0)
-        {
-            _restartCounter++;
-            _restartRecommended = _restartCounter > _nextRestartThreshold;
-        }
-    }
     void Restart()
     {
         _restartRecommended = false;
         _restartCounter = 0;
-        if (_options.LubyfyRestart)
+        if (_options.RestartMode == RestartMode.Luby)
         {
             var next = _lubySequence.Next();
             _nextRestartThreshold = next < int.MaxValue ? (int)next : 0;
@@ -196,6 +205,8 @@ public sealed partial class SatSolver
         _decisionLevels.Clear();
         ResetVariableTrail(0);
         _unitLiterals.Clear();
+        _lbdQueue.Clear();
+        _globalLiteralBlockDistanceMean = 2;
     }
 
     Literal[] BuildSolution() => [.. Enumerable.Range(0, _literals.Length >> 1).Select(i => new Literal(i+1, _literals[i << 1].Sense!.Value))];

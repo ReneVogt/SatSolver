@@ -1,36 +1,43 @@
-﻿using Revo.SatSolver;
-using Revo.SatSolver.Parsing;
+﻿using Revo.SatSolver.Parsing;
 using Xunit.Abstractions;
+using static Revo.SatSolver.SatSolver;
 
 namespace SatSolverTests;
 
 public sealed partial class SatSolverTests(ITestOutputHelper _output)
 {
-    static readonly SatSolver.Options _testOptions = new()
+    static readonly Options _testOptions = new()
     {
-        ActivityDecayInterval = 1,
-        ActivityDecayFactor = 0.95d,
-        LiteralBlockDistanceLimit = 2, // increase when clause deletion will be added?
+        VariableActivityDecayFactor = 0.95d,
+        ClauseActivityDecayFactor = 0.99d,
+        LiteralBlockDistanceLimit = 5,
+        LiteralBlockDistanceToKeep = 2,
+        ClauseDeletionInterval = 3000,
+        ClauseDeletionRatio = 0.5,
+
+        RestartMode = RestartMode.MeanLBD,
         RestartInterval = 0,
-        LubyfyRestart = true
+        LiteralBlockDistanceDecay = 0.999,
+        LiteralBlockDistanceQueueSize = 200,
+        RestartLiteralBlockDistanceThreshold = 2
     };
 
     [Fact]
     public void Solve_Null_ArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => SatSolver.Solve(null!));
+        Assert.Throws<ArgumentNullException>(() => Solve(null!));
     }
     [Fact]
     public void Solve_NoLiterals_EmptySolution()
     {
-        var solution = SatSolver.Solve(new(0, []), _testOptions);
+        var solution = Solve(new(0, []), _testOptions);
         Assert.NotNull(solution);
         Assert.Empty(solution);
     }
     [Fact]
     public void Solve_EmptyClause_Null()
     {
-        var solution = SatSolver.Solve(new(2, [new([1, 2]), new([1]), new([]), new([2])]), _testOptions);
+        var solution = Solve(new(2, [new([1, 2]), new([1]), new([]), new([2])]), _testOptions);
         Assert.Null(solution);
     }
 
@@ -40,7 +47,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
     {
         string cnf = File.ReadAllText(Path.Combine("SimpleCases", fileName));
         var problem = DimacsParser.Parse(cnf).Single();
-        var solution = SatSolver.Solve(problem, _testOptions);
+        var solution = Solve(problem, _testOptions);
         Assert.NotNull(solution);
         SolutionValidator.Validate(problem, solution);
     }
@@ -52,7 +59,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         string cnf = File.ReadAllText(Path.Combine("SAT", fileName));
         var problem = DimacsParser.Parse(cnf).Single();
         _output?.WriteLine($"{fileName} Literals: {problem.NumberOfLiterals} Clauses: {problem.Clauses.Length}");
-        var solution = SatSolver.Solve(problem, _testOptions);
+        var solution = Solve(problem, _testOptions);
         Assert.NotNull(solution);
         SolutionValidator.Validate(problem, solution);
     }
@@ -64,7 +71,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         string cnf = File.ReadAllText(Path.Combine("UNSAT", fileName));
         var problem = DimacsParser.Parse(cnf).Single();
         _output?.WriteLine($"{fileName} Literals: {problem.NumberOfLiterals} Clauses: {problem.Clauses.Length}");
-        Assert.Null(SatSolver.Solve(problem, _testOptions));
+        Assert.Null(Solve(problem, _testOptions));
     }
 
     public static TheoryData<string> ProvideSatTestCases()

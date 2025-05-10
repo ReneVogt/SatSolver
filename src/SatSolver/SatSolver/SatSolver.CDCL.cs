@@ -6,8 +6,8 @@ public sealed partial class SatSolver
     {
         var learnedLiterals = new HashSet<int>();
         var conflicts = 0;
-        
-        foreach(var literal in conflictingConstraint.Literals)
+
+        foreach (var literal in conflictingConstraint.Literals)
         {
             learnedLiterals.Add(literal);
             if (_literals[literal &-2].DecisionLevel == _decisionLevels.Count) conflicts++;
@@ -25,6 +25,8 @@ public sealed partial class SatSolver
             var negatedLiteralToResolve = literalToResolve ^ 1;
             if (!learnedLiterals.Remove(literalToResolve)) continue;
 
+            IncreaseClauseActivity(trailedPositiveLiteral.Reason);            
+
             foreach (var reasonLiteral in trailedPositiveLiteral.Reason.Literals)
             {
                 if (reasonLiteral == negatedLiteralToResolve) continue;
@@ -39,7 +41,9 @@ public sealed partial class SatSolver
 
         MinimizeClause(learnedLiterals, uipLiteral);
 
-        return new Constraint([.. learnedLiterals]) { LiteralBlockDistance = learnedLiterals.Select(l => _literals[l&-2].DecisionLevel).ToHashSet().Count };
+        var learnedConstraint = new Constraint([.. learnedLiterals]) { LiteralBlockDistance = learnedLiterals.Select(l => _literals[l&-2].DecisionLevel).ToHashSet().Count, Activity = _clauseActivityIncrement };
+        _clauseActivityIncrement /= _options.ClauseActivityDecayFactor;
+        return learnedConstraint;
     }
     void MinimizeClause(HashSet<int> literals, int uipLiteral)
     {
@@ -58,6 +62,8 @@ public sealed partial class SatSolver
     void AddLearnedConstraintIfUseful(Constraint learnedConstraint, int uipLiteral)
     {
         if (learnedConstraint.LiteralBlockDistance > _options.LiteralBlockDistanceLimit) return;
+
+        _learnedConstraints.Add(learnedConstraint);
 
         learnedConstraint.Watched1 = uipLiteral;
         _literals[learnedConstraint.Watched1].Watchers.Add(learnedConstraint);
@@ -85,5 +91,53 @@ public sealed partial class SatSolver
             (variableTrailIndex, _) = _decisionLevels.Pop();
 
         ResetVariableTrail(variableTrailIndex);
+    }
+
+    void ReduceClauses()
+    {
+        var constraintsToRemove = _learnedConstraints.Where(constraint => constraint.Literals.Count > 2 && constraint.LiteralBlockDistance > _options.LiteralBlockDistanceToKeep).OrderBy(constraint => constraint.Activity).ToArray();
+        var countToDelete = Math.Max(constraintsToRemove.Length, (int)(constraintsToRemove.Length * _options.ClauseDeletionRatio));
+        for (var i=0; i<countToDelete; i++)
+        {
+            var constraint = constraintsToRemove[i];
+            _learnedConstraints.Remove(constraint);
+            _literals[constraint.Watched1].Watchers.Remove(constraint);
+            _literals[constraint.Watched2].Watchers.Remove(constraint);
+        }
+    }
+
+    void IncreaseClauseActivity(Constraint constraint, double factor = 1)
+    {
+        constraint.Activity += _clauseActivityIncrement * factor;
+        if (constraint.Activity < 1e100) return;
+        
+        foreach (var learnedConstraint in _learnedConstraints)
+            learnedConstraint.Activity *= 1e-100;
+        _clauseActivityIncrement *= 1e-100;
+    }
+    void IncreaseVariableActivity(int literal)
+    {
+        var activity = _literals[literal & -2].Activity += _variableActivityIncrement;
+        if (activity < 1e100) return;
+        for (var i = 0; i< _literals.Length; i+=2)
+            _literals[i].Activity *= 1e-100;
+        _variableActivityIncrement *= 1e-100;
+    }
+
+    void CheckLBDforRestart(int lbd)
+    {
+        _lbdQueue.Enqueue(lbd);
+        if (_lbdQueue.Count > _options.LiteralBlockDistanceQueueSize)
+        { 
+            _lbdQueue.Dequeue();
+            _globalLiteralBlockDistanceMean = _options.LiteralBlockDistanceDecay * _globalLiteralBlockDistanceMean + (1 - _options.LiteralBlockDistanceDecay) * lbd;
+            var average = _lbdQueue.Average();
+            if (average > _globalLiteralBlockDistanceMean * _options.RestartLiteralBlockDistanceThreshold)
+                _restartRecommended = true;
+
+            return;
+        }
+        if (_lbdQueue.Count < _options.LiteralBlockDistanceQueueSize) return;
+        _globalLiteralBlockDistanceMean = _lbdQueue.Average();
     }
 }

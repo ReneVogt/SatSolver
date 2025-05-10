@@ -23,6 +23,7 @@ public sealed partial class SatSolver
         public int Watched2 { get; set; } = -1;
 
         public int LiteralBlockDistance { get; init; }
+        public double Activity { get; set; }
     }
 
     bool PropagateVariable(int variable, bool sense, Constraint? reason) 
@@ -63,6 +64,7 @@ public sealed partial class SatSolver
                 if (otherWatchedSense is not null)
                     return HandleConflict(constraint, reason);
                 _unitLiterals.Enqueue((constraint.Watched1, constraint));
+                IncreaseClauseActivity(constraint, 0.5);
                 continue;
             }
             
@@ -89,8 +91,22 @@ public sealed partial class SatSolver
 
     bool HandleConflict(Constraint conflictingConstraint, Constraint? reason)
     {
-        IncreaseConflictCount();
-        //if (_restartRecommended) return false;
+        if (_nextRestartThreshold > 0)
+        {
+            _restartCounter++;
+            _restartRecommended = _restartCounter > _nextRestartThreshold;
+        }
+
+        if (_options.ClauseDeletionInterval > 0)
+        {
+            if (++_clauseDeletionCounter == _options.ClauseDeletionInterval)
+            {
+                _clauseDeletionCounter = 0;
+                ReduceClauses();
+            }
+        }
+
+        IncreaseClauseActivity(conflictingConstraint);
 
         // Poor Man's VSIDS
         //foreach (var literal in conflictingConstraint.Literals)
@@ -107,13 +123,17 @@ public sealed partial class SatSolver
     {
         var learnedConstraint = CreateLearnedConstraint(conflictingConstraint, out var uipLiteral);
 
-        foreach (var l in learnedConstraint.Literals) _literals[l & -2].Activity += 1;
+        foreach (var l in learnedConstraint.Literals) IncreaseVariableActivity(l);
+        _variableActivityIncrement /= _options.VariableActivityDecayFactor;
 
         _unitLiterals.Clear();
         _unitLiterals.Enqueue((uipLiteral, learnedConstraint));
 
         AddLearnedConstraintIfUseful(learnedConstraint, uipLiteral);
         JumpBack(learnedConstraint, uipLiteral);
+
+        if (_options.RestartMode == RestartMode.MeanLBD)
+            CheckLBDforRestart(learnedConstraint.LiteralBlockDistance);
     }
 
     (int Variable, bool Sense) Backtrack()
