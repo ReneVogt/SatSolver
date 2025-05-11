@@ -1,4 +1,6 @@
-﻿namespace Revo.SatSolver;
+﻿using Revo.SatSolver.Helpers;
+
+namespace Revo.SatSolver;
 
 public sealed partial class SatSolver
 {
@@ -29,6 +31,15 @@ public sealed partial class SatSolver
         /// must be configured.
         /// </summary>
         public double? LiteralBlockDistanceThreshold { get; init; }
+        /// <summary>
+        /// If not <c>null</c>, the solver will restart if the ratio
+        /// of the recent propagation rates (propagations per conflict)
+        /// to the over all propagation rate average is smaller than 
+        /// this threshold.
+        /// To use this threshold, <see cref="Options.PropagationRateTracking"/> 
+        /// must be configured.
+        /// </summary>
+        public double? PropagationRateThreshold { get; init; }
     }
 
     /// <summary>
@@ -67,6 +78,15 @@ public sealed partial class SatSolver
         /// must be configured.
         /// </summary>
         public double? LiteralBlockDistanceThreshold { get; init; }
+        /// <summary>
+        /// If not <c>null</c>, the solver will perform a clause
+        /// deletion if the ratio of the recent propagation rates 
+        /// (propagations per conflict) to the over all propagation 
+        /// rate average is smaller than this threshold.
+        /// To use this threshold, <see cref="Options.PropagationRateTracking"/> 
+        /// must be configured.
+        /// </summary>
+        public double? PropagationRateThreshold { get; init; }
     }
 
     /// <summary>
@@ -84,6 +104,29 @@ public sealed partial class SatSolver
         /// The decay value for the exponential moving average.
         /// </summary>
         public double Decay { get; init; }
+    }
+
+    /// <summary>
+    /// Configures how propagation rate will be tracked.
+    /// </summary>
+    public class PropagationRateTrackingOptions
+    {
+        /// <summary>
+        /// The number of propagation rates counted as "recent".
+        /// </summary>
+        public int SampleSize { get; init; }
+
+        /// <summary>
+        /// The decay value for the exponential 
+        /// moving average of propagation rates..
+        /// </summary>
+        public double Decay { get; init; }
+
+        /// <summary>
+        /// The number of conflicts for which the propagations
+        /// should be counted to get a propagation rate.
+        /// </summary>
+        public int ConflictInterval { get; init; }
     }
 
     /// <summary>
@@ -136,14 +179,22 @@ public sealed partial class SatSolver
         /// Configures when and how learned clauses will
         /// be deleted.
         /// </summary>
-        public ClauseDeletionOptions ClauseDeletionOptions { get; init; } = new();
+        public ClauseDeletionOptions ClauseDeletion { get; init; } = new();
 
         /// <summary>
         /// Configures how the <see cref="SatSolver"/> decides to restart
         /// its search.
         /// </summary>
-        public RestartOptions RestartOptions { get; init; } = new ();
+        public RestartOptions Restart { get; init; } = new ();
 
+        /// <summary>
+        /// Configures how the literal block distances are tracked.
+        /// </summary>
         public EmaOptions? LiteralBlockDistanceTracking { get; init; } = new ();
+
+        /// <summary>
+        /// Configures how the propagation rate is tracked.
+        /// </summary>
+        public PropagationRateTrackingOptions? PropagationRateTracking { get; init; } = new();
     }
 }

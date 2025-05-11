@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using Revo.SatSolver.Helpers;
+using System.Diagnostics;
 
 namespace Revo.SatSolver;
 
@@ -24,6 +25,7 @@ public sealed partial class SatSolver
     readonly int _originalClauseCount;
 
     readonly EmaTracker? _literalBlockDistanceTracker;
+    readonly PropagationRateTracker? _propagationRateTracker;
 
     int _variableTrailSize;
     int _restartCounter, _nextRestartThreshold;
@@ -41,15 +43,15 @@ public sealed partial class SatSolver
         _variableTrail = new int[problem.NumberOfLiterals];
 
         if (_options.LiteralBlockDistanceTracking is { Decay: var lbdDecay, RecentCount: var lbdSize } && 
-            (_options.RestartOptions is { LiteralBlockDistanceThreshold: not null} || 
-            _options.ClauseDeletionOptions is { LiteralBlockDistanceThreshold: not null}))
+            (_options.Restart is { LiteralBlockDistanceThreshold: not null} || 
+            _options.ClauseDeletion is { LiteralBlockDistanceThreshold: not null}))
             _literalBlockDistanceTracker = new(lbdSize, lbdDecay);
         
         _originalClauseCount = BuildConstraints(problem.Clauses);
 
-        if (_options.RestartOptions?.Interval is { } restartInterval)
+        if (_options.Restart?.Interval is { } restartInterval)
         {
-            if (_options.RestartOptions.Luby)
+            if (_options.Restart.Luby)
             {
                 _lubySequence = new(restartInterval);
                 _nextRestartThreshold = (int)_lubySequence.Next();
@@ -57,6 +59,9 @@ public sealed partial class SatSolver
             else
                 _nextRestartThreshold = restartInterval;
         }
+
+        if (_options.PropagationRateTracking is { ConflictInterval: var interval, Decay: var decay, SampleSize: var sampleSize } && interval > 0 && sampleSize > 0)
+            _propagationRateTracker = new(interval, sampleSize, decay);
     }
     int BuildConstraints(IEnumerable<Clause> clauses)
     {
@@ -194,7 +199,6 @@ public sealed partial class SatSolver
     {
         _restartRecommended = false;
         _restartCounter = 0;
-        _literalBlockDistanceTracker?.Reset();
         if (_lubySequence is not null)
         {
             var next = _lubySequence.Next();

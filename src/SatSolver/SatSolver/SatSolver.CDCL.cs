@@ -30,7 +30,7 @@ public sealed partial class SatSolver
             _literals[learnedConstraint.Watched2].Watchers.Add(learnedConstraint);
         }
 
-        if (_options.ClauseDeletionOptions?.OriginalClauseCountFactor is { } f && _learnedConstraints.Count > f * _originalClauseCount)
+        if (_options.ClauseDeletion?.OriginalClauseCountFactor is { } f && _learnedConstraints.Count > f * _originalClauseCount)
             ReduceClauses();
 
         JumpBack(learnedConstraint, uipLiteral);
@@ -114,8 +114,8 @@ public sealed partial class SatSolver
 
     void ReduceClauses()
     {
-        var constraintsToRemove = _learnedConstraints.Where(constraint => constraint.Literals.Count > 2 && constraint.LiteralBlockDistance > _options.ClauseDeletionOptions!.LiteralBlockDistanceToKeep).OrderBy(constraint => constraint.Activity).ToArray();
-        var countToDelete = Math.Max(constraintsToRemove.Length, (int)(constraintsToRemove.Length * _options.ClauseDeletionOptions.RatioToDelete));
+        var constraintsToRemove = _learnedConstraints.Where(constraint => constraint.Literals.Count > 2 && constraint.LiteralBlockDistance > _options.ClauseDeletion!.LiteralBlockDistanceToKeep).OrderBy(constraint => constraint.Activity).ToArray();
+        var countToDelete = Math.Max(constraintsToRemove.Length, (int)(constraintsToRemove.Length * _options.ClauseDeletion.RatioToDelete));
         for (var i=0; i<countToDelete; i++)
         {
             var constraint = constraintsToRemove[i];
@@ -150,9 +150,9 @@ public sealed partial class SatSolver
         if (_literalBlockDistanceTracker is null) return;
         _literalBlockDistanceTracker.AddValue(lbd);
 
-        if (_options.RestartOptions is { LiteralBlockDistanceThreshold: { } restartThreshold } &&  _literalBlockDistanceTracker.CurrentRatio > restartThreshold)
+        if (_options.Restart is { LiteralBlockDistanceThreshold: { } restartThreshold } &&  _literalBlockDistanceTracker.CurrentRatio > restartThreshold)
                 _restartRecommended = true;
-        if (_options.ClauseDeletionOptions is { LiteralBlockDistanceThreshold: { } clauseDeletionThreshold} &&  _literalBlockDistanceTracker.CurrentRatio > clauseDeletionThreshold)
+        if (_options.ClauseDeletion is { LiteralBlockDistanceThreshold: { } clauseDeletionThreshold} &&  _literalBlockDistanceTracker.CurrentRatio > clauseDeletionThreshold)
             ReduceClauses();
     }
 }

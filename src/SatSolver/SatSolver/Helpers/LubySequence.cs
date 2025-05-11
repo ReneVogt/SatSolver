@@ -1,4 +1,4 @@
-﻿namespace Revo.SatSolver;
+﻿namespace Revo.SatSolver.Helpers;
 
 sealed class LubySequence(long baseValue = 1)
 {
@@ -10,7 +10,7 @@ sealed class LubySequence(long baseValue = 1)
         // Donald Knuth's 'reluctant doubling' formula
         //
         var next = _v;
-        if ((_u & (-_u)) == _v)
+        if ((_u & -_u) == _v)
         {
             _u += 1;
             _v = 1;

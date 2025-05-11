@@ -1,4 +1,4 @@
-﻿namespace Revo.SatSolver;
+﻿namespace Revo.SatSolver.Helpers;
 sealed class EmaTracker(int size, double decay)
 {    
     readonly Queue<int> _recent = new(size+1);
@@ -19,10 +19,4 @@ sealed class EmaTracker(int size, double decay)
         if (_recent.Count < size) return;
         _ema = _recent.Average();
     }
-    public void Reset()
-    {
-        CurrentRatio = 1;
-        _recent.Clear();
-    }
-
 }
