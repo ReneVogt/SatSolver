@@ -9,34 +9,6 @@ namespace Revo.SatSolver;
 /// </summary>
 public sealed partial class SatSolver
 {
-    public enum RestartMode
-    {
-        None,
-        Interval,
-        Luby,
-        MeanLBD
-    }
-    public sealed class Options
-    {
-        public static Options Default { get; } = new();
-
-        public bool OnlyPoorMansVSIDS { get; init; }
-        public double VariableActivityDecayFactor { get; init; } = 0.95;
-
-        public double ClauseActivityDecayFactor { get; init; } = 0.99;
-        public int LiteralBlockDistanceLimit { get; init; } = 8;
-        public int LiteralBlockDistanceToKeep { get; init; } = 2;
-        public double ClauseDeletionRatio { get; init; } = 0.5;
-        public double ClauseDeletionFactor { get; init; } = 10;
-        public double ClauseDeletionLiteralBlockDistanceThreshold { get; init; } = 1.3;
-
-        public RestartMode RestartMode { get; init; } = RestartMode.MeanLBD;
-        public int RestartInterval { get; init; }
-        public double LiteralBlockDistanceDecay { get; init; } = 0.999;
-        public double LiteralBlockDistanceQueueSize { get; init; } = 100;
-        public double RestartLiteralBlockDistanceThreshold { get; init; } = 1.3;
-    }
-
     readonly CancellationToken _cancellationToken;
     readonly Options _options;
     
@@ -47,29 +19,44 @@ public sealed partial class SatSolver
 
     readonly HashSet<Constraint> _learnedConstraints = [];
 
-    readonly LubySequence _lubySequence;
-    readonly Queue<int> _lbdQueue = [];
+    readonly LubySequence? _lubySequence;
 
     readonly int _originalClauseCount;
+
+    readonly EmaTracker? _literalBlockDistanceTracker;
 
     int _variableTrailSize;
     int _restartCounter, _nextRestartThreshold;
     bool _restartRecommended;
 
-    double _clauseActivityIncrement = 1, _variableActivityIncrement = 1, _globalLiteralBlockDistanceMean = 2;
+    double _clauseActivityIncrement = 1, _variableActivityIncrement = 1;
 
     SatSolver(Problem problem, Options options, CancellationToken cancellationToken)
     {
         if (options.VariableActivityDecayFactor == 0 || options.ClauseActivityDecayFactor == 0) throw new ArgumentException(paramName: nameof(options), message: "A decay factor must not be zero.");
+
         _options = options;
         _cancellationToken = cancellationToken;
         _literals = new Variable[problem.NumberOfLiterals << 1];
-        _variableTrail = new int[problem.NumberOfLiterals];        
+        _variableTrail = new int[problem.NumberOfLiterals];
+
+        if (_options.LiteralBlockDistanceTracking is { Decay: var lbdDecay, RecentCount: var lbdSize } && 
+            (_options.RestartOptions is { LiteralBlockDistanceThreshold: not null} || 
+            _options.ClauseDeletionOptions is { LiteralBlockDistanceThreshold: not null}))
+            _literalBlockDistanceTracker = new(lbdSize, lbdDecay);
         
         _originalClauseCount = BuildConstraints(problem.Clauses);
 
-        _lubySequence = new(_options.RestartInterval);
-        _nextRestartThreshold = _options.RestartMode is RestartMode.Interval or RestartMode.Luby ? (int)_lubySequence.Next() : 0;
+        if (_options.RestartOptions?.Interval is { } restartInterval)
+        {
+            if (_options.RestartOptions.Luby)
+            {
+                _lubySequence = new(restartInterval);
+                _nextRestartThreshold = (int)_lubySequence.Next();
+            }
+            else
+                _nextRestartThreshold = restartInterval;
+        }
     }
     int BuildConstraints(IEnumerable<Clause> clauses)
     {
@@ -207,7 +194,8 @@ public sealed partial class SatSolver
     {
         _restartRecommended = false;
         _restartCounter = 0;
-        if (_options.RestartMode == RestartMode.Luby)
+        _literalBlockDistanceTracker?.Reset();
+        if (_lubySequence is not null)
         {
             var next = _lubySequence.Next();
             _nextRestartThreshold = next < int.MaxValue ? (int)next : 0;
@@ -215,8 +203,6 @@ public sealed partial class SatSolver
         _decisionLevels.Clear();
         ResetVariableTrail(0);
         _unitLiterals.Clear();
-        _lbdQueue.Clear();
-        _globalLiteralBlockDistanceMean = 2;
     }
 
     Literal[] BuildSolution() => [.. Enumerable.Range(0, _literals.Length >> 1).Select(i => new Literal(i+1, _literals[i << 1].Sense!.Value))];

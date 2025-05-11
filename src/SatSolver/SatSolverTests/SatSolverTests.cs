@@ -8,23 +8,32 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 {
     static readonly Options _testOptions = new()
     {
-        OnlyPoorMansVSIDS = false,
+        OnlyPoorMansVSIDS = true,
 
-        VariableActivityDecayFactor = 0.95,
+        VariableActivityDecayFactor = 0.9995,
         ClauseActivityDecayFactor = 0.999,
-        LiteralBlockDistanceLimit = 8,
-        LiteralBlockDistanceToKeep = 3,
-        ClauseDeletionFactor = 10,
-        ClauseDeletionRatio = 0.5,
-        ClauseDeletionLiteralBlockDistanceThreshold = 1.5,
+        LiteralBlockDistanceMaximum = 8,
 
+        ClauseDeletionOptions = new()
+        {
+            LiteralBlockDistanceToKeep = 3,
+            OriginalClauseCountFactor = 10,
+            RatioToDelete = 0.5,
+            LiteralBlockDistanceThreshold = 1.5
+        },
 
-        RestartMode = RestartMode.None,
-        RestartInterval = 0,
-        RestartLiteralBlockDistanceThreshold = 2,
+        RestartOptions = new()
+        {
+            Interval = null,
+            Luby = false,
+            LiteralBlockDistanceThreshold = null
+        },
 
-        LiteralBlockDistanceDecay = 0.999,
-        LiteralBlockDistanceQueueSize = 200,
+        LiteralBlockDistanceTracking = new()
+        {
+            Decay = 0.999,
+            RecentCount = 200
+        }
     };
 
     [Fact]
