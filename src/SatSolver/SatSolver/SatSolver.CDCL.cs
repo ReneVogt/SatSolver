@@ -2,6 +2,41 @@
 
 public sealed partial class SatSolver
 {
+    void PerformClauseLearning(Constraint conflictingConstraint)
+    {
+        var learnedConstraint = CreateLearnedConstraint(conflictingConstraint, out var uipLiteral);
+
+        foreach (var l in learnedConstraint.Literals) IncreaseVariableActivity(l);
+        _variableActivityIncrement /= _options.VariableActivityDecayFactor;
+
+        _unitLiterals.Clear();
+        _unitLiterals.Enqueue((uipLiteral, learnedConstraint));
+
+        if (learnedConstraint.LiteralBlockDistance > _options.LiteralBlockDistanceMaximum)
+        {
+            JumpBack(learnedConstraint, uipLiteral);
+            return;
+        }
+
+        _learnedConstraints.Add(learnedConstraint);
+
+        learnedConstraint.Watched1 = uipLiteral;
+        _literals[learnedConstraint.Watched1].Watchers.Add(learnedConstraint);
+        if (learnedConstraint.Literals.Count == 1)
+            learnedConstraint.Watched2 = uipLiteral;
+        else
+        {
+            learnedConstraint.Watched2 = learnedConstraint.Literals.First(l => l != uipLiteral);
+            _literals[learnedConstraint.Watched2].Watchers.Add(learnedConstraint);
+        }
+
+        if (_options.ClauseDeletionOptions?.OriginalClauseCountFactor is { } f && _learnedConstraints.Count > f * _originalClauseCount)
+            ReduceClauses();
+
+        JumpBack(learnedConstraint, uipLiteral);
+        CheckLiteralBlockDistanceBehaviour(learnedConstraint.LiteralBlockDistance);
+    }
+
     Constraint CreateLearnedConstraint(Constraint conflictingConstraint, out int uipLiteral)
     {
         var learnedLiterals = new HashSet<int>();
@@ -59,25 +94,6 @@ public sealed partial class SatSolver
                 IsRedundant(r, depth+1));
         }
     }
-    void AddLearnedConstraintIfUseful(Constraint learnedConstraint, int uipLiteral)
-    {
-        if (learnedConstraint.LiteralBlockDistance > _options.LiteralBlockDistanceLimit) return;
-
-        _learnedConstraints.Add(learnedConstraint);
-
-        learnedConstraint.Watched1 = uipLiteral;
-        _literals[learnedConstraint.Watched1].Watchers.Add(learnedConstraint);
-        if (learnedConstraint.Literals.Count == 1)
-            learnedConstraint.Watched2 = uipLiteral;
-        else
-        {
-            learnedConstraint.Watched2 = learnedConstraint.Literals.First(l => l != uipLiteral);
-            _literals[learnedConstraint.Watched2].Watchers.Add(learnedConstraint);
-        }
-
-        if (_learnedConstraints.Count > _options.ClauseDeletionFactor * _originalClauseCount)
-            ReduceClauses();
-    }
     void JumpBack(Constraint learnedConstraint, int uipLiteral)
     {
         var uipLevel = _literals[uipLiteral & -2].DecisionLevel;
@@ -98,8 +114,8 @@ public sealed partial class SatSolver
 
     void ReduceClauses()
     {
-        var constraintsToRemove = _learnedConstraints.Where(constraint => constraint.Literals.Count > 2 && constraint.LiteralBlockDistance > _options.LiteralBlockDistanceToKeep).OrderBy(constraint => constraint.Activity).ToArray();
-        var countToDelete = Math.Max(constraintsToRemove.Length, (int)(constraintsToRemove.Length * _options.ClauseDeletionRatio));
+        var constraintsToRemove = _learnedConstraints.Where(constraint => constraint.Literals.Count > 2 && constraint.LiteralBlockDistance > _options.ClauseDeletionOptions!.LiteralBlockDistanceToKeep).OrderBy(constraint => constraint.Activity).ToArray();
+        var countToDelete = Math.Max(constraintsToRemove.Length, (int)(constraintsToRemove.Length * _options.ClauseDeletionOptions.RatioToDelete));
         for (var i=0; i<countToDelete; i++)
         {
             var constraint = constraintsToRemove[i];
@@ -129,22 +145,14 @@ public sealed partial class SatSolver
         _variableActivityIncrement *= 1e-100;
     }
 
-    void CheckLiteralBlockDistanceAverage(int lbd)
+    void CheckLiteralBlockDistanceBehaviour(int lbd)
     {
-        _lbdQueue.Enqueue(lbd);
-        if (_lbdQueue.Count > _options.LiteralBlockDistanceQueueSize)
-        { 
-            _lbdQueue.Dequeue();
-            _globalLiteralBlockDistanceMean = _options.LiteralBlockDistanceDecay * _globalLiteralBlockDistanceMean + (1 - _options.LiteralBlockDistanceDecay) * lbd;
-            var average = _lbdQueue.Average();
-            if (_options.RestartMode == RestartMode.MeanLBD && average > _globalLiteralBlockDistanceMean * _options.RestartLiteralBlockDistanceThreshold)
-                _restartRecommended = true;
-            if (average > _globalLiteralBlockDistanceMean * _options.ClauseDeletionLiteralBlockDistanceThreshold)
-                ReduceClauses();
+        if (_literalBlockDistanceTracker is null) return;
+        _literalBlockDistanceTracker.AddValue(lbd);
 
-            return;
-        }
-        if (_lbdQueue.Count < _options.LiteralBlockDistanceQueueSize) return;
-        _globalLiteralBlockDistanceMean = _lbdQueue.Average();
+        if (_options.RestartOptions is { LiteralBlockDistanceThreshold: { } restartThreshold } &&  _literalBlockDistanceTracker.CurrentRatio > restartThreshold)
+                _restartRecommended = true;
+        if (_options.ClauseDeletionOptions is { LiteralBlockDistanceThreshold: { } clauseDeletionThreshold} &&  _literalBlockDistanceTracker.CurrentRatio > clauseDeletionThreshold)
+            ReduceClauses();
     }
 }

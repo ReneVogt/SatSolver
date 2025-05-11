@@ -109,25 +109,8 @@ public sealed partial class SatSolver
         IncreaseClauseActivity(conflictingConstraint);
 
         if (reason is null || _decisionLevels.Count == 0) return false;
-        LearnFromConflict(conflictingConstraint);
+        PerformClauseLearning(conflictingConstraint);
         return true;
-    }
-
-    void LearnFromConflict(Constraint conflictingConstraint) 
-    {
-        var learnedConstraint = CreateLearnedConstraint(conflictingConstraint, out var uipLiteral);
-
-        foreach (var l in learnedConstraint.Literals) IncreaseVariableActivity(l);
-        _variableActivityIncrement /= _options.VariableActivityDecayFactor;
-
-        _unitLiterals.Clear();
-        _unitLiterals.Enqueue((uipLiteral, learnedConstraint));
-
-        AddLearnedConstraintIfUseful(learnedConstraint, uipLiteral);
-        JumpBack(learnedConstraint, uipLiteral);
-
-        if (_options.RestartMode == RestartMode.MeanLBD)
-            CheckLiteralBlockDistanceAverage(learnedConstraint.LiteralBlockDistance);
     }
 
     (int Variable, bool Sense) Backtrack()
