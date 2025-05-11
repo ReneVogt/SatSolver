@@ -1,6 +1,6 @@
-﻿using Revo.SatSolver;
+﻿using Revo.SatSolver.Helpers;
 
-namespace SatSolverTests;
+namespace SatSolverTests.Helpers;
 
 public sealed class LubySequenceTests
 {
@@ -34,8 +34,8 @@ public sealed class LubySequenceTests
     public static long RecursiveLuby(int i)
     {
         var k = (int)Math.Log2(i + 1);
-        if (((i + 1) & i) == 0)
-            return 1 << (k - 1);
+        if ((i + 1 & i) == 0)
+            return 1 << k - 1;
 
         return RecursiveLuby(i + 1 - (1 << k));
     }

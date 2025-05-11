@@ -8,31 +8,41 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 {
     static readonly Options _testOptions = new()
     {
-        OnlyPoorMansVSIDS = true,
+        OnlyPoorMansVSIDS = false,
 
-        VariableActivityDecayFactor = 0.9995,
+        VariableActivityDecayFactor = 0.95,
+
         ClauseActivityDecayFactor = 0.999,
         LiteralBlockDistanceMaximum = 8,
 
-        ClauseDeletionOptions = new()
+        ClauseDeletion = new()
         {
-            LiteralBlockDistanceToKeep = 3,
-            OriginalClauseCountFactor = 10,
+            LiteralBlockDistanceToKeep = 2,
+            OriginalClauseCountFactor = 5,
             RatioToDelete = 0.5,
-            LiteralBlockDistanceThreshold = 1.5
+            LiteralBlockDistanceThreshold = 1.3,
+            PropagationRateThreshold = 0.5
         },
 
-        RestartOptions = new()
+        Restart = new()
         {
             Interval = null,
             Luby = false,
-            LiteralBlockDistanceThreshold = null
+            LiteralBlockDistanceThreshold = null,
+            PropagationRateThreshold = null
         },
 
         LiteralBlockDistanceTracking = new()
         {
             Decay = 0.999,
-            RecentCount = 200
+            RecentCount = 100
+        },
+
+        PropagationRateTracking = new()
+        {
+            ConflictInterval = 500,
+            Decay = 0.999,
+            SampleSize = 50
         }
     };
 

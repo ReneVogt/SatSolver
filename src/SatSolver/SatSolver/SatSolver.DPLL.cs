@@ -63,9 +63,13 @@ public sealed partial class SatSolver
             if (nextLiteral < 0)
             {
                 if (otherWatchedSense is not null)
+                {
+                    TrackPropagationRate(conflict: true);
                     return HandleConflict(constraint, reason);
+                }
                 _unitLiterals.Enqueue((constraint.Watched1, constraint));
                 IncreaseClauseActivity(constraint, 0.5);
+                TrackPropagationRate(conflict: false);
                 continue;
             }
             
@@ -111,6 +115,20 @@ public sealed partial class SatSolver
         if (reason is null || _decisionLevels.Count == 0) return false;
         PerformClauseLearning(conflictingConstraint);
         return true;
+    }
+
+    void TrackPropagationRate(bool conflict)
+    {
+        if (_propagationRateTracker is null) return;
+        if (conflict)
+            _propagationRateTracker.AddConflict();
+        else
+            _propagationRateTracker.AddPropagation();
+
+        if (_options.Restart is { PropagationRateThreshold: { } restartThreshold } &&  _propagationRateTracker.CurrentRatio < restartThreshold)
+            _restartRecommended = true;
+        if (_options.ClauseDeletion is { PropagationRateThreshold: { } clauseDeletionThreshold } && _propagationRateTracker.CurrentRatio < clauseDeletionThreshold)
+            ReduceClauses();
     }
 
     (int Variable, bool Sense) Backtrack()
