@@ -8,9 +8,9 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 {
     static readonly Options _testOptions = new()
     {
-        OnlyPoorMansVSIDS = false,
+        OnlyPoorMansVSIDS = true,
 
-        VariableActivityDecayFactor = 0.95,
+        VariableActivityDecayFactor = 0.9995,
 
         ClauseActivityDecayFactor = 0.999,
         LiteralBlockDistanceMaximum = 8,
@@ -77,6 +77,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
     }
 
     [Theory]
+    [Trait("Category", "Benchmark")]
     [MemberData(nameof(ProvideSatTestCases))]
     public void Solve_SAT(string fileName)
     {
@@ -89,6 +90,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
     }
 
     [Theory]
+    [Trait("Category", "Benchmark")]
     [MemberData(nameof(ProvideUnsatTestCases))]
     public void Solve_UNSAT(string fileName)
     {

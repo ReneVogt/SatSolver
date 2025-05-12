@@ -10,6 +10,8 @@ namespace Revo.SatSolver;
 /// </summary>
 public sealed partial class SatSolver
 {
+    const double _rescaleLimit = 1e100;
+
     readonly CancellationToken _cancellationToken;
     readonly Options _options;
     
@@ -19,6 +21,8 @@ public sealed partial class SatSolver
     readonly int[] _variableTrail;
 
     readonly HashSet<Constraint> _learnedConstraints = [];
+
+    readonly CandidateHeap _candidateHeap;
 
     readonly LubySequence? _lubySequence;
 
@@ -44,7 +48,7 @@ public sealed partial class SatSolver
 
         if (_options.LiteralBlockDistanceTracking is { Decay: var lbdDecay, RecentCount: var lbdSize } && 
             (_options.Restart is { LiteralBlockDistanceThreshold: not null} || 
-            _options.ClauseDeletion is { LiteralBlockDistanceThreshold: not null}))
+            !_options.OnlyPoorMansVSIDS && _options.ClauseDeletion is { LiteralBlockDistanceThreshold: not null}))
             _literalBlockDistanceTracker = new(lbdSize, lbdDecay);
         
         _originalClauseCount = BuildConstraints(problem.Clauses);
@@ -60,8 +64,13 @@ public sealed partial class SatSolver
                 _nextRestartThreshold = restartInterval;
         }
 
-        if (_options.PropagationRateTracking is { ConflictInterval: var interval, Decay: var decay, SampleSize: var sampleSize } && interval > 0 && sampleSize > 0)
+        if (_options.PropagationRateTracking is { ConflictInterval: var interval, Decay: var decay, SampleSize: var sampleSize } && 
+            interval > 0  && sampleSize > 0 &&
+            (_options.Restart is { PropagationRateThreshold: not null } ||
+            !_options.OnlyPoorMansVSIDS && _options.ClauseDeletion is { PropagationRateThreshold: not null }))
             _propagationRateTracker = new(interval, sampleSize, decay);
+
+        _candidateHeap = new(Enumerable.Range(0, problem.NumberOfLiterals).Select(i => _literals[i << 1].Activity));
     }
     int BuildConstraints(IEnumerable<Clause> clauses)
     {
@@ -69,6 +78,8 @@ public sealed partial class SatSolver
         var scores = new double[_literals.Length];
         var positives = new HashSet<int>();
         var negatives = new HashSet<int>();
+        var literals = _literals;
+        
         foreach (var clause in clauses)
         {
             positives.Clear();
@@ -85,25 +96,25 @@ public sealed partial class SatSolver
 
             clauseCount++;
 
-            var literals = positives.Select(i => i << 1).Concat(negatives.Select(i => (i << 1) + 1)).ToHashSet();
-            var constraint = new Constraint(literals);
+            var constraintLiterals = positives.Select(i => i << 1).Concat(negatives.Select(i => (i << 1) + 1)).ToHashSet();
+            var constraint = new Constraint(constraintLiterals);
 
-            if (literals.Count == 1)
+            if (constraintLiterals.Count == 1)
             {
-                constraint.Watched1 = constraint.Watched2 = literals.First();
-                _literals[constraint.Watched1].Watchers.Add(constraint);
+                constraint.Watched1 = constraint.Watched2 = constraintLiterals.First();
+                literals[constraint.Watched1].Watchers.Add(constraint);
                 _unitLiterals.Enqueue((constraint.Watched1, constraint));
             }
             else
             {
-                constraint.Watched1 = literals.First();
-                constraint.Watched2 = literals.Skip(1).First();
-                _literals[constraint.Watched1].Watchers.Add(constraint);
-                _literals[constraint.Watched2].Watchers.Add(constraint);
+                constraint.Watched1 = constraintLiterals.First();
+                constraint.Watched2 = constraintLiterals.Skip(1).First();
+                literals[constraint.Watched1].Watchers.Add(constraint);
+                literals[constraint.Watched2].Watchers.Add(constraint);
             }
 
-            foreach (var literal in literals)
-                scores[literal] += Math.Pow(2, -literals.Count);
+            foreach (var literal in constraintLiterals)
+                scores[literal] += Math.Pow(2, -constraintLiterals.Count);
         }
 
         var maxActivity = double.MinValue;
@@ -111,11 +122,11 @@ public sealed partial class SatSolver
         {
             var activity = scores[i] + scores[i+1];
             if (activity > maxActivity) maxActivity = activity;
-            _literals[i].Activity = activity;
-            _literals[i].Polarity = scores[i] > scores[i+1];
+            literals[i].Activity = activity;
+            literals[i].Polarity = scores[i] > scores[i+1];
         }
         for (var i = 0; i<_literals.Length; i+=2)        
-            _literals[i].Activity /= maxActivity;
+            literals[i].Activity /= maxActivity;
 
         _variableActivityIncrement /= _options.VariableActivityDecayFactor;
 
@@ -164,33 +175,30 @@ public sealed partial class SatSolver
     }
     (int Variable, bool Sense) GetNextCandidate()
     {
-        var variable = -1;
-        var sense = false;
-        var best = double.MinValue;
-        for (var i = 0; i < _literals.Length; i+=2)
+        var literals = _literals;
+        while(_candidateHeap.Count > 0)
         {
-            var literal = _literals[i];
-            if (literal.Sense is null && literal.Activity > best)
-            {
-                variable = i >> 1;
-                sense = literal.Polarity;
-                best = literal.Activity;
-            }
+            var variable = _candidateHeap.Dequeue();
+            var literal = literals[variable << 1];
+            if (literal.Sense is null) return (variable, literal.Polarity);
         }
 
-        return (variable, sense);
+        return (-1, false);
     }
 
     void ResetVariableTrail(int targetLevelStart)
     {
+        var literals = _literals;
         foreach (var trailedVariable in _variableTrail[targetLevelStart.._variableTrailSize])
         {
             var positiveLiteral = trailedVariable << 1;
-            _literals[positiveLiteral].Sense = null;
-            _literals[positiveLiteral].Reason = null;
-            _literals[positiveLiteral].DecisionLevel = 0;
+            literals[positiveLiteral].Sense = null;
+            literals[positiveLiteral].Reason = null;
+            literals[positiveLiteral].DecisionLevel = 0;
 
-            _literals[positiveLiteral+1].Sense = null;
+            literals[positiveLiteral+1].Sense = null;
+
+            _candidateHeap.Enqueue(trailedVariable, literals[positiveLiteral].Activity);
         }
         
         _variableTrailSize = targetLevelStart;

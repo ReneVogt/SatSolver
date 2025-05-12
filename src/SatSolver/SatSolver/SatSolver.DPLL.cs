@@ -29,16 +29,17 @@ public sealed partial class SatSolver
 
     bool PropagateVariable(int variable, bool sense, Constraint? reason) 
     {
+        var literals = _literals;
         var positiveLiteralIndex = variable << 1;
         var negativeLiteralIndex = positiveLiteralIndex + 1;
-        _literals[positiveLiteralIndex].Sense = sense;
-        _literals[positiveLiteralIndex].Reason = reason;
-        _literals[positiveLiteralIndex].DecisionLevel = _decisionLevels.Count;
-        _literals[negativeLiteralIndex].Sense = !sense;
-        _variableTrail[_variableTrailSize++] = variable;
+        literals[positiveLiteralIndex].Sense = sense;
+        literals[positiveLiteralIndex].Reason = reason;
+        literals[positiveLiteralIndex].DecisionLevel = _decisionLevels.Count;
+        literals[negativeLiteralIndex].Sense = !sense;
+        _variableTrail[_variableTrailSize++] = variable;        
 
         var watchedLiteral = sense ? negativeLiteralIndex : positiveLiteralIndex;
-        var watchers = _literals[watchedLiteral].Watchers;
+        var watchers = literals[watchedLiteral].Watchers;
         for(var watcherIndex = 0; watcherIndex<watchers.Count; watcherIndex++)
         {            
             var constraint = watchers[watcherIndex];
@@ -48,14 +49,14 @@ public sealed partial class SatSolver
                 constraint.Watched2 = watchedLiteral;
             }
 
-            var otherWatchedSense = _literals[constraint.Watched1].Sense;
+            var otherWatchedSense = literals[constraint.Watched1].Sense;
             if (otherWatchedSense == true) continue;
 
             var nextLiteral = -1;
             foreach (var next in constraint.Literals)
             {
                 if (next == watchedLiteral || next == constraint.Watched1) continue;
-                var nextSense = _literals[next].Sense;
+                var nextSense = literals[next].Sense;
                 if (nextSense != false) nextLiteral = next;
                 if (nextSense == true) break;
             }
@@ -74,20 +75,21 @@ public sealed partial class SatSolver
             }
             
             constraint.Watched2 = nextLiteral;
-            _literals[nextLiteral].Watchers.Add(constraint);
+            literals[nextLiteral].Watchers.Add(constraint);
             watchers.RemoveAt(watcherIndex--);            
         }
 
-        _literals[positiveLiteralIndex].Polarity = sense;
+        literals[positiveLiteralIndex].Polarity = sense;
         return true;
     }
     bool PropagateUnits()
     {
+        var literals = _literals;
         while(_unitLiterals.Count > 0)
         {
             _cancellationToken.ThrowIfCancellationRequested();
             var (literal, reason) = _unitLiterals.Dequeue();
-            if (_literals[literal].Sense is not null) continue;
+            if (literals[literal].Sense is not null) continue;
             if (!PropagateVariable(literal >> 1, (literal & 1) == 0, reason)) return false;
         }
 

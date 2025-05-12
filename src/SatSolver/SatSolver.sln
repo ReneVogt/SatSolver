@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BooleanAlgebra", "BooleanAl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BooleanAlgebraTests", "BooleanAlgebraTests\BooleanAlgebraTests.csproj", "{2194E29E-498B-4394-9560-7061321D6A5E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SatSolverBenchmark", "SatSolverBenchmark\SatSolverBenchmark.csproj", "{5D19DCC4-F098-468E-B6F3-1A41458A6BFD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,8 +49,15 @@ Global
 		{2194E29E-498B-4394-9560-7061321D6A5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2194E29E-498B-4394-9560-7061321D6A5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2194E29E-498B-4394-9560-7061321D6A5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D19DCC4-F098-468E-B6F3-1A41458A6BFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D19DCC4-F098-468E-B6F3-1A41458A6BFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D19DCC4-F098-468E-B6F3-1A41458A6BFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D19DCC4-F098-468E-B6F3-1A41458A6BFD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {46ED47DD-E862-42DE-8C67-9B0982E0F9A8}
 	EndGlobalSection
 EndGlobal
