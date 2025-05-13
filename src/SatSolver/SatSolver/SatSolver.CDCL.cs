@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+﻿using Revo.SatSolver.DataStructures;
 
 namespace Revo.SatSolver;
 
