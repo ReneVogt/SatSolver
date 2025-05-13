@@ -1,4 +1,5 @@
-﻿using Revo.SatSolver.Helpers;
+﻿using Revo.SatSolver.DataStructures;
+using Revo.SatSolver.Helpers;
 using System.Diagnostics;
 
 namespace Revo.SatSolver;
@@ -15,7 +16,7 @@ public sealed partial class SatSolver
     readonly CancellationToken _cancellationToken;
     readonly Options _options;
     
-    readonly Variable[] _literals;
+    readonly ConstraintLiteral[] _literals;
     readonly Queue<(int Literal, Constraint Reason)> _unitLiterals = [];
     readonly Stack<(int variableTrailIndex, bool first)> _decisionLevels = [];
     readonly int[] _variableTrail;
@@ -43,7 +44,7 @@ public sealed partial class SatSolver
 
         _options = options;
         _cancellationToken = cancellationToken;
-        _literals = new Variable[problem.NumberOfLiterals << 1];
+        _literals = new ConstraintLiteral[problem.NumberOfLiterals << 1];
         _variableTrail = new int[problem.NumberOfLiterals];
 
         if (_options.LiteralBlockDistanceTracking is { Decay: var lbdDecay, RecentCount: var lbdSize } && 

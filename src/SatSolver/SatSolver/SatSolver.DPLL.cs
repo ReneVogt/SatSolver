@@ -1,32 +1,9 @@
-﻿namespace Revo.SatSolver;
+﻿using Revo.SatSolver.DataStructures;
+
+namespace Revo.SatSolver;
 
 public sealed partial class SatSolver
 {
-    struct Variable
-    {
-        public bool? Sense { get; set; }
-        public double Activity { get; set; }
-        public bool Polarity { get; set; }
-        
-        public Constraint? Reason { get; set; }
-        public int DecisionLevel { get; set; }
-
-        List<Constraint>? _watchers;
-        public List<Constraint> Watchers => _watchers ??= [];
-
-        public override readonly string ToString() => $"Sense: {Sense?.ToString() ?? "null"} Activity: {Activity} Polarity: {Polarity}";
-    }
-    class Constraint(HashSet<int> literals) // not a record to use reference equality!
-    {
-        public HashSet<int> Literals => literals;
-        public int Watched1 { get; set; } = -1;
-        public int Watched2 { get; set; } = -1;
-
-        public int LiteralBlockDistance { get; init; }
-        public double Activity { get; set; }
-        public bool IsLearned => LiteralBlockDistance > 0;
-    }
-
     bool PropagateVariable(int variable, bool sense, Constraint? reason) 
     {
         var literals = _literals;
