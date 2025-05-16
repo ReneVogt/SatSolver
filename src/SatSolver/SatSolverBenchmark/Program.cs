@@ -51,9 +51,9 @@ var elapsed = TimeSpan.Zero;
 try
 {
     var satProblems = Directory.GetFiles("SAT", "*.cnf")
-        .Select(file => (file, problem: DimacsParser.Parse(File.ReadAllText(file)).Single())).OrderBy(x => x.file).Take(3).ToArray();
+        .Select(file => (file, problem: DimacsParser.Parse(File.ReadAllText(file)).Single())).OrderBy(x => x.file).ToArray();
     var unsatProblems = Directory.GetFiles("UNSAT", "*.cnf")
-        .Select(file => (file, problem: DimacsParser.Parse(File.ReadAllText(file)).Single())).OrderBy(x => x.file).Take(3).ToArray();
+        .Select(file => (file, problem: DimacsParser.Parse(File.ReadAllText(file)).Single())).OrderBy(x => x.file).ToArray();
 
     var textLength = satProblems.Concat(unsatProblems).Select(x => x.file.Length).Max();
 
@@ -85,7 +85,8 @@ void Solve((string file, Problem problem)[] problems, bool sat)
         var dotCount = 20 * i / problems.Length;
         var dots = new string('.', dotCount);
         var spaces = new string(' ', 20 - dotCount);
-        Write($"{elapsed:mm\\:ss\\.fff} [{dots}{spaces}] ({i}/{problems.Length})  ");
+        var estimated = i > 0 ? (double)problems.Length / i * elapsed : TimeSpan.Zero;
+        Write($"{i}/{problems.Length} [{dots}{spaces}] {elapsed:mm\\:ss\\.fff} {estimated:mm\\:ss\\:fff}");
         var watch = Stopwatch.StartNew();
         var solution = SatSolver.Solve(problems[i].problem, testOptions);
         watch.Stop();
