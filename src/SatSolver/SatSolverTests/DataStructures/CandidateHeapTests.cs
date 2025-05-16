@@ -1,6 +1,6 @@
-﻿using Revo.SatSolver.Helpers;
+﻿using Revo.SatSolver.DataStructures;
 
-namespace SatSolverTests.Helpers;
+namespace SatSolverTests.DataStructures;
 
 public sealed class CandidateHeapTests
 {
