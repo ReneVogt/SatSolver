@@ -1,4 +1,4 @@
-﻿namespace Revo.SatSolver.Helpers;
+﻿namespace Revo.SatSolver.DataStructures;
 
 sealed class CandidateHeap
 {
@@ -76,7 +76,7 @@ sealed class CandidateHeap
     void Heapify()
     {
         var nodes = _nodes;
-        int lastParentWithChildren = GetParentIndex(_size - 1);
+        var lastParentWithChildren = GetParentIndex(_size - 1);
         for (var index = lastParentWithChildren; index >= 0; --index)
             MoveDown(nodes[index], index);
     }
@@ -130,6 +130,6 @@ sealed class CandidateHeap
         indices[node.Variable] = nodeIndex;
     }
 
-    static int GetParentIndex(int index) => (index - 1) >> Log2Arity;
+    static int GetParentIndex(int index) => index - 1 >> Log2Arity;
     static int GetFirstChildIndex(int index) => (index << Log2Arity) + 1;
 }

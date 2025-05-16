@@ -22,7 +22,7 @@
 		</PackageReference>
 		<ProjectReference Include="..\SatSolver\SatSolver.csproj" />
 		<Using Include="Xunit" />
-		<InternalsVisibleTo Include="SatSolverBenchmark"/>
+		<InternalsVisibleTo Include="SatSolverBenchmark" />
 	</ItemGroup>
 
 	<ItemGroup>

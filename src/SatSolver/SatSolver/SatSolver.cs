@@ -16,12 +16,12 @@ public sealed partial class SatSolver
     readonly CancellationToken _cancellationToken;
     readonly Options _options;
     
-    readonly ConstraintLiteral[] _literals;
-    readonly Queue<(int Literal, Constraint Reason)> _unitLiterals = [];
+    readonly Variable[] _variables;
+    readonly Queue<(ConstraintLiteral, Constraint Reason)> _unitLiterals = [];
     readonly Stack<(int variableTrailIndex, bool first)> _decisionLevels = [];
-    readonly int[] _variableTrail;
+    readonly Variable[] _variableTrail;
 
-    readonly HashSet<Constraint> _learnedConstraints = [];
+    readonly List<Constraint> _learnedConstraints = [];
 
     readonly CandidateHeap _candidateHeap;
 
@@ -44,8 +44,8 @@ public sealed partial class SatSolver
 
         _options = options;
         _cancellationToken = cancellationToken;
-        _literals = new ConstraintLiteral[problem.NumberOfLiterals << 1];
-        _variableTrail = new int[problem.NumberOfLiterals];
+        _variables = [..Enumerable.Range(0, problem.NumberOfLiterals).Select(index => new Variable(index))];
+        _variableTrail = new Variable[problem.NumberOfLiterals];
 
         if (_options.LiteralBlockDistanceTracking is { Decay: var lbdDecay, RecentCount: var lbdSize } && 
             (_options.Restart is { LiteralBlockDistanceThreshold: not null} || 
@@ -71,63 +71,53 @@ public sealed partial class SatSolver
             !_options.OnlyPoorMansVSIDS && _options.ClauseDeletion is { PropagationRateThreshold: not null }))
             _propagationRateTracker = new(interval, sampleSize, decay);
 
-        _candidateHeap = new(Enumerable.Range(0, problem.NumberOfLiterals).Select(i => _literals[i << 1].Activity));
+        _candidateHeap = new(Enumerable.Range(0, problem.NumberOfLiterals).Select(i => _variables[i].Activity));
     }
     int BuildConstraints(IEnumerable<Clause> clauses)
     {
         var clauseCount = 0;
-        var scores = new double[_literals.Length];
-        var positives = new HashSet<int>();
-        var negatives = new HashSet<int>();
-        var literals = _literals;
+        var scores = new double[_variables.Length << 1];
+        var literals = new HashSet<ConstraintLiteral>();
+        var tautologyTest = new HashSet<int>();
+        var variables = _variables;
         
         foreach (var clause in clauses)
         {
-            positives.Clear();
-            negatives.Clear();
+            literals.Clear();
 
             foreach (var literal in clause.Literals)
-                if (literal.Sense)
-                    positives.Add(literal.Id-1);
-                else
-                    negatives.Add(literal.Id-1);
+                literals.Add(literal.Sense ? variables[literal.Id-1].PositiveLiteral : variables[literal.Id-1].NegativeLiteral);
 
             // test for tautology (a | !a)
-            if (positives.Intersect(negatives).Any()) continue;
+            tautologyTest.Clear();
+            if (literals.Any(l => !tautologyTest.Add(l.Variable.Index))) continue;
 
             clauseCount++;
-
-            var constraintLiterals = positives.Select(i => i << 1).Concat(negatives.Select(i => (i << 1) + 1)).ToHashSet();
-            var constraint = new Constraint(constraintLiterals);
-
-            if (constraintLiterals.Count == 1)
-            {
-                constraint.Watched1 = constraint.Watched2 = constraintLiterals.First();
-                literals[constraint.Watched1].Watchers.Add(constraint);
+            
+            var constraint = new Constraint(literals);
+            if (constraint.Literals.Length == 1)
                 _unitLiterals.Enqueue((constraint.Watched1, constraint));
-            }
-            else
-            {
-                constraint.Watched1 = constraintLiterals.First();
-                constraint.Watched2 = constraintLiterals.Skip(1).First();
-                literals[constraint.Watched1].Watchers.Add(constraint);
-                literals[constraint.Watched2].Watchers.Add(constraint);
-            }
 
-            foreach (var literal in constraintLiterals)
-                scores[literal] += Math.Pow(2, -constraintLiterals.Count);
+            foreach (var literal in literals)
+            {
+                var index = literal.Variable.Index << 1;
+                if (!literal.Orientation) index+=1;
+                scores[index] += Math.Pow(2, -constraint.Literals.Length);
+            }
         }
 
         var maxActivity = double.MinValue;
-        for (var i = 0; i<_literals.Length; i+=2)
+        for (var i = 0; i<variables.Length; i++)
         {
-            var activity = scores[i] + scores[i+1];
+            var ps = scores[i<<1];
+            var ns = scores[(i<<1)+1];
+            var activity = ps + ns;
             if (activity > maxActivity) maxActivity = activity;
-            literals[i].Activity = activity;
-            literals[i].Polarity = scores[i] > scores[i+1];
+            variables[i].Activity = activity;
+            variables[i].Polarity = ps > ns;
         }
-        for (var i = 0; i<_literals.Length; i+=2)        
-            literals[i].Activity /= maxActivity;
+        for (var i = 0; i<variables.Length; i++)        
+            variables[i].Activity /= maxActivity;
 
         _variableActivityIncrement /= _options.VariableActivityDecayFactor;
 
@@ -141,7 +131,7 @@ public sealed partial class SatSolver
 
         _variableTrailSize = 0;
 
-        var candidateVariable = -1;
+        Variable? candidateVariable = null;
         var candidateSense = true;
 
         for(; ; )
@@ -149,17 +139,17 @@ public sealed partial class SatSolver
             _cancellationToken.ThrowIfCancellationRequested();
 
             var firstTry = false;
-            if (candidateVariable < 0)
+            if (candidateVariable is null)
             {
                 (candidateVariable, candidateSense) = GetNextCandidate();
-                if (candidateVariable < 0) return BuildSolution();
+                if (candidateVariable is null) return BuildSolution();
                 firstTry = true;
             }
 
             _decisionLevels.Push((_variableTrailSize, first: firstTry));
             var success = PropagateVariable(candidateVariable, candidateSense, null) && PropagateUnits();
 
-            candidateVariable = -1;
+            candidateVariable = null;
 
             if (_restartRecommended)
             {
@@ -170,36 +160,32 @@ public sealed partial class SatSolver
             if (!success)
             {
                 (candidateVariable, candidateSense) = Backtrack();
-                if (candidateVariable == -1) return null;
+                if (candidateVariable is null) return null;
             }
         }
     }
-    (int Variable, bool Sense) GetNextCandidate()
+    (Variable? Variable, bool Sense) GetNextCandidate()
     {
-        var literals = _literals;
+        var variables = _variables;
         while(_candidateHeap.Count > 0)
         {
-            var variable = _candidateHeap.Dequeue();
-            var literal = literals[variable << 1];
-            if (literal.Sense is null) return (variable, literal.Polarity);
+            var variableIndex = _candidateHeap.Dequeue();
+            var variable = variables[variableIndex];
+            if (variable.Sense is null) return (variable, variable.Polarity);
         }
 
-        return (-1, false);
+        return (null, false);
     }
 
     void ResetVariableTrail(int targetLevelStart)
     {
-        var literals = _literals;
         foreach (var trailedVariable in _variableTrail[targetLevelStart.._variableTrailSize])
         {
-            var positiveLiteral = trailedVariable << 1;
-            literals[positiveLiteral].Sense = null;
-            literals[positiveLiteral].Reason = null;
-            literals[positiveLiteral].DecisionLevel = 0;
+            trailedVariable.Sense = null;
+            trailedVariable.Reason = null;
+            trailedVariable.DecisionLevel = 0;
 
-            literals[positiveLiteral+1].Sense = null;
-
-            _candidateHeap.Enqueue(trailedVariable, literals[positiveLiteral].Activity);
+            _candidateHeap.Enqueue(trailedVariable.Index, trailedVariable.Activity);
         }
         
         _variableTrailSize = targetLevelStart;
@@ -218,7 +204,7 @@ public sealed partial class SatSolver
         _unitLiterals.Clear();
     }
 
-    Literal[] BuildSolution() => [.. Enumerable.Range(0, _literals.Length >> 1).Select(i => new Literal(i+1, _literals[i << 1].Sense!.Value))];
+    Literal[] BuildSolution() => [.. _variables.Select(v => new Literal(v.Index+1, v.Sense!.Value))];
 
     /// <summary>
     /// Finds a variable configuration that satisfies the SATisfiability <paramref name="problem"/>.

@@ -14,6 +14,7 @@ var testOptions = new Options()
 
     ClauseActivityDecayFactor = 0.999,
     LiteralBlockDistanceMaximum = 8,
+    MaximumClauseMinimizationDepth = 9,
 
     ClauseDeletion = new()
     {
@@ -62,14 +63,14 @@ try
     Write("SAT:   ");
     Solve(satProblems, true);
     SetCursorPosition(7, 1);
-    WriteLine($"{elapsed,-50:mm\\:ss\\.fff}");
+    WriteLine($"{elapsed,-50:mm\\:ss\\.ff}");
     Write("UNSAT: ");
     var satTime = elapsed;
     elapsed = TimeSpan.Zero;
     Solve(unsatProblems, false);
     SetCursorPosition(7, 2);
-    WriteLine($"{elapsed,-50:mm\\:ss\\.fff}");
-    WriteLine($"TOTAL: {elapsed+satTime:mm\\:ss\\.fff}");
+    WriteLine($"{elapsed,-50:mm\\:ss\\.ff}");
+    WriteLine($"TOTAL: {elapsed+satTime:mm\\:ss\\.ff}");
 }
 finally
 {
@@ -86,7 +87,7 @@ void Solve((string file, Problem problem)[] problems, bool sat)
         var dots = new string('.', dotCount);
         var spaces = new string(' ', 20 - dotCount);
         var estimated = i > 0 ? (double)problems.Length / i * elapsed : TimeSpan.Zero;
-        Write($"{i}/{problems.Length} [{dots}{spaces}] {elapsed:mm\\:ss\\.fff} {estimated:mm\\:ss\\:fff}");
+        Write($"{i}/{problems.Length} [{dots}{spaces}] {elapsed:mm\\:ss\\.ff} {estimated:mm\\:ss\\:ff}");
         var watch = Stopwatch.StartNew();
         var solution = SatSolver.Solve(problems[i].problem, testOptions);
         watch.Stop();

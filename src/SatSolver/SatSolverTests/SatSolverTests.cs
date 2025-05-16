@@ -14,8 +14,9 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 
         ClauseActivityDecayFactor = 0.999,
         LiteralBlockDistanceMaximum = 8,
+        MaximumClauseMinimizationDepth = 9,
 
-        ClauseDeletion = new()
+    ClauseDeletion = new ()
         {
             LiteralBlockDistanceToKeep = 2,
             OriginalClauseCountFactor = 5,

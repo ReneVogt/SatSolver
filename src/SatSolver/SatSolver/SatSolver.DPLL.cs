@@ -4,19 +4,15 @@ namespace Revo.SatSolver;
 
 public sealed partial class SatSolver
 {
-    bool PropagateVariable(int variable, bool sense, Constraint? reason) 
+    bool PropagateVariable(Variable variable, bool sense, Constraint? reason)
     {
-        var literals = _literals;
-        var positiveLiteralIndex = variable << 1;
-        var negativeLiteralIndex = positiveLiteralIndex + 1;
-        literals[positiveLiteralIndex].Sense = sense;
-        literals[positiveLiteralIndex].Reason = reason;
-        literals[positiveLiteralIndex].DecisionLevel = _decisionLevels.Count;
-        literals[negativeLiteralIndex].Sense = !sense;
+        variable.Sense = sense;
+        variable.Reason = reason;
+        variable.DecisionLevel = _decisionLevels.Count;
         _variableTrail[_variableTrailSize++] = variable;        
 
-        var watchedLiteral = sense ? negativeLiteralIndex : positiveLiteralIndex;
-        var watchers = literals[watchedLiteral].Watchers;
+        var watchedLiteral = sense ? variable.NegativeLiteral : variable.PositiveLiteral;
+        var watchers = watchedLiteral.Watchers;
         for(var watcherIndex = 0; watcherIndex<watchers.Count; watcherIndex++)
         {            
             var constraint = watchers[watcherIndex];
@@ -26,19 +22,19 @@ public sealed partial class SatSolver
                 constraint.Watched2 = watchedLiteral;
             }
 
-            var otherWatchedSense = literals[constraint.Watched1].Sense;
+            var otherWatchedSense = constraint.Watched1.Sense;
             if (otherWatchedSense == true) continue;
 
-            var nextLiteral = -1;
+            ConstraintLiteral? nextLiteral = null;
             foreach (var next in constraint.Literals)
             {
                 if (next == watchedLiteral || next == constraint.Watched1) continue;
-                var nextSense = literals[next].Sense;
+                var nextSense = next.Sense;
                 if (nextSense != false) nextLiteral = next;
                 if (nextSense == true) break;
             }
 
-            if (nextLiteral < 0)
+            if (nextLiteral is null)
             {
                 if (otherWatchedSense is not null)
                 {
@@ -52,22 +48,21 @@ public sealed partial class SatSolver
             }
             
             constraint.Watched2 = nextLiteral;
-            literals[nextLiteral].Watchers.Add(constraint);
-            watchers.RemoveAt(watcherIndex--);            
+            nextLiteral.Watchers.Add(constraint);
+            watchers.RemoveAt(watcherIndex--);         
         }
 
-        literals[positiveLiteralIndex].Polarity = sense;
+        variable.Polarity = sense;
         return true;
     }
     bool PropagateUnits()
     {
-        var literals = _literals;
         while(_unitLiterals.Count > 0)
         {
             _cancellationToken.ThrowIfCancellationRequested();
             var (literal, reason) = _unitLiterals.Dequeue();
-            if (literals[literal].Sense is not null) continue;
-            if (!PropagateVariable(literal >> 1, (literal & 1) == 0, reason)) return false;
+            if (literal.Sense is not null) continue;
+            if (!PropagateVariable(literal.Variable, literal.Orientation, reason)) return false;
         }
 
         return true;
@@ -84,7 +79,7 @@ public sealed partial class SatSolver
         if (_options.OnlyPoorMansVSIDS)
         {
             foreach (var literal in conflictingConstraint.Literals)
-                IncreaseVariableActivity(literal);
+                IncreaseVariableActivity(literal.Variable);
             _variableActivityIncrement /= _options.VariableActivityDecayFactor;
             return false;
         }
@@ -110,17 +105,17 @@ public sealed partial class SatSolver
             ReduceClauses();
     }
 
-    (int Variable, bool Sense) Backtrack()
+    (Variable? Variable, bool Sense) Backtrack()
     {
         _unitLiterals.Clear();
 
         var first = false;
         var variableTrailIndex = -1;
         while (_decisionLevels.Count > 0 && !first) (variableTrailIndex, first) = _decisionLevels.Pop();
-        if (!first) return (-1, true);
+        if (!first) return (null, true);
 
         var variable = _variableTrail[variableTrailIndex];
-        var sense = !_literals[variable << 1].Sense!.Value;
+        var sense = !variable.Sense!.Value;
 
         ResetVariableTrail(variableTrailIndex);
         return (variable, sense);

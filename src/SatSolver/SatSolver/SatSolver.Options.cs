@@ -176,6 +176,11 @@ public sealed partial class SatSolver
         public int LiteralBlockDistanceMaximum { get; init; } = 8;
 
         /// <summary>
+        /// The maximum recursion depth for clause minimization.
+        /// </summary>
+        public int MaximumClauseMinimizationDepth { get; init; } = 9;
+
+        /// <summary>
         /// Configures when and how learned clauses will
         /// be deleted.
         /// </summary>
