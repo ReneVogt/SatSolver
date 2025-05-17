@@ -57,7 +57,7 @@ public sealed class CandidateHeapTests
         var sut = new CandidateHeap(variables);
         Assert.Equal(4, sut.Dequeue()!.Index);
         variables[4].Activity = 3;
-        sut.Enqueue(4, variables[4].Activity);
+        sut.Enqueue(variables[4]);
 
         Assert.Equal(1, sut.Dequeue()!.Index);
         Assert.Equal(3, sut.Dequeue()!.Index);
@@ -80,7 +80,7 @@ public sealed class CandidateHeapTests
         Assert.Equal(4, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);
         variables[1].Activity = 10;
-        sut.Enqueue(1, variables[1].Activity);
+        sut.Enqueue(variables[1]);
 
         Assert.Equal(1, sut.Dequeue()!.Index);
         Assert.Equal(3, sut.Dequeue()!.Index);
@@ -100,7 +100,7 @@ public sealed class CandidateHeapTests
 
         var sut = new CandidateHeap(variables);
         variables[4].Activity = 3;
-        sut.Enqueue(4, variables[4].Activity);
+        sut.Enqueue(variables[4]);
 
         Assert.Equal(1, sut.Dequeue()!.Index);
         Assert.Equal(3, sut.Dequeue()!.Index);
@@ -121,7 +121,7 @@ public sealed class CandidateHeapTests
 
         var sut = new CandidateHeap(variables);
         variables[4].Activity = 12;
-        sut.Enqueue(4, variables[4].Activity);
+        sut.Enqueue(variables[4]);
 
         Assert.Equal(4, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);
@@ -142,7 +142,7 @@ public sealed class CandidateHeapTests
 
         var sut = new CandidateHeap(variables);
         variables[4].Activity = 1;
-        sut.Enqueue(4, variables[4].Activity);
+        sut.Enqueue(variables[4]);
 
         Assert.Equal(0, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);
@@ -163,7 +163,7 @@ public sealed class CandidateHeapTests
 
         var sut = new CandidateHeap(variables);
         variables[4].Activity = 5;
-        sut.Enqueue(4, variables[4].Activity);
+        sut.Enqueue(variables[4]);
 
         Assert.Equal(0, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);
@@ -175,43 +175,55 @@ public sealed class CandidateHeapTests
     [Fact]
     public void Update_Inner_Smaller_CorrectSequence()
     {
-        var variables = Enumerable.Range(0, 5).Select(i => new Variable(i)).ToArray();
-        variables[0].Activity = 10;
-        variables[1].Activity = 8;
-        variables[2].Activity = 6;
-        variables[3].Activity = 4;
-        variables[4].Activity = 2;
+        var variables = Enumerable.Range(0, 7).Select(i => new Variable(i)).ToArray();
+        variables[0].Activity = 90;
+        variables[1].Activity = 80;
+        variables[2].Activity = 70;
+        variables[3].Activity = 60;
+        variables[4].Activity = 50;
+        variables[5].Activity = 40;
+        variables[6].Activity = 30;
 
         var sut = new CandidateHeap(variables);
-        variables[2].Activity = 3;
-        sut.Enqueue(2, variables[2].Activity);
+        
+        variables[1].Activity = 55;
+        sut.Enqueue(variables[1]);
 
         Assert.Equal(0, sut.Dequeue()!.Index);
-        Assert.Equal(1, sut.Dequeue()!.Index);
-        Assert.Equal(3, sut.Dequeue()!.Index);
         Assert.Equal(2, sut.Dequeue()!.Index);
+        Assert.Equal(3, sut.Dequeue()!.Index);
+        Assert.Equal(1, sut.Dequeue()!.Index);
         Assert.Equal(4, sut.Dequeue()!.Index);
+        Assert.Equal(5, sut.Dequeue()!.Index);
+        Assert.Equal(6, sut.Dequeue()!.Index);
         Assert.Null(sut.Dequeue());
     }
     [Fact]
     public void Update_Inner_Greater_CorrectSequence()
     {
-        var variables = Enumerable.Range(0, 5).Select(i => new Variable(i)).ToArray();
-        variables[0].Activity = 10;
-        variables[1].Activity = 8;
-        variables[2].Activity = 6;
-        variables[3].Activity = 4;
-        variables[4].Activity = 2;
+        var variables = Enumerable.Range(0, 7).Select(i => new Variable(i)).ToArray();
+        variables[0].Activity = 90;
+        variables[1].Activity = 80;
+        variables[2].Activity = 70;
+        variables[3].Activity = 60;
+        variables[4].Activity = 50;
+        variables[5].Activity = 40;
+        variables[6].Activity = 30;
 
         var sut = new CandidateHeap(variables);
-        variables[2].Activity = 9;
-        sut.Enqueue(2, variables[2].Activity);
+        
+        variables[2].Activity = 100;
+        sut.Enqueue(variables[2]);
+        variables[1].Activity = 110;
+        sut.Enqueue(variables[1]);
 
-        Assert.Equal(0, sut.Dequeue()!.Index);
-        Assert.Equal(2, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);
+        Assert.Equal(2, sut.Dequeue()!.Index);
+        Assert.Equal(0, sut.Dequeue()!.Index);
         Assert.Equal(3, sut.Dequeue()!.Index);
         Assert.Equal(4, sut.Dequeue()!.Index);
+        Assert.Equal(5, sut.Dequeue()!.Index);
+        Assert.Equal(6, sut.Dequeue()!.Index);
         Assert.Null(sut.Dequeue());
     }
 }

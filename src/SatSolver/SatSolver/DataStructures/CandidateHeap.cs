@@ -5,12 +5,9 @@ sealed class CandidateHeap
     const int Arity = 2;
     const int Log2Arity = 1;
 
-    readonly Variable[] _variables;
-    readonly (int Variable, double Activity)[] _nodes;
+    readonly Variable[] _nodes;
     readonly int[] _indices;
     int _size;
-
-    public int Count => _size;
 
 #if DEBUG
     static CandidateHeap()
@@ -21,55 +18,53 @@ sealed class CandidateHeap
 
     public CandidateHeap(Variable[] variables)
     {
-        _variables = variables;
-        _nodes = [.. _variables.Select(v => (v.Index, v.Activity))];
+        _nodes = (Variable[])variables.Clone();
         _indices = [.. Enumerable.Range(0, _nodes.Length)];
         _size = _nodes.Length;
         Heapify();
     }
 
-    public void Enqueue(int variable, double activity)
+    public void Enqueue(Variable variable)
     {
-        var index = _indices[variable];
+        var index = _indices[variable.Index];
         if (index < 0)
         {
             _size++;
-            MoveUp((variable, activity), _size-1);
+            MoveUp(variable, _size-1);
             return;
         }
 
-        var lastActivity = _nodes[index].Activity;
-        _nodes[index].Activity = activity;
-        var cmp = activity.CompareTo(lastActivity);
-        if (cmp > 0)
-            MoveUp(_nodes[index], index);
-        else if (cmp < 0)
-            MoveDown(_nodes[index], index);
+        if (index == 0)
+        {
+            MoveDown(variable, 0);
+            return;
+        }
+
+        if (index == _size-1)
+        {
+            MoveUp(variable, index);
+            return;
+        }
+
+        var parent = _nodes[GetParentIndex(index)];
+        if (parent.Activity < variable.Activity)
+            MoveUp(variable, index);
+        else
+            MoveDown(variable, index);
     }
     public Variable? Dequeue()
     {
-        var variables = _variables;
+        var nodes = _nodes;
+        var indices = _indices;
         while (_size > 0)
         {
-            var index = _nodes[0].Variable;
+            var variable = nodes[0];
             RemoveRootNode();
-            _indices[index] = -1;
-            var variable = variables[index];
+            indices[variable.Index] = -1;
             if (variable.Sense is null) return variable;
         }
 
         return null;
-    }
-
-    public void Rescale(double scaleLimit)
-    {
-        var nodes = _nodes;
-        for(var i=0; i<_indices.Length; i++)
-        {
-            var index = _indices[i];
-            if (index < 0) continue;
-            nodes[index].Activity /= scaleLimit;
-        }
     }
 
     void RemoveRootNode()
@@ -86,7 +81,7 @@ sealed class CandidateHeap
         for (var index = lastParentWithChildren; index >= 0; --index)
             MoveDown(nodes[index], index);
     }
-    void MoveUp((int Variable, double Activity) node, int nodeIndex)
+    void MoveUp(Variable variable, int nodeIndex)
     {
         var nodes = _nodes;
         var indices = _indices;
@@ -94,17 +89,17 @@ sealed class CandidateHeap
         {
             var parentIndex = GetParentIndex(nodeIndex);
             var parent = nodes[parentIndex];
-            if (node.Activity <= parent.Activity) break;
+            if (variable.Activity <= parent.Activity) break;
             
             nodes[nodeIndex] = parent;
-            indices[parent.Variable] = nodeIndex;
+            indices[parent.Index] = nodeIndex;
             nodeIndex = parentIndex;
         }
 
-        nodes[nodeIndex] = node;
-        indices[node.Variable] = nodeIndex;
+        nodes[nodeIndex] = variable;
+        indices[variable.Index] = nodeIndex;
     }
-    void MoveDown((int Variable, double Activity) node, int nodeIndex)
+    void MoveDown(Variable variable, int nodeIndex)
     {
         var nodes = _nodes;
         var indices = _indices;
@@ -125,15 +120,15 @@ sealed class CandidateHeap
                 maxChildIndex = i;
             }
 
-            if (node.Activity >= maxChild.Activity) break;
+            if (variable.Activity >= maxChild.Activity) break;
 
             nodes[nodeIndex] = maxChild;
-            indices[maxChild.Variable] = nodeIndex;
+            indices[maxChild.Index] = nodeIndex;
             nodeIndex = maxChildIndex;
         }
 
-        nodes[nodeIndex] = node;
-        indices[node.Variable] = nodeIndex;
+        nodes[nodeIndex] = variable;
+        indices[variable.Index] = nodeIndex;
     }
 
     static int GetParentIndex(int index) => index - 1 >> Log2Arity;

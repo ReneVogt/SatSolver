@@ -1,6 +1,5 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Helpers;
-using System.Diagnostics;
 
 namespace Revo.SatSolver;
 
@@ -174,7 +173,7 @@ public sealed partial class SatSolver
             trailedVariable.Reason = null;
             trailedVariable.DecisionLevel = 0;
 
-            _candidateHeap.Enqueue(trailedVariable.Index, trailedVariable.Activity);
+            _candidateHeap.Enqueue(trailedVariable);
         }
         
         _variableTrailSize = targetLevelStart;
