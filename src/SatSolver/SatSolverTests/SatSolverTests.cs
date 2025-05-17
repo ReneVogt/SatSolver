@@ -73,8 +73,13 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         string cnf = File.ReadAllText(Path.Combine("SimpleCases", fileName));
         var problem = DimacsParser.Parse(cnf).Single();
         var solution = Solve(problem, _testOptions);
-        Assert.NotNull(solution);
-        SolutionValidator.Validate(problem, solution);
+        if (cnf.Trim().EndsWith("c UNSAT"))
+            Assert.Null(solution);
+        else
+        {
+            Assert.NotNull(solution);
+            SolutionValidator.Validate(problem, solution);
+        }
     }
 
     [Theory]
