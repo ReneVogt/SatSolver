@@ -1,5 +1,8 @@
-﻿namespace Revo.SatSolver.DataStructures;
+﻿using System.Diagnostics;
 
+namespace Revo.SatSolver.DataStructures;
+
+[DebuggerDisplay("{" + nameof(Index) + "} {" + nameof(Sense) + "} {" + nameof(DecisionLevel) + "} {" + nameof(Polarity) + "} {" + nameof(Activity) + "}")]
 sealed class Variable
 {
     public int Index { get; }
@@ -26,4 +29,6 @@ sealed class Variable
         PositiveLiteral = new(this, true);
         NegativeLiteral = new(this, false);
     }
+
+    public override int GetHashCode() => Index;
 }
