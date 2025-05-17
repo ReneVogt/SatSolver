@@ -5,6 +5,7 @@ sealed class CandidateHeap
     const int Arity = 2;
     const int Log2Arity = 1;
 
+    readonly Variable[] _variables;
     readonly (int Variable, double Activity)[] _nodes;
     readonly int[] _indices;
     int _size;
@@ -18,41 +19,46 @@ sealed class CandidateHeap
     }
 #endif
 
-    public CandidateHeap(IEnumerable<double> initialActivities)
+    public CandidateHeap(Variable[] variables)
     {
-        _nodes = [.. initialActivities.Select((activity, index) => (index, activity))];
+        _variables = variables;
+        _nodes = [.. _variables.Select(v => (v.Index, v.Activity))];
         _indices = [.. Enumerable.Range(0, _nodes.Length)];
         _size = _nodes.Length;
         Heapify();
     }
 
-    public void Enqueue(int variable, double activity)
+    public void Enqueue(Variable variable)
     {
-        var index = _indices[variable];
+        var index = _indices[variable.Index];
         if (index < 0)
         {
             _size++;
-            MoveUp((variable, activity), _size-1);
+            MoveUp((variable.Index, variable.Activity), _size-1);
             return;
         }
 
         var lastActivity = _nodes[index].Activity;
-        _nodes[index].Activity = activity;
-        var cmp = activity.CompareTo(lastActivity);
+        _nodes[index].Activity = variable.Activity;
+        var cmp = variable.Activity.CompareTo(lastActivity);
         if (cmp > 0)
             MoveUp(_nodes[index], index);
         else if (cmp < 0)
             MoveDown(_nodes[index], index);
     }
-    public int Dequeue()
+    public Variable? Dequeue()
     {
-        if (_size == 0)
-            throw new InvalidOperationException("The candidate queue is empty.");
+        var variables = _variables;
+        while (_size > 0)
+        {
+            var index = _nodes[0].Variable;
+            RemoveRootNode();
+            _indices[index] = -1;
+            var variable = variables[index];
+            if (variable.Sense is null) return variable;
+        }
 
-        var variable  = _nodes[0].Variable;
-        RemoveRootNode();
-        _indices[variable] = -1;
-        return variable;
+        return null;
     }
 
     public void Rescale(double scaleLimit)
