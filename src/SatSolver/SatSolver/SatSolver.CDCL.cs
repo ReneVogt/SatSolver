@@ -164,8 +164,8 @@ public sealed partial class SatSolver
         var variables = _variables;
         for (var i = 0; i < variables.Length; i++)
             variables[i].Activity /= _rescaleLimit;
-        _variableActivityIncrement /= _rescaleLimit;
         _candidateHeap.Rescale(_rescaleLimit);
+        _variableActivityIncrement /= _rescaleLimit;
     }
 
     void CheckLiteralBlockDistanceBehaviour(int lbd)

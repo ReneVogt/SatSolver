@@ -71,7 +71,7 @@ public sealed partial class SatSolver
             !_options.OnlyPoorMansVSIDS && _options.ClauseDeletion is { PropagationRateThreshold: not null }))
             _propagationRateTracker = new(interval, sampleSize, decay);
 
-        _candidateHeap = new(Enumerable.Range(0, problem.NumberOfLiterals).Select(i => _variables[i].Activity));
+        _candidateHeap = new(_variables);
     }
     int BuildConstraints(IEnumerable<Clause> clauses)
     {
@@ -141,8 +141,9 @@ public sealed partial class SatSolver
             var firstTry = false;
             if (candidateVariable is null)
             {
-                (candidateVariable, candidateSense) = GetNextCandidate();
+                candidateVariable = _candidateHeap.Dequeue();
                 if (candidateVariable is null) return BuildSolution();
+                candidateSense = candidateVariable.Polarity;
                 firstTry = true;
             }
 
@@ -163,18 +164,6 @@ public sealed partial class SatSolver
                 if (candidateVariable is null) return null;
             }
         }
-    }
-    (Variable? Variable, bool Sense) GetNextCandidate()
-    {
-        var variables = _variables;
-        while(_candidateHeap.Count > 0)
-        {
-            var variableIndex = _candidateHeap.Dequeue();
-            var variable = variables[variableIndex];
-            if (variable.Sense is null) return (variable, variable.Polarity);
-        }
-
-        return (null, false);
     }
 
     void ResetVariableTrail(int targetLevelStart)
