@@ -173,7 +173,7 @@ public sealed partial class SatSolver
         /// of the watcher structure and not counted for the
         /// average literal block distance.
         /// </summary>
-        public int LiteralBlockDistanceMaximum { get; init; } = 8;
+        public int MaximumLiteralBlockDistance { get; init; } = 8;
 
         /// <summary>
         /// The maximum recursion depth for clause minimization.

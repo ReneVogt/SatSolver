@@ -1,5 +1,17 @@
 ﻿namespace Revo.SatSolver.DataStructures;
 
+/// <summary>
+/// A max heap containing the candidate variables.
+/// Only candidates will be dequeued. Propagated
+/// units that are re-enqueued are updated in 
+/// place. We keep the <see cref="_indices"/> array
+/// to find the node in O(1).
+/// NOTE: using only Variables in the nodes without
+/// explicit activity turns out to be slower for 
+/// whatever reason. Rescaling appears so rarely 
+/// that it does not count. So please don't
+/// refactor to use only a Variable[] for nodes.
+/// </summary>
 sealed class CandidateHeap
 {
     const int Arity = 2;
