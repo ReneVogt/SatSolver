@@ -2,9 +2,14 @@
 
 using static System.Console;
 
-WriteLine("[A]utomatic or [M]anual? ");
+CursorVisible = false;
+
+WriteLine("[A]utomatic");
+WriteLine("[M]anual");
+WriteLine("[C]andidateQueue");
 switch (ReadKey(true).Key)
 {
-    case ConsoleKey.A: Benchmark.Run();  break;
+    case ConsoleKey.A: SatSolverBenchmark.SatSolverBenchmark.Run();  break;
     case ConsoleKey.M: ManualBenchmark.Run(); break;
+    case ConsoleKey.C: CandidateHeapBenchmark.Run(); break;
 }

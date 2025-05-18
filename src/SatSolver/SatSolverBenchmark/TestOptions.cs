@@ -10,7 +10,7 @@ static class TestOptions
         VariableActivityDecayFactor = 0.9995,
 
         ClauseActivityDecayFactor = 0.999,
-        LiteralBlockDistanceMaximum = 8,
+        MaximumLiteralBlockDistance = 8,
         MaximumClauseMinimizationDepth = 9,
 
         ClauseDeletion = new()

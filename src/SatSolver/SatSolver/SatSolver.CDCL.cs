@@ -14,7 +14,7 @@ public sealed partial class SatSolver
         _unitLiterals.Clear();
         _unitLiterals.Enqueue((uipLiteral, learnedConstraint));
 
-        if (learnedConstraint.LiteralBlockDistance > _options.LiteralBlockDistanceMaximum)
+        if (learnedConstraint.LiteralBlockDistance > _options.MaximumLiteralBlockDistance)
         {
             JumpBack(learnedConstraint, uipLiteral);
             return;

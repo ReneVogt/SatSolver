@@ -36,6 +36,7 @@
 			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
 		</EmbeddedResource>
 		<InternalsVisibleTo Include="SatSolverTests" />
+		<InternalsVisibleTo Include="SatSolverBenchmark" />
 	</ItemGroup>
 
 </Project>

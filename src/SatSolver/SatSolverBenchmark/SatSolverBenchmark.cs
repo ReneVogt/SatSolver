@@ -1,6 +1,4 @@
 ﻿using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using Revo.SatSolver;
 using SatSolverTests;
@@ -9,7 +7,7 @@ namespace SatSolverBenchmark;
 
 [SimpleJob(warmupCount: 1, iterationCount: 5)]
 
-public class Benchmark
+public class SatSolverBenchmark
 {
     readonly SatSolver.Options _options = TestOptions.Default;
 
@@ -44,6 +42,6 @@ public class Benchmark
 
     public static void Run()
     {
-        BenchmarkRunner.Run<Benchmark>();
+        BenchmarkRunner.Run<SatSolverBenchmark>();
     }
 }
