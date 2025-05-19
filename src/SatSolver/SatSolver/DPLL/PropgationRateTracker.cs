@@ -1,4 +1,4 @@
-﻿namespace Revo.SatSolver.Helpers;
+﻿namespace Revo.SatSolver.DPLL;
 
 sealed class PropagationRateTracker(int conflictInterval, int sampleSize, double decay)
 {    
@@ -17,7 +17,7 @@ sealed class PropagationRateTracker(int conflictInterval, int sampleSize, double
         AddRate(_propagationCount/(double)_conflictCount);
         _conflictCount = _propagationCount = 0;
     }
-    public void AddPropagation() => _propagationCount++;
+    public void AddPropagations(int propgations) => _propagationCount += propgations;
 
     void AddRate(double rate) 
     {

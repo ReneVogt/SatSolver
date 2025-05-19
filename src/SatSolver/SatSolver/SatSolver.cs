@@ -1,6 +1,6 @@
 ﻿using Revo.SatSolver.DataStructures;
+using Revo.SatSolver.DPLL;
 using Revo.SatSolver.Helpers;
-using System.Diagnostics;
 
 namespace Revo.SatSolver;
 
@@ -11,19 +11,18 @@ namespace Revo.SatSolver;
 /// </summary>
 public sealed partial class SatSolver
 {
-    const double _rescaleLimit = 1e100;
-
     readonly CancellationToken _cancellationToken;
     readonly Options _options;
     
     readonly Variable[] _variables;
     readonly Queue<(ConstraintLiteral, Constraint Reason)> _unitLiterals = [];
-    readonly Stack<(int variableTrailIndex, bool first)> _decisionLevels = [];
-    readonly Variable[] _variableTrail;
+    readonly VariableTrail _trail;
+    readonly DpllProcessor _dpllProcessor;
 
     readonly List<Constraint> _learnedConstraints = [];
 
     readonly CandidateHeap _candidateHeap;
+    readonly ActivityManager _activityManager;
 
     readonly LubySequence? _lubySequence;
 
@@ -32,11 +31,8 @@ public sealed partial class SatSolver
     readonly EmaTracker? _literalBlockDistanceTracker;
     readonly PropagationRateTracker? _propagationRateTracker;
 
-    int _variableTrailSize;
     int _restartCounter, _nextRestartThreshold;
     bool _restartRecommended;
-
-    double _clauseActivityIncrement = 1, _variableActivityIncrement = 1;
 
     SatSolver(Problem problem, Options options, CancellationToken cancellationToken)
     {
@@ -45,15 +41,12 @@ public sealed partial class SatSolver
         _options = options;
         _cancellationToken = cancellationToken;
         _variables = [..Enumerable.Range(0, problem.NumberOfLiterals).Select(index => new Variable(index))];
-        _variableTrail = new Variable[problem.NumberOfLiterals];
 
         if (_options.LiteralBlockDistanceTracking is { Decay: var lbdDecay, RecentCount: var lbdSize } && 
             (_options.Restart is { LiteralBlockDistanceThreshold: not null} || 
             !_options.OnlyPoorMansVSIDS && _options.ClauseDeletion is { LiteralBlockDistanceThreshold: not null}))
             _literalBlockDistanceTracker = new(lbdSize, lbdDecay);
         
-        _originalClauseCount = BuildConstraints(problem.Clauses);
-
         if (_options.Restart?.Interval is { } restartInterval)
         {
             if (_options.Restart.Luby)
@@ -71,7 +64,20 @@ public sealed partial class SatSolver
             !_options.OnlyPoorMansVSIDS && _options.ClauseDeletion is { PropagationRateThreshold: not null }))
             _propagationRateTracker = new(interval, sampleSize, decay);
 
-        _candidateHeap = new(_variables);
+        // it is very important to do this before we 
+        // initialize the heap with the variables and
+        // activities!
+        _originalClauseCount = BuildConstraints(problem.Clauses);
+
+        _candidateHeap = new (_variables);
+        _activityManager = new ActivityManager(
+            variables: _variables, 
+            learnedConstraints: _learnedConstraints, 
+            variableActivityDecay: _options.VariableActivityDecayFactor, 
+            constraintActivityDecay: _options.ClauseActivityDecayFactor, 
+            candidateHeap: _candidateHeap);
+        _trail = new(problem.NumberOfLiterals, _candidateHeap);
+        _dpllProcessor = new(_trail, _unitLiterals, _activityManager, _cancellationToken);
     }
     int BuildConstraints(IEnumerable<Clause> clauses)
     {
@@ -116,20 +122,20 @@ public sealed partial class SatSolver
             variables[i].Activity = activity;
             variables[i].Polarity = ps > ns;
         }
+        maxActivity /= _options.VariableActivityDecayFactor;
         for (var i = 0; i<variables.Length; i++)        
             variables[i].Activity /= maxActivity;
-
-        _variableActivityIncrement /= _options.VariableActivityDecayFactor;
 
         return clauseCount;
     }
 
     Literal[]? Solve()
     {
-        if (!PropagateUnits())
+        var propagationCount = 0;
+        if (_dpllProcessor.PropagateUnits(ref propagationCount) is not null)
             return null;
 
-        _variableTrailSize = 0;
+        _trail.Clear();
 
         Variable? candidateVariable = null;
         var candidateSense = true;
@@ -147,8 +153,23 @@ public sealed partial class SatSolver
                 firstTry = true;
             }
 
-            _decisionLevels.Push((_variableTrailSize, first: firstTry));
-            var success = PropagateVariable(candidateVariable, candidateSense, null) && PropagateUnits();
+            var backtrack = false;
+            var decision = true;
+            _trail.Push(firstTry);
+            var conflictingConstraint = _dpllProcessor.PropagateVariable(candidateVariable, candidateSense, null, out propagationCount);
+            if (conflictingConstraint is null)
+            {
+                decision = false;
+                conflictingConstraint = _dpllProcessor.PropagateUnits(ref propagationCount);
+            }
+
+            TrackPropagationRate(propagationCount);
+
+            if (conflictingConstraint is not null)
+            {
+                TrackPropagationRate(null);
+                backtrack = HandleConflict(conflictingConstraint, decision);
+            }
 
             candidateVariable = null;
 
@@ -158,26 +179,46 @@ public sealed partial class SatSolver
                 continue;
             }
 
-            if (!success)
+            if (backtrack)
             {
-                (candidateVariable, candidateSense) = Backtrack();
+                _unitLiterals.Clear();
+                (candidateVariable, candidateSense) = _trail.Backtrack();
                 if (candidateVariable is null) return null;
             }
         }
     }
-
-    void ResetVariableTrail(int targetLevelStart)
+    bool HandleConflict(Constraint conflictingConstraint, bool decision)
     {
-        foreach (var trailedVariable in _variableTrail[targetLevelStart.._variableTrailSize])
+        if (_nextRestartThreshold > 0)
         {
-            trailedVariable.Sense = null;
-            trailedVariable.Reason = null;
-            trailedVariable.DecisionLevel = 0;
-
-            _candidateHeap.Enqueue(trailedVariable);
+            _restartCounter++;
+            _restartRecommended = _restartCounter > _nextRestartThreshold;
         }
-        
-        _variableTrailSize = targetLevelStart;
+
+        if (_options.OnlyPoorMansVSIDS)
+        {
+            _activityManager.IncreaseVariableActivity(conflictingConstraint);
+            return true;
+        }
+
+        _activityManager.IncreaseConstraintActivity(conflictingConstraint);
+
+        if (decision || _trail.DecisionLevel == 0) return true;
+        PerformClauseLearning(conflictingConstraint);
+        return false;
+    }
+    void TrackPropagationRate(int? propagations)
+    {
+        if (_propagationRateTracker is null) return;
+        if (propagations is null)
+            _propagationRateTracker.AddConflict();
+        else
+            _propagationRateTracker.AddPropagations(propagations.Value);
+
+        if (_options.Restart is { PropagationRateThreshold: { } restartThreshold } &&  _propagationRateTracker.CurrentRatio < restartThreshold)
+            _restartRecommended = true;
+        if (_options.ClauseDeletion is { PropagationRateThreshold: { } clauseDeletionThreshold } && _propagationRateTracker.CurrentRatio < clauseDeletionThreshold)
+            ReduceClauses();
     }
     void Restart()
     {
@@ -188,8 +229,7 @@ public sealed partial class SatSolver
             var next = _lubySequence.Next();
             _nextRestartThreshold = next < int.MaxValue ? (int)next : 0;
         }
-        _decisionLevels.Clear();
-        ResetVariableTrail(0);
+        _trail.Reset();
         _unitLiterals.Clear();
     }
 

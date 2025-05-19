@@ -6,17 +6,15 @@ public sealed partial class SatSolver
 {
     void PerformClauseLearning(Constraint conflictingConstraint)
     {
-        var learnedConstraint = CreateLearnedConstraint(conflictingConstraint, out var uipLiteral);
-
-        foreach (var l in learnedConstraint.Literals) IncreaseVariableActivity(l.Variable);
-        _variableActivityIncrement /= _options.VariableActivityDecayFactor;
+        var learnedConstraint = CreateLearnedConstraint(conflictingConstraint, out var uipLiteral, out var jumpBackLevel);
+        _activityManager.IncreaseVariableActivity(learnedConstraint);
 
         _unitLiterals.Clear();
         _unitLiterals.Enqueue((uipLiteral, learnedConstraint));
 
         if (learnedConstraint.LiteralBlockDistance > _options.MaximumLiteralBlockDistance)
         {
-            JumpBack(learnedConstraint, uipLiteral);
+            _trail.JumpBack(jumpBackLevel);
             return;
         }
 
@@ -39,13 +37,13 @@ public sealed partial class SatSolver
         if (_options.ClauseDeletion?.OriginalClauseCountFactor is { } f && _learnedConstraints.Count > f * _originalClauseCount)
             ReduceClauses();
 
-        JumpBack(learnedConstraint, uipLiteral);
+        _trail.JumpBack(jumpBackLevel);
         CheckLiteralBlockDistanceBehaviour(learnedConstraint.LiteralBlockDistance);
     }
 
     readonly HashSet<int> _literalBlockDistanceCounter = [];
     readonly HashSet<ConstraintLiteral> _learnedLiterals = [];
-    Constraint CreateLearnedConstraint(Constraint conflictingConstraint, out ConstraintLiteral uipLiteral)
+    Constraint CreateLearnedConstraint(Constraint conflictingConstraint, out ConstraintLiteral uipLiteral, out int jumpBackLevel)
     {
         var variables = _variables;
         var conflicts = 0;
@@ -56,12 +54,12 @@ public sealed partial class SatSolver
         foreach (var literal in conflictingConstraint.Literals)
         {
             learnedLiterals.Add(literal);
-            if (literal.Variable.DecisionLevel == _decisionLevels.Count) conflicts++;
+            if (literal.Variable.DecisionLevel == _trail.DecisionLevel) conflicts++;
         }
 
-        for (int trailIndex = _variableTrailSize-1; conflicts > 1; trailIndex--)
+        for (int trailIndex = _trail.Count-1; conflicts > 1; trailIndex--)
         {
-            var trailedVariable = _variableTrail[trailIndex];
+            var trailedVariable = _trail[trailIndex];
             var reason = trailedVariable.Reason;
             if (reason is null) continue;
 
@@ -71,28 +69,37 @@ public sealed partial class SatSolver
 
             if (!learnedLiterals.Remove(literalToResolve)) continue;
 
-            IncreaseClauseActivity(reason);
+            _activityManager.IncreaseConstraintActivity(reason);
 
             foreach (var reasonLiteral in reason.Literals)
             {
                 if (reasonLiteral == negatedLiteralToResolve) continue;
-                if (learnedLiterals.Add(reasonLiteral) && reasonLiteral.Variable.DecisionLevel == _decisionLevels.Count)
+                if (learnedLiterals.Add(reasonLiteral) && reasonLiteral.Variable.DecisionLevel == _trail.DecisionLevel)
                     conflicts++;
             }
 
             conflicts--;
         }
 
-        uipLiteral = learnedLiterals.First(l => l.Variable.DecisionLevel == _decisionLevels.Count);
+        uipLiteral = learnedLiterals.First(l => l.Variable.DecisionLevel == _trail.DecisionLevel);
 
         MinimizeClause(learnedLiterals, uipLiteral);
 
         _literalBlockDistanceCounter.Clear();
+        jumpBackLevel = 0;
         foreach (var level in learnedLiterals.Select(l => l.Variable.DecisionLevel))
+        {
             _literalBlockDistanceCounter.Add(level);
+            if (level < _trail.DecisionLevel && level > jumpBackLevel)
+                jumpBackLevel = level;
+        }
 
-        var learnedConstraint = new Constraint([.. learnedLiterals]) { LiteralBlockDistance = _literalBlockDistanceCounter.Count, Activity = _clauseActivityIncrement };
-        _clauseActivityIncrement /= _options.ClauseActivityDecayFactor;
+        var learnedConstraint = new Constraint([.. learnedLiterals]) 
+        {
+            Activity = _activityManager.ConstraintActivityIncrement,
+            LiteralBlockDistance = _literalBlockDistanceCounter.Count
+        };
+        _activityManager.DecayConstraintActivity();
         return learnedConstraint;
     }
     void MinimizeClause(HashSet<ConstraintLiteral> literals, ConstraintLiteral uipLiteral)
@@ -111,23 +118,6 @@ public sealed partial class SatSolver
                 IsRedundant(r, depth+1));
         }
     }
-    void JumpBack(Constraint learnedConstraint, ConstraintLiteral uipLiteral)
-    {
-        var uipLevel = uipLiteral.Variable.DecisionLevel;
-        var level = 0;
-        foreach (var learnedLiteral in learnedConstraint.Literals)
-        {
-            var ll = learnedLiteral.Variable.DecisionLevel;
-            if (ll > level && ll < uipLevel)
-                level = ll;
-        }
-
-        var variableTrailIndex = 0;
-        while (_decisionLevels.Count > level)
-            (variableTrailIndex, _) = _decisionLevels.Pop();
-
-        ResetVariableTrail(variableTrailIndex);
-    }
 
     void ReduceClauses()
     {
@@ -142,30 +132,6 @@ public sealed partial class SatSolver
             constraint.Watched2.Watchers.Remove(constraint);
         }
         learnedConstraints.RemoveRange(start, learnedConstraints.Count-start);
-    }
-
-    void IncreaseClauseActivity(Constraint constraint, double factor = 1)
-    {
-        if (!constraint.IsTracked) return;
-
-        constraint.Activity += _clauseActivityIncrement * factor;
-        if (constraint.Activity < _rescaleLimit) return;
-
-        var learnedConstraints = _learnedConstraints;
-        for (var i=0; i<learnedConstraints.Count; i++)
-            learnedConstraints[i].Activity /= _rescaleLimit;
-        _clauseActivityIncrement /= _rescaleLimit;
-    }
-    void IncreaseVariableActivity(Variable variable)
-    {
-        var activity = variable.Activity += _variableActivityIncrement;
-        if (activity < _rescaleLimit) return;
-
-        var variables = _variables;
-        for (var i = 0; i < variables.Length; i++)
-            variables[i].Activity /= _rescaleLimit;
-        _candidateHeap.Rescale(_rescaleLimit);
-        _variableActivityIncrement /= _rescaleLimit;
     }
 
     void CheckLiteralBlockDistanceBehaviour(int lbd)
