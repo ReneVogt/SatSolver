@@ -41,7 +41,7 @@ public class TseitinTransformer : BooleanExpressionRewriter
 
         //
         // If this is a double negation it can be skipped
-        // and the inner epression should be rewritten and
+        // and the inner expression should be rewritten and
         // returned.
         //
         if (expression.Expression.Kind == ExpressionKind.Unary && expression.Expression is UnaryExpression { Expression: var doubleNegatedExpression })

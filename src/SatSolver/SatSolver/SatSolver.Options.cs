@@ -1,4 +1,5 @@
 ﻿using Revo.SatSolver.Helpers;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Revo.SatSolver;
 
@@ -8,7 +9,8 @@ public sealed partial class SatSolver
     /// Configures how the <see cref="SatSolver"/> decides to
     /// restart its search.
     /// </summary>
-    public class RestartOptions
+    [ExcludeFromCodeCoverage]
+    public record RestartOptions
     {
         /// <summary>
         /// If not <c>null</c>, determines after how many
@@ -46,7 +48,8 @@ public sealed partial class SatSolver
     /// Configures when and how learned clauses will
     /// be deleted.
     /// </summary>
-    public class ClauseDeletionOptions
+    [ExcludeFromCodeCoverage]
+    public record ClauseDeletionOptions
     {
         /// <summary>
         /// Clauses with literal block distances less than
@@ -93,7 +96,8 @@ public sealed partial class SatSolver
     /// Configures how an exponential moving average of
     /// a value is tracked. This used for <see cref="Options.LiteralBlockDistanceTracking"/>.
     /// </summary>
-    public class EmaOptions
+    [ExcludeFromCodeCoverage]
+    public record EmaOptions
     {
         /// <summary>
         /// The number of values counted as "recent".
@@ -109,7 +113,8 @@ public sealed partial class SatSolver
     /// <summary>
     /// Configures how propagation rate will be tracked.
     /// </summary>
-    public class PropagationRateTrackingOptions
+    [ExcludeFromCodeCoverage]
+    public record PropagationRateTrackingOptions
     {
         /// <summary>
         /// The number of propagation rates counted as "recent".
@@ -133,7 +138,8 @@ public sealed partial class SatSolver
     /// Configures the details of how the <see cref="SatSolver"/>
     /// performs its search.
     /// </summary>
-    public class Options
+    [ExcludeFromCodeCoverage]
+    public record Options
     {
         /// <summary>
         /// A recommended default options set.
@@ -167,7 +173,7 @@ public sealed partial class SatSolver
 
         /// <summary>
         /// Learned clauses with a literal block distance greater
-        /// than this value will deleted immediatly, The propagation
+        /// than this value will be deleted immediatly, The propagation
         /// of their unique implication point will be performed as
         /// well as activity updates, but they will not be part
         /// of the watcher structure and not counted for the

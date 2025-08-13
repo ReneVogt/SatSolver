@@ -1,6 +1,6 @@
 ﻿namespace Revo.SatSolver.Helpers;
 
-sealed class LubySequence(long baseValue = 1)
+sealed class LubySequence(long baseValue = 1) : ILubySequence
 {
     long _u = 1, _v = 1;
 
@@ -14,7 +14,7 @@ sealed class LubySequence(long baseValue = 1)
         {
             _u += 1;
             _v = 1;
-        } 
+        }
         else _v *= 2;
 
         return next * baseValue;

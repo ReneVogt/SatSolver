@@ -9,6 +9,8 @@ sealed class Constraint
     public double Activity { get; set; }
     public bool IsTracked { get; set; }
 
+    public bool IsLearned { get; init; }
+
     public Constraint(IEnumerable<ConstraintLiteral> literals)
     {
         Literals = [.. literals];
@@ -22,4 +24,6 @@ sealed class Constraint
         else
             Watched2 = Watched1;
     }
+
+    public override string ToString() => string.Join(" ", Literals.Select(l => $"{(l.Orientation ? "" : "-")}{l.Variable.Index+1}"));
 }
