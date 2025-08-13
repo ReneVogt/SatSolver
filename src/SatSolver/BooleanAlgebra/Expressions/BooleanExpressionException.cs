@@ -1,4 +1,8 @@
-﻿namespace Revo.BooleanAlgebra.Expressions;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Revo.BooleanAlgebra.Expressions;
+
+[ExcludeFromCodeCoverage]
 static class BooleanExpressionException
 {
     public static NotSupportedException UnsupportedExpressionKind(ExpressionKind kind) => new($"Unsupported expression kind '{kind}'.");

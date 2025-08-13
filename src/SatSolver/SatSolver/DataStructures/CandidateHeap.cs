@@ -12,7 +12,7 @@
 /// that it does not count. So please don't
 /// refactor to use only a Variable[] for nodes.
 /// </summary>
-sealed class CandidateHeap
+sealed class CandidateHeap : ICandidateHeap
 {
     const int Arity = 2;
     const int Log2Arity = 1;
@@ -40,7 +40,19 @@ sealed class CandidateHeap
         Heapify();
     }
 
-    public void Enqueue(Variable variable)
+    public void Enqueue(Span<Variable> variables)
+    {
+        for(var i=0; i<variables.Length; i++)
+        {
+            var variable = variables[i];
+            variable.Sense = null;
+            variable.Reason = null;
+            variable.DecisionLevel = 0;
+
+            Enqueue(variable);
+        }
+    }
+    void Enqueue(Variable variable)
     {
         var index = _indices[variable.Index];
         if (index < 0)
@@ -76,7 +88,7 @@ sealed class CandidateHeap
     public void Rescale(double scaleLimit)
     {
         var nodes = _nodes;
-        for(var i=0; i<_indices.Length; i++)
+        for (var i = 0; i<_indices.Length; i++)
         {
             var index = _indices[i];
             if (index < 0) continue;
@@ -107,7 +119,7 @@ sealed class CandidateHeap
             var parentIndex = GetParentIndex(nodeIndex);
             var parent = nodes[parentIndex];
             if (node.Activity <= parent.Activity) break;
-            
+
             nodes[nodeIndex] = parent;
             indices[parent.Variable] = nodeIndex;
             nodeIndex = parentIndex;

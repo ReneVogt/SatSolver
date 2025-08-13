@@ -30,7 +30,7 @@ public class CandidateHeapBenchmark
         foreach(var variable in _variables)
         {            
             variable.Activity = ++activity;
-            sut.Enqueue(variable);
+            sut.Enqueue([variable]);
             if (activity % 10 == 0) variable.Sense = true;
         }
 
@@ -40,7 +40,7 @@ public class CandidateHeapBenchmark
             var variable = sut.Dequeue()!;
             variable.Activity -= ++activity;
             variable.Sense = null;
-            sut.Enqueue(variable);
+            sut.Enqueue([variable]);
         }
 
         var temp = new List<Variable?>();

@@ -5,8 +5,9 @@ using SatSolverTests;
 
 namespace SatSolverBenchmark;
 
-[SimpleJob(warmupCount: 1, iterationCount: 5)]
-
+[SimpleJob(warmupCount: 1, iterationCount: 2)]
+[GcServer(true)]
+[GcConcurrent(false)]
 public class SatSolverBenchmark
 {
     readonly SatSolver.Options _options = TestOptions.Default;

@@ -53,6 +53,9 @@ public class ExpressionTreeWriterTests()
         InlineData("a | b", "a | b", "a | b"),
         InlineData("a & b", "a & b", "a & b"),
         InlineData("a % b", "a % b", "a % b"),
+        InlineData("a = b", "a = b", "a = b"),
+        InlineData("a < b", "a < b", "a < b"),
+        InlineData("a > b", "a > b", "a > b"),
         InlineData("!(a | b & c % (d | a))", "!(a | b & c % (d | a))", "!(a | ((b & c) % (d | a)))")
     ]
     public void Write_Formatted(string input, string withoutParentheses, string withParentheses)

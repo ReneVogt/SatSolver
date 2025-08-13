@@ -1,4 +1,4 @@
-﻿namespace Revo.SatSolver.Helpers;
+﻿namespace Revo.SatSolver.DPLL;
 sealed class EmaTracker(int size, double decay)
 {    
     readonly Queue<int> _recent = new(size+1);
