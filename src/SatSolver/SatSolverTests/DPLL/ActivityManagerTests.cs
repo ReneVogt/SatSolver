@@ -1,21 +1,15 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.DPLL;
+using SatSolverTests.Stubs;
 
 namespace SatSolverTests.DPLL;
+
 public sealed class ActivityManagerTests
 {
-    sealed class CandidateHeapMock : ICandidateHeap
-    {
-        public int RescaleCalls { get; set; }
-        public Variable? Dequeue() => throw new NotImplementedException();
-        public void Enqueue(Span<Variable> variables) => throw new NotImplementedException();
-        public void Rescale(double scaleLimit) => RescaleCalls++;
-    }
-
     [Fact]
     public void IncreaseVariableActivity_IncreasesVariableActivity()
     {
-        var candidateHeap = new CandidateHeapMock();
+        var candidateHeap = new TestCandidateHeap();
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i) { Activity = i}).ToArray();
 
         var sut = new ActivityManager(variables, [], 0.5, 0.7, candidateHeap);
@@ -43,7 +37,7 @@ public sealed class ActivityManagerTests
     [Fact]
     public void IncreaseVariableActivity_RescaleWhenNeeded()
     {
-        var candidateHeap = new CandidateHeapMock();
+        var candidateHeap = new TestCandidateHeap();
         var variables = new[] { new Variable(0) { Activity = 1e100 - 1 } };
 
         var sut = new ActivityManager(variables, [], 0.5, 0.7, candidateHeap);
@@ -56,7 +50,7 @@ public sealed class ActivityManagerTests
     [Fact]
     public void IncreaseConstraintActivity_OnlyIfTracked()
     {
-        var candidateHeap = new CandidateHeapMock();
+        var candidateHeap = new TestCandidateHeap();
         var constraints = new List<Constraint> { new([new Variable(0).PositiveLiteral]) { Activity = 12, IsTracked = true} };
         var constraint = new Constraint([new Variable(1).PositiveLiteral]) { Activity = 23, IsTracked = false };
         var sut = new ActivityManager([], constraints, 0.7, 0.5, candidateHeap);
@@ -80,7 +74,7 @@ public sealed class ActivityManagerTests
     [Fact]
     public void DecayConstraintActivity_HigherIncrement()
     {
-        var candidateHeap = new CandidateHeapMock();
+        var candidateHeap = new TestCandidateHeap();
         var constraints = new List<Constraint> { new([new Variable(0).PositiveLiteral]) { Activity = 12, IsTracked = true } };
         var constraint = new Constraint([new Variable(1).PositiveLiteral]) { Activity = 23, IsTracked = true };
         var sut = new ActivityManager([], constraints, 0.7, 0.5, candidateHeap);
@@ -105,7 +99,7 @@ public sealed class ActivityManagerTests
     [Fact]
     public void IncreaseConstraintActivity_RescaleWhenNeeded()
     {
-        var candidateHeap = new CandidateHeapMock();
+        var candidateHeap = new TestCandidateHeap();
         var constraints = new List<Constraint> { 
             new([new Variable(0).PositiveLiteral]) { Activity = 1, IsTracked = true },
             new ([new Variable(1).PositiveLiteral]) { Activity = 1e100-1, IsTracked = true }

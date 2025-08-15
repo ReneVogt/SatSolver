@@ -1,5 +1,6 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.DPLL;
+using Revo.SatSolver.Helpers;
 using System.Diagnostics;
 
 namespace Revo.SatSolver.CDCL;
@@ -8,16 +9,23 @@ sealed class LearnedConstraintCreator(IVariableTrail _trail, IActivityManager _a
 {
     readonly HashSet<int> _literalBlockDistanceCounter = [];
     readonly HashSet<ConstraintLiteral> _learnedLiterals = [];
+    readonly HashSet<int> _seenVariables = [];
+
     public Constraint CreateLearnedConstraint(Constraint conflictingConstraint, out ConstraintLiteral uipLiteral, out int jumpBackLevel)
     {
         var variables = _variables;
         var conflicts = 0;
 
+        Debug.Assert(conflictingConstraint.Literals.All(l => l.Sense == false));
+
         var learnedLiterals = _learnedLiterals;
+        var seenVariables = _seenVariables;
         learnedLiterals.Clear();
+        seenVariables.Clear();
 
         foreach (var literal in conflictingConstraint.Literals)
         {
+            seenVariables.Add(literal.Variable.Index);
             learnedLiterals.Add(literal);
             if (literal.Variable.DecisionLevel == _trail.DecisionLevel) conflicts++;
         }
@@ -25,12 +33,14 @@ sealed class LearnedConstraintCreator(IVariableTrail _trail, IActivityManager _a
         for (int trailIndex = _trail.Count-1; conflicts > 1; trailIndex--)
         {
             var trailedVariable = _trail[trailIndex];
+            _seenVariables.Add(trailedVariable.Index);
+
             var reason = trailedVariable.Reason;
             if (reason is null) continue;
 
-            var (literalToResolve, negatedLiteralToResolve) = trailedVariable.Sense == true
-                ? (trailedVariable.NegativeLiteral, trailedVariable.PositiveLiteral)
-                : (trailedVariable.PositiveLiteral, trailedVariable.NegativeLiteral);
+            var literalToResolve = trailedVariable.Sense == true
+                ? trailedVariable.NegativeLiteral
+                : trailedVariable.PositiveLiteral;
 
             if (!learnedLiterals.Remove(literalToResolve)) continue;
 
@@ -38,7 +48,7 @@ sealed class LearnedConstraintCreator(IVariableTrail _trail, IActivityManager _a
 
             foreach (var reasonLiteral in reason.Literals)
             {
-                if (reasonLiteral == negatedLiteralToResolve) continue;
+                if (seenVariables.Contains(reasonLiteral.Variable.Index)) continue;
                 if (learnedLiterals.Add(reasonLiteral) && reasonLiteral.Variable.DecisionLevel == _trail.DecisionLevel)
                     conflicts++;
             }
@@ -59,7 +69,7 @@ sealed class LearnedConstraintCreator(IVariableTrail _trail, IActivityManager _a
                 jumpBackLevel = level;
         }
 
-        var learnedConstraint = new Constraint([.. learnedLiterals])
+        var learnedConstraint = new Constraint([.. learnedLiterals], setWatchers: false)
         {
             Activity = _activityManager.ConstraintActivityIncrement,
             LiteralBlockDistance = _literalBlockDistanceCounter.Count,

@@ -1,22 +1,15 @@
 ﻿using Revo.SatSolver.DataStructures;
+using SatSolverTests.Stubs;
 
 namespace SatSolverTests.DataStructures;
 
 public sealed class VariableTrailTests
 {
-    sealed class TestHeap : ICandidateHeap
-    {
-        public List<Variable> Enqueued { get; } = [];
-        public Variable? Dequeue() => throw new NotImplementedException();
-        public void Enqueue(Span<Variable> variables) => Enqueued.AddRange(variables);
-        public void Rescale(double scaleLimit) => throw new NotImplementedException();
-    }
-
     [Fact]
     public void AddFourDecisionLevels_JumpBackTwo()
     {
         var variables = Enumerable.Range(0, 10).Select(i =>  new Variable(i)).ToArray();
-        var heap = new TestHeap();
+        var heap = new TestCandidateHeap();
         var sut = new VariableTrail(10, heap);
 
         sut.Push(true);
@@ -68,7 +61,7 @@ public sealed class VariableTrailTests
     public void AddFourDecisionLevels_BacktrackTwo()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
-        var heap = new TestHeap();
+        var heap = new TestCandidateHeap();
         var sut = new VariableTrail(10, heap);
 
         sut.Push(true);
@@ -123,7 +116,7 @@ public sealed class VariableTrailTests
     public void Backtrack_NoFirstTry_Null()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
-        var heap = new TestHeap();
+        var heap = new TestCandidateHeap();
         var sut = new VariableTrail(10, heap);
 
         sut.Push(false);
@@ -177,7 +170,7 @@ public sealed class VariableTrailTests
     public void Reset_ResetsAllVariables()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
-        var heap = new TestHeap();
+        var heap = new TestCandidateHeap();
         var sut = new VariableTrail(10, heap);
 
         sut.Push(true);
@@ -230,7 +223,7 @@ public sealed class VariableTrailTests
     public void Clear_DoesNotResetVariables()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
-        var heap = new TestHeap();
+        var heap = new TestCandidateHeap();
         var sut = new VariableTrail(10, heap);
 
         sut.Push(true);
