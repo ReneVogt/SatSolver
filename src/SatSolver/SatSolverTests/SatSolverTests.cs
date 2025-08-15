@@ -153,21 +153,20 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         string cnf = File.ReadAllText(file);
         SolveCnf(cnf, sat, options);
     }
-    void SolveCnf(string cnf, bool sat, Options options)
+    static void SolveCnf(string cnf, bool sat, Options options)
     {
         var problem = DimacsParser.Parse(cnf).Single();
-        using (DebugLogger.Log(_output))
+        
+        //using var logging = DebugLogger.Log(_output);
+        
+        var solution = Solve(problem, options);
+        if (sat)
         {
-            var solution = Solve(problem, options);
-
-            if (sat)
-            {
-                Assert.NotNull(solution);
-                SolutionValidator.Validate(problem, solution);
-            }
-            else
-                Assert.Null(Solve(problem, options));
+            Assert.NotNull(solution);
+            SolutionValidator.Validate(problem, solution);
         }
+        else
+            Assert.Null(Solve(problem, options));
     }
 
     public static TheoryData<string> ProvideSatTestCases() => ProvideTestCases("SAT");

@@ -1,4 +1,6 @@
-﻿namespace Revo.SatSolver.DataStructures;
+﻿using System.Diagnostics;
+
+namespace Revo.SatSolver.DataStructures;
 sealed class Constraint
 {
     public ConstraintLiteral[] Literals { get; }
@@ -11,15 +13,16 @@ sealed class Constraint
 
     public bool IsLearned { get; init; }
 
-    public Constraint(IEnumerable<ConstraintLiteral> literals)
+    public Constraint(IEnumerable<ConstraintLiteral> literals, bool setWatchers = true)
     {
         Literals = [.. literals];
+
         Watched1 = Literals[0];
-        Watched1.Watchers.Add(this);
+        if (setWatchers) Watched1.Watchers.Add(this);
         if (Literals.Length > 1)
         {
             Watched2 = Literals[1];
-            Watched2.Watchers.Add(this);
+            if (setWatchers) Watched2.Watchers.Add(this);
         }
         else
             Watched2 = Watched1;

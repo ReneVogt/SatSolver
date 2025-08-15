@@ -5,13 +5,13 @@ static class TestOptions
 {
     public static SatSolver.Options Default { get; } = new SatSolver.Options()
     {
-        OnlyPoorMansVSIDS = true,
+        OnlyPoorMansVSIDS = false,
 
-        VariableActivityDecayFactor = 0.9995,
+        VariableActivityDecayFactor = 0.95,
 
         ClauseActivityDecayFactor = 0.999,
-        MaximumLiteralBlockDistance = 25,
-        MaximumClauseMinimizationDepth = 2,
+        MaximumLiteralBlockDistance = 8,
+        MaximumClauseMinimizationDepth = 9,
 
         ClauseDeletion = new()
         {

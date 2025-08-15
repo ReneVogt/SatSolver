@@ -22,6 +22,8 @@ sealed class DpllProcessor(IVariableTrail trail, Queue<(ConstraintLiteral, Const
         for (var watcherIndex = 0; watcherIndex<watchers.Count; watcherIndex++)
         {
             var constraint = watchers[watcherIndex];
+            if (constraint.Literals.Length == 1) return constraint;
+
             if (constraint.Watched1 == watchedLiteral)
             {
                 constraint.Watched1 = constraint.Watched2;
@@ -30,7 +32,11 @@ sealed class DpllProcessor(IVariableTrail trail, Queue<(ConstraintLiteral, Const
 
             var otherWatchedSense = constraint.Watched1.Sense;
             if (otherWatchedSense == true) continue;
-            if (otherWatchedSense == false) return constraint;
+            if (otherWatchedSense == false)
+            {
+                Debug.Assert(constraint.Literals.All(l => l.Sense == false));
+                return constraint;
+            }
 
             ConstraintLiteral? nextLiteral = null;
             foreach (var next in constraint.Literals)

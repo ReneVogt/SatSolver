@@ -179,6 +179,7 @@ public sealed partial class SatSolver
     Literal[]? SolveCDCL()
     {
         Variable? candidateVariable = null;
+        Constraint? learnedConstraint = null;
         var candidateSense = true;
 
         for (;;)
@@ -190,17 +191,18 @@ public sealed partial class SatSolver
                 candidateVariable = _candidateHeap.Dequeue();
                 if (candidateVariable is null) return BuildSolution();
                 candidateSense = candidateVariable.Polarity;
-                _trail.Push(false);
+                _trail.Push();
                 Debug.WriteLine($"[{_trail.DecisionLevel}] Decided {candidateVariable.Index+1} to {candidateSense}.");
             }
 
             var conflictingConstraint = 
-                _dpllProcessor.PropagateVariable(candidateVariable, candidateSense, null, out var propagationCount) ??
+                _dpllProcessor.PropagateVariable(candidateVariable, candidateSense, learnedConstraint, out var propagationCount) ??
                 _dpllProcessor.PropagateUnits(ref propagationCount);
 
             _propagationRateTracker?.AddPropagations(propagationCount);
 
             candidateVariable = null;
+            learnedConstraint = null;
             if (conflictingConstraint is null) continue;
             Debug.WriteLine($"Conflict in {conflictingConstraint} (learned: {conflictingConstraint.IsLearned}).");
             if (_trail.DecisionLevel == 0) return null;
@@ -209,10 +211,11 @@ public sealed partial class SatSolver
             _activityManager.IncreaseConstraintActivity(conflictingConstraint);
             _unitLiterals.Clear();
 
-            var candidateLiteral = _cdclProcessor.PerformClauseLearning(conflictingConstraint);
+            var (candidateLiteral, candidateReason) = _cdclProcessor.PerformClauseLearning(conflictingConstraint);
             if (_restartManager.RestartIfNecessary()) continue;
             candidateVariable = candidateLiteral.Variable;
             candidateSense = candidateLiteral.Orientation;
+            learnedConstraint = candidateReason;
             Debug.WriteLine($"[{_trail.DecisionLevel}] Propagating uip {candidateVariable.Index+1} to {candidateSense}.");
         }
     }

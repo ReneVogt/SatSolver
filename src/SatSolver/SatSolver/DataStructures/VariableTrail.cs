@@ -13,6 +13,7 @@ sealed class VariableTrail(int size, ICandidateHeap candidateHeap) : IVariableTr
 
     public int Count => _trailSize;
     public int DecisionLevel => _decisionLevels.Count;
+    public int StartIndexOfCurrentDecisionLevel => _decisionLevels.TryPeek(out var l) ? l.TrailIndex : -1; 
 
     public Variable this[int index]
     {
@@ -25,7 +26,7 @@ sealed class VariableTrail(int size, ICandidateHeap candidateHeap) : IVariableTr
         _trail[_trailSize++] = variable;
         variable.DecisionLevel = DecisionLevel;
     }
-    public void Push(bool firstTryOfCandidate) => _decisionLevels.Push((_trailSize, firstTryOfCandidate));
+    public void Push(bool firstTryOfCandidate = true) => _decisionLevels.Push((_trailSize, firstTryOfCandidate));
 
     public void JumpBack(int level)
     {
