@@ -4,9 +4,9 @@ using System.Diagnostics;
 
 namespace Revo.SatSolver.CDCL;
 
-sealed class CdclProcessor(SatSolver.Options _options, IActivityManager _activityManager, IVariableTrail _trail, EmaTracker? _literalBlockDistanceTracker, ICreateLearnedConstraints _learnedConstraintCreator, List<Constraint> _learnedConstraints)
+sealed class CdclProcessor(SatSolver.Options _options, IActivityManager _activityManager, IVariableTrail _trail, EmaTracker _literalBlockDistanceTracker, ICreateLearnedConstraints _learnedConstraintCreator, List<Constraint> _learnedConstraints)
 {
-    readonly int _literalBlockDistanceDeletionLimit = _options.ClauseDeletion?.LiteralBlockDistanceToKeep ?? int.MaxValue;
+    readonly int _literalBlockDistanceDeletionLimit = _options.ClauseDeletion.LiteralBlockDistanceToKeep;
     readonly int _literalBlockDistanceMaximum = _options.MaximumLiteralBlockDistance;
 
     public (ConstraintLiteral uip, Constraint reason) PerformClauseLearning(Constraint conflictingConstraint)
@@ -15,7 +15,8 @@ sealed class CdclProcessor(SatSolver.Options _options, IActivityManager _activit
         _activityManager.IncreaseVariableActivity(learnedConstraint);
 
         if (learnedConstraint.LiteralBlockDistance > _literalBlockDistanceMaximum)
-        {            
+        {
+            Debug.WriteLine($"LBD {learnedConstraint.LiteralBlockDistance} too high, only jumping back.");
             _trail.JumpBack(jumpBackLevel);
             return (uipLiteral, learnedConstraint);
         }
@@ -25,9 +26,13 @@ sealed class CdclProcessor(SatSolver.Options _options, IActivityManager _activit
         // it.
         if (learnedConstraint.LiteralBlockDistance > _literalBlockDistanceDeletionLimit)
         {
+            Debug.WriteLine($"LBD {learnedConstraint.LiteralBlockDistance}, we track this constraint to eventually delete it.");
+            _activityManager.IncreaseConstraintActivity(learnedConstraint);
             _learnedConstraints.Add(learnedConstraint);
             learnedConstraint.IsTracked = true;
         }
+        else
+            Debug.WriteLine($"LBD {learnedConstraint.LiteralBlockDistance} so good, we keep this forever.");
 
         learnedConstraint.Watched1 = uipLiteral;
         uipLiteral.Watchers.Add(learnedConstraint);
@@ -44,7 +49,8 @@ sealed class CdclProcessor(SatSolver.Options _options, IActivityManager _activit
         }
 
         _trail.JumpBack(jumpBackLevel);
-        _literalBlockDistanceTracker?.AddValue(learnedConstraint.LiteralBlockDistance);
+        _activityManager.DecayConstraintActivity();
+        _literalBlockDistanceTracker.AddValue(learnedConstraint.LiteralBlockDistance);
         Debug.Assert(learnedConstraint.Literals.All(l => l == uipLiteral && l.Sense is null || l != uipLiteral && l.Sense == false));
         Debug.Assert(learnedConstraint.Literals.Contains(uipLiteral));
         return (uipLiteral, learnedConstraint);

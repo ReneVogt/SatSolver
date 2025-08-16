@@ -31,8 +31,8 @@ public sealed partial class SatSolver
 
     readonly int _originalClauseCount;
 
-    readonly EmaTracker? _literalBlockDistanceTracker;
-    readonly PropagationRateTracker? _propagationRateTracker;
+    readonly EmaTracker _literalBlockDistanceTracker;
+    readonly PropagationRateTracker _propagationRateTracker;
 
     readonly RestartManager _restartManager;
 
@@ -44,16 +44,8 @@ public sealed partial class SatSolver
         _cancellationToken = cancellationToken;
         _variables = [..Enumerable.Range(0, problem.NumberOfLiterals).Select(index => new Variable(index))];
 
-        if (_options.LiteralBlockDistanceTracking is { Decay: var lbdDecay, RecentCount: var lbdSize } && 
-            (_options.Restart is { LiteralBlockDistanceThreshold: not null} || 
-            !_options.OnlyPoorMansVSIDS && _options.ClauseDeletion is { LiteralBlockDistanceThreshold: not null}))
-            _literalBlockDistanceTracker = new(lbdSize, lbdDecay);
-        
-        if (_options.PropagationRateTracking is { ConflictInterval: var interval, Decay: var decay, SampleSize: var sampleSize } && 
-            interval > 0  && sampleSize > 0 &&
-            (_options.Restart is { PropagationRateThreshold: not null } ||
-            !_options.OnlyPoorMansVSIDS && _options.ClauseDeletion is { PropagationRateThreshold: not null }))
-            _propagationRateTracker = new(interval, sampleSize, decay);
+        _literalBlockDistanceTracker = new(_options.LiteralBlockDistanceTracking.RecentCount, _options.LiteralBlockDistanceTracking.Decay);
+        _propagationRateTracker = new(_options.PropagationRateTracking.ConflictInterval, _options.PropagationRateTracking.SampleSize, _options.PropagationRateTracking.Decay);
 
         // it is very important to do this before we 
         // initialize the heap with the variables and
@@ -159,13 +151,14 @@ public sealed partial class SatSolver
             var conflictingConstraint = _dpllProcessor.PropagateVariable(candidateVariable, candidateSense, null, out var propagationCount);
             conflictingConstraint ??= _dpllProcessor.PropagateUnits(ref propagationCount);
 
-            _propagationRateTracker?.AddPropagations(propagationCount);
+            _propagationRateTracker.AddPropagations(propagationCount);
 
             candidateVariable = null;
             if (conflictingConstraint is null) continue;
 
             Debug.WriteLine($"Conflict in {conflictingConstraint}");
-            _propagationRateTracker?.AddConflict();
+            _propagationRateTracker.AddConflict();
+            _restartManager.AddConflict();
             _activityManager.IncreaseVariableActivity(conflictingConstraint);
 
             if (_restartManager.RestartIfNecessary()) continue;
@@ -199,7 +192,7 @@ public sealed partial class SatSolver
                 _dpllProcessor.PropagateVariable(candidateVariable, candidateSense, learnedConstraint, out var propagationCount) ??
                 _dpllProcessor.PropagateUnits(ref propagationCount);
 
-            _propagationRateTracker?.AddPropagations(propagationCount);
+            _propagationRateTracker.AddPropagations(propagationCount);
 
             candidateVariable = null;
             learnedConstraint = null;
@@ -207,12 +200,15 @@ public sealed partial class SatSolver
             Debug.WriteLine($"Conflict in {conflictingConstraint} (learned: {conflictingConstraint.IsLearned}).");
             if (_trail.DecisionLevel == 0) return null;
 
-            _propagationRateTracker?.AddConflict();
+            _propagationRateTracker.AddConflict();
+            _restartManager.AddConflict();
             _activityManager.IncreaseConstraintActivity(conflictingConstraint);
             _unitLiterals.Clear();
 
             var (candidateLiteral, candidateReason) = _cdclProcessor.PerformClauseLearning(conflictingConstraint);
+            _learnedConstraintsReducer.ReduceLearnedConstraintsIfNecessary();
             if (_restartManager.RestartIfNecessary()) continue;
+
             candidateVariable = candidateLiteral.Variable;
             candidateSense = candidateLiteral.Orientation;
             learnedConstraint = candidateReason;
