@@ -295,14 +295,14 @@ public sealed class DpllProcessorTests
         var variables = Enumerable.Range(0, 2).Select(i => new Variable(i)).ToArray();
         var v0 = variables[0]; var v0p = v0.PositiveLiteral; var v0n = v0.NegativeLiteral;
         var v1 = variables[1]; var v1p = v1.PositiveLiteral; var v1n = v1.NegativeLiteral;
-        var constraint0 = new Constraint([v0p, v1p], setWatchers: false)
+        var constraint0 = new Constraint([v0p, v1p], 0, 0)
         {
             Watched1 = v0p,
             Watched2 = v1p
         };
         v0p.Watchers.Add(constraint0);
         v1p.Watchers.Add(constraint0);
-        var constraint1 = new Constraint([v0p, v1n], setWatchers: false)
+        var constraint1 = new Constraint([v0p, v1n], 0, 0)
         {
             Watched1 = v0p,
             Watched2 = v1n

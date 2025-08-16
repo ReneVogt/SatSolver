@@ -1,4 +1,5 @@
-﻿using Revo.SatSolver.Parsing;
+﻿using Revo.SatSolver;
+using Revo.SatSolver.Parsing;
 using Xunit.Abstractions;
 using static Revo.SatSolver.SatSolver;
 
@@ -6,87 +7,6 @@ namespace SatSolverTests;
 
 public sealed partial class SatSolverTests(ITestOutputHelper _output)
 {
-    static readonly Options _poorMansVsidsOptions = new()
-    {
-        OnlyPoorMansVSIDS = true,
-
-        VariableActivityDecayFactor = 0.9995,
-
-        ClauseActivityDecayFactor = 0.999,
-        MaximumLiteralBlockDistance = 8,
-        MaximumClauseMinimizationDepth = 9,
-
-        ClauseDeletion = new()
-        {
-            LiteralBlockDistanceToKeep = 2,
-            OriginalClauseCountFactor = 5,
-            RatioToDelete = 0.5,
-            LiteralBlockDistanceThreshold = 1.3,
-            PropagationRateThreshold = 0.5
-        },
-
-        Restart = new()
-        {
-            Interval = null,
-            Luby = false,
-            LiteralBlockDistanceThreshold = null,
-            PropagationRateThreshold = null
-        },
-
-        LiteralBlockDistanceTracking = new()
-        {
-            Decay = 0.999,
-            RecentCount = 100
-        },
-
-        PropagationRateTracking = new()
-        {
-            ConflictInterval = 500,
-            Decay = 0.999,
-            SampleSize = 50
-        }
-    };
-    static readonly Options _cdclNoRestartOptions = new()
-    {
-        OnlyPoorMansVSIDS = false,
-
-        VariableActivityDecayFactor = 0.95,
-
-        ClauseActivityDecayFactor = 0.999,
-        MaximumLiteralBlockDistance = 8,
-        MaximumClauseMinimizationDepth = 9,
-
-        ClauseDeletion = new()
-        {
-            LiteralBlockDistanceToKeep = 2,
-            OriginalClauseCountFactor = 5,
-            RatioToDelete = 0.5,
-            LiteralBlockDistanceThreshold = 1.3,
-            PropagationRateThreshold = 0.5
-        },
-
-        Restart = new()
-        {
-            Interval = null,
-            Luby = false,
-            LiteralBlockDistanceThreshold = null,
-            PropagationRateThreshold = null
-        },
-
-        LiteralBlockDistanceTracking = new()
-        {
-            Decay = 0.999,
-            RecentCount = 100
-        },
-
-        PropagationRateTracking = new()
-        {
-            ConflictInterval = 500,
-            Decay = 0.999,
-            SampleSize = 50
-        }
-    };
-
     [Fact]
     public void Solve_Null_ArgumentNullException()
     {
@@ -110,34 +30,33 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
     [Trait("Category", "Simple Cases")]
     [Trait("Options", "Poor Man's VSIDS")]
     [MemberData(nameof(ProvideSimpleTestCases))]
-    public void Solve_SimpleCases_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), _poorMansVsidsOptions);
+    public void Solve_SimpleCases_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), Options.PoorMansVSIDS);
     [Theory]
     [Trait("Category", "Benchmark")]
     [Trait("Options", "Poor Man's VSIDS")]
     [MemberData(nameof(ProvideSatTestCases))]
-    public void Solve_SAT_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, _poorMansVsidsOptions);
+    public void Solve_SAT_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, Options.PoorMansVSIDS);
     [Theory]
     [Trait("Category", "Benchmark")]
     [Trait("Options", "Poor Man's VSIDS")]
     [MemberData(nameof(ProvideUnsatTestCases))]
-    public void Solve_UNSAT_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, _poorMansVsidsOptions);
-
+    public void Solve_UNSAT_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, Options.PoorMansVSIDS);
 
     [Theory]
     [Trait("Category", "Simple Cases")]
-    [Trait("Options", "CDCL no restart")]
+    [Trait("Options", "CDCL")]
     [MemberData(nameof(ProvideSimpleTestCases))]
-    public void Solve_SimpleCases_CDCLNoRestart(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), _cdclNoRestartOptions);
+    public void Solve_SimpleCases_CDCL(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), Options.CDCL);
     [Theory]
     [Trait("Category", "Benchmark")]
-    [Trait("Options", "CDCL no restart")]
+    [Trait("Options", "CDCL")]
     [MemberData(nameof(ProvideSatTestCases))]
-    public void Solve_SAT_CDCLNoRestart(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, _cdclNoRestartOptions);
+    public void Solve_SAT_CDCL(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, Options.CDCL);
     [Theory]
     [Trait("Category", "Benchmark")]
-    [Trait("Options", "CDCL no restart")]
+    [Trait("Options", "CDCL")]
     [MemberData(nameof(ProvideUnsatTestCases))]
-    public void Solve_UNSAT_CDCLNoRestart(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, _cdclNoRestartOptions);
+    public void Solve_UNSAT_CDCL(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, Options.CDCL);
 
     void SolveFile(string file, Options options)
     {
@@ -153,11 +72,11 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         string cnf = File.ReadAllText(file);
         SolveCnf(cnf, sat, options);
     }
-    static void SolveCnf(string cnf, bool sat, Options options)
+    void SolveCnf(string cnf, bool sat, Options options)
     {
         var problem = DimacsParser.Parse(cnf).Single();
         
-        //using var logging = DebugLogger.Log(_output);
+        using var logging = DebugLogger.Log(_output);
         
         var solution = Solve(problem, options);
         if (sat)

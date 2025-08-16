@@ -13,19 +13,27 @@ sealed class Constraint
 
     public bool IsLearned { get; init; }
 
-    public Constraint(IEnumerable<ConstraintLiteral> literals, bool setWatchers = true)
+    public Constraint(IEnumerable<ConstraintLiteral> literals)
     {
         Literals = [.. literals];
-
         Watched1 = Literals[0];
-        if (setWatchers) Watched1.Watchers.Add(this);
+        Watched1.Watchers.Add(this);        
         if (Literals.Length > 1)
         {
             Watched2 = Literals[1];
-            if (setWatchers) Watched2.Watchers.Add(this);
+            Watched2.Watchers.Add(this);
         }
         else
             Watched2 = Watched1;
+    }
+    public Constraint(Span<ConstraintLiteral> literals, double activity, int literalBlockDistance)
+    {
+        Literals = [.. literals];
+        IsLearned = true;
+        Activity = activity;
+        LiteralBlockDistance = literalBlockDistance;
+        Watched1 = Literals[0];
+        Watched2 = Literals.Length > 1 ? Literals[1] : Watched1;
     }
 
     public override string ToString() => string.Join(" ", Literals.Select(l => $"{(l.Orientation ? "" : "-")}{l.Variable.Index+1}"));

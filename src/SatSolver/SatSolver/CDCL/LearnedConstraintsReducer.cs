@@ -1,30 +1,33 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.DPLL;
+using System.Diagnostics;
 
 namespace Revo.SatSolver.CDCL;
 
-sealed class LearnedConstraintsReducer(SatSolver.Options _options, PropagationRateTracker? _propagationRateTracker, EmaTracker? _literalBlockDistanceTracker, List<Constraint> _learnedConstraints, int _originalClauseCount) : IReduceLearnedConstraints
+sealed class LearnedConstraintsReducer(SatSolver.Options _options, PropagationRateTracker _propagationRateTracker, EmaTracker _literalBlockDistanceTracker, List<Constraint> _learnedConstraints, int _originalClauseCount) : IReduceLearnedConstraints
 {
-    readonly double _originalClauseCountFactor = _options.ClauseDeletion?.OriginalClauseCountFactor ?? double.MaxValue;
-    readonly double _propagationRateThreshold = _options.ClauseDeletion?.PropagationRateThreshold ?? 0;
-    readonly double _literalBlockDistanceThreshold = _options.ClauseDeletion?.LiteralBlockDistanceThreshold ?? 0;
-    readonly double _ratioToDelete = _options.ClauseDeletion?.RatioToDelete ?? 0;
-    readonly bool _reduceClauses = _options.ClauseDeletion?.OriginalClauseCountFactor is not null ||
-        _options.ClauseDeletion?.PropagationRateThreshold is not null ||
-        _options.ClauseDeletion?.LiteralBlockDistanceThreshold is not null;
+    readonly double _originalClauseCountFactor = _options.ClauseDeletion.OriginalClauseCountFactor ?? double.MaxValue;
+    readonly double _propagationRateThreshold = _options.ClauseDeletion.PropagationRateThreshold ?? 0;
+    readonly double _literalBlockDistanceThreshold = _options.ClauseDeletion.LiteralBlockDistanceThreshold ?? double.MaxValue;
+    readonly double _ratioToDelete = _options.ClauseDeletion.RatioToDelete;
+    readonly bool _reduceClauses = _options.ClauseDeletion.RatioToDelete > 0 && (_options.ClauseDeletion.OriginalClauseCountFactor is not null ||
+        _options.ClauseDeletion.PropagationRateThreshold is not null ||
+        _options.ClauseDeletion.LiteralBlockDistanceThreshold is not null);
 
     public void ReduceLearnedConstraintsIfNecessary()
     {
         if (!_reduceClauses) return;
 
         // reduce clauses if we learned too many already
-        var reduce = _learnedConstraints.Count > _originalClauseCount * _originalClauseCount;
+        var reduce = _learnedConstraints.Count > _originalClauseCount * _originalClauseCountFactor;
         // or if the propagation rate is too low
-        reduce |= _propagationRateTracker?.CurrentRatio < _propagationRateThreshold;
-        // or if the literal block distance average is too high
-        reduce |= _literalBlockDistanceTracker?.CurrentRatio > _literalBlockDistanceThreshold;
+        reduce |= _propagationRateTracker.CurrentRatio < _propagationRateThreshold;
+        // or if the literal block distance is too high
+        reduce |= _literalBlockDistanceTracker.CurrentRatio > _literalBlockDistanceThreshold;
         
         if (!reduce) return;
+
+        Debug.WriteLine($"Start reducing learned constraints ({_learnedConstraints.Count}).");
 
         var learnedConstraints = _learnedConstraints;
         learnedConstraints.Sort((left, right) => -left.Activity.CompareTo(right.Activity));
@@ -37,5 +40,6 @@ sealed class LearnedConstraintsReducer(SatSolver.Options _options, PropagationRa
             constraint.Watched2.Watchers.Remove(constraint);
         }
         learnedConstraints.RemoveRange(start, learnedConstraints.Count-start);
+        Debug.WriteLine($"Reduced learned constraints to {_learnedConstraints.Count}.");
     }
 }

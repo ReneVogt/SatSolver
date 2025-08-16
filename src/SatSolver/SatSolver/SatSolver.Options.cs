@@ -63,14 +63,14 @@ public sealed partial class SatSolver
         /// The clauses are ordered by their activiy so that
         /// only the useless part will be deleted.
         /// </summary>
-        public double RatioToDelete { get; init; } = 0.5;        
+        public double RatioToDelete { get; init; } = 0.5;
         /// <summary>
         /// If not <c>null</c>, a clause deletion will be
         /// performed if the number of learned clauses
         /// exceeds the number of original clauses multiplied
         /// by this value.
         /// </summary>
-        public double? OriginalClauseCountFactor { get; init; }
+        public double? OriginalClauseCountFactor { get; init; } = 5d;
         /// <summary>
         /// If not <c>null</c>, a clause deletion will be
         /// performed when the ratio of the recent literal 
@@ -102,12 +102,12 @@ public sealed partial class SatSolver
         /// <summary>
         /// The number of values counted as "recent".
         /// </summary>
-        public int RecentCount { get; init; }
+        public int RecentCount { get; init; } = 100;
 
         /// <summary>
         /// The decay value for the exponential moving average.
         /// </summary>
-        public double Decay { get; init; }
+        public double Decay { get; init; } = 0.999d;
     }
 
     /// <summary>
@@ -119,19 +119,19 @@ public sealed partial class SatSolver
         /// <summary>
         /// The number of propagation rates counted as "recent".
         /// </summary>
-        public int SampleSize { get; init; }
+        public int SampleSize { get; init; } = 100;
 
         /// <summary>
         /// The decay value for the exponential 
         /// moving average of propagation rates..
         /// </summary>
-        public double Decay { get; init; }
+        public double Decay { get; init; } = 0.999d;
 
         /// <summary>
         /// The number of conflicts for which the propagations
         /// should be counted to get a propagation rate.
         /// </summary>
-        public int ConflictInterval { get; init; }
+        public int ConflictInterval { get; init; } = 100;
     }
 
     /// <summary>
@@ -142,9 +142,47 @@ public sealed partial class SatSolver
     public record Options
     {
         /// <summary>
-        /// A recommended default options set.
+        /// The recommended default options set
+        /// using CDCL with a restart strategy
+        /// based on a Luby sequence with base 100
+        /// and depending on literal block distance
+        /// average and propagation rate.
         /// </summary>
         public static Options Default { get; } = new();
+
+        /// <summary>
+        /// Options for a poor man's VSIDS solver without
+        /// any restarts or other fancy strategies.
+        /// </summary>
+        public static Options PoorMansVSIDS { get; } = new ()
+        {
+            OnlyPoorMansVSIDS = true,
+            VariableActivityDecayFactor = 0.9995,
+            Restart = new()
+            {
+                Interval = null,
+                LiteralBlockDistanceThreshold = null,
+                Luby = false,
+                PropagationRateThreshold = null
+            },
+            ClauseDeletion = new()
+            {
+                LiteralBlockDistanceThreshold = null,
+                LiteralBlockDistanceToKeep = 0,
+                OriginalClauseCountFactor = null,
+                PropagationRateThreshold = null,
+                RatioToDelete = 0
+            }
+        };
+        
+        /// <summary>
+        /// The recommended default options set
+        /// using CDCL with a restart strategy
+        /// based on a Luby sequence with base 100
+        /// and depending on literal block distance
+        /// average and propagation rate.
+        /// </summary>
+        public static Options CDCL { get; } = Default;
 
         /// <summary>
         /// If this is <c>true</c>, no clause learning will
@@ -161,7 +199,7 @@ public sealed partial class SatSolver
         /// the activities of all variables in a conflicting
         /// clause are incremented.
         /// </summary>
-        public double VariableActivityDecayFactor { get; init; } = 0.95;
+        public double VariableActivityDecayFactor { get; init; } = 0.999;
         /// <summary>
         /// The activites of learned clauses are incremented 
         /// when they are created, found in the reasons for
@@ -169,7 +207,7 @@ public sealed partial class SatSolver
         /// when they lead to a unit propagation:
         /// They are decayed after each conflict by this factor.
         /// </summary>
-        public double ClauseActivityDecayFactor { get; init; } = 0.99;
+        public double ClauseActivityDecayFactor { get; init; } = 0.999;
 
         /// <summary>
         /// Learned clauses with a literal block distance greater
@@ -201,11 +239,11 @@ public sealed partial class SatSolver
         /// <summary>
         /// Configures how the literal block distances are tracked.
         /// </summary>
-        public EmaOptions? LiteralBlockDistanceTracking { get; init; } = new ();
+        public EmaOptions LiteralBlockDistanceTracking { get; init; } = new ();
 
         /// <summary>
         /// Configures how the propagation rate is tracked.
         /// </summary>
-        public PropagationRateTrackingOptions? PropagationRateTracking { get; init; } = new();
+        public PropagationRateTrackingOptions PropagationRateTracking { get; init; } = new();
     }
 }
