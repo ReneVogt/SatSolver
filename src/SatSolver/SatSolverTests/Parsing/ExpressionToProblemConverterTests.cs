@@ -53,7 +53,7 @@ public class ExpressionToProblemConverterTests
         var data = new TheoryData<string, string, string[]>
         {            
             // cnf -> .t0 & (!.t0 | !a | !b) & (.t0 | a) & (.t0 | b) -> reduced .t0 & (!.t0 | !a | !b)
-            { "!a | !b", "p cnf 3 2\r\n1 0\r\n-1 -2 -3 0", [".t0", "a", "b"] },
+            { "!a | !b", "p cnf 2 1\r\n-1 -2 0", ["a", "b"] },
 
             // 2o3
             { "a & b & !c | a & !b & c | !a & b & c", @"p cnf 11 15

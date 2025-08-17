@@ -18,12 +18,12 @@ public sealed partial class SatSolver
         /// If <see cref="Luby"/> is <c>true</c>, this value
         /// is multiplied by the Luby sequence (<see cref="LubySequence"/>).
         /// </summary>
-        public int? Interval { get; init; }
+        public int? Interval { get; init; } = 1000;
         /// <summary>
         /// Determines if the restartl <see cref="Interval"/> is
         /// multiplied by the Luby sequence (<see cref="LubySequence"/>.
         /// </summary>
-        public bool Luby { get; init; }
+        public bool Luby { get; init; } = true;
         /// <summary>
         /// If not <c>null</c>, the solver will restart if the ratio
         /// of the recent literal block distances found in learned
@@ -161,8 +161,8 @@ public sealed partial class SatSolver
             Restart = new()
             {
                 Interval = null,
-                LiteralBlockDistanceThreshold = null,
                 Luby = false,
+                LiteralBlockDistanceThreshold = null,
                 PropagationRateThreshold = null
             },
             ClauseDeletion = new()
@@ -184,6 +184,8 @@ public sealed partial class SatSolver
         /// </summary>
         public static Options CDCL { get; } = Default;
 
+
+
         /// <summary>
         /// If this is <c>true</c>, no clause learning will
         /// be performed. Only the activites of variables 
@@ -199,7 +201,7 @@ public sealed partial class SatSolver
         /// the activities of all variables in a conflicting
         /// clause are incremented.
         /// </summary>
-        public double VariableActivityDecayFactor { get; init; } = 0.999;
+        public double VariableActivityDecayFactor { get; init; } = 0.95;
         /// <summary>
         /// The activites of learned clauses are incremented 
         /// when they are created, found in the reasons for

@@ -131,6 +131,7 @@ public class TseitinTransformer : BooleanExpressionRewriter
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> is <c>null</c>.</exception>
     public static BooleanExpression Transform(BooleanExpression expression)
     {
+        if (expression.IsConjunctiveNormalForm()) return expression;
         var transformer = new TseitinTransformer();
         var resultingExpression = transformer.Rewrite(Lowerer.Lower(expression));
         if (resultingExpression.Kind == ExpressionKind.Constant || 

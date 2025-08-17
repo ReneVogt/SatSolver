@@ -55,4 +55,14 @@ public static class ExpressionExtensions
     /// that can be processed by the <see cref="SatSolver"/>.</returns>
     /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
     public static Problem ToProblem(this BooleanExpression expression, out BooleanExpression transformedExpression, out IReadOnlyDictionary<string, int> literalMapping) => ExpressionToProblemConverter.ToProblem(expression, out transformedExpression, out literalMapping);
+
+    /// <summary>
+    /// Determines if a <see cref="BooleanExpression"/> is in
+    /// a conjunctive normal form.
+    /// </summary>
+    /// <param name="expression">The <see cref="BooleanExpression"/> to examine.</param>
+    /// <returns><c>true</c> if the <paramref name="expression"/> is in a conjunctive normal form, <c>false</c> if not.
+    /// that can be processed by the <see cref="SatSolver"/>.</returns>
+    /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
+    public static bool IsConjunctiveNormalForm(this BooleanExpression expression) => ConjunctiveNormalFormChecker.Check(expression);
 }
