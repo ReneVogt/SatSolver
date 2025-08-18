@@ -1,7 +1,7 @@
-﻿using Revo.SatSolver.CDCL;
-using Revo.SatSolver.DataStructures;
+﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.DPLL;
-using Revo.SatSolver.Helpers;
+using Revo.SatSolver.Processors;
+using Revo.SatSolver.Tools;
 using System.Diagnostics;
 
 namespace Revo.SatSolver;
@@ -13,109 +13,36 @@ namespace Revo.SatSolver;
 /// </summary>
 public sealed partial class SatSolver
 {
-    readonly CancellationToken _cancellationToken;
-    readonly Options _options;
-    
-    readonly Variable[] _variables;
-    readonly Queue<(ConstraintLiteral, Constraint Reason)> _unitLiterals = [];
-    readonly VariableTrail _trail;
-    readonly DpllProcessor _dpllProcessor;
-    
-    readonly LearnedConstraintsReducer _learnedConstraintsReducer;
-    readonly CdclProcessor _cdclProcessor;
-
-    readonly List<Constraint> _learnedConstraints = [];
-
-    readonly CandidateHeap _candidateHeap;
-    readonly ActivityManager _activityManager;
-
-    readonly int _originalClauseCount;
-
-    readonly EmaTracker _literalBlockDistanceTracker;
-    readonly PropagationRateTracker _propagationRateTracker;
-
     readonly RestartManager _restartManager;
+    readonly CancellationToken _cancellationToken;
+    readonly ICandidateHeap _candidateHeap;
+    readonly IVariableTrail _trail;
+    readonly IVariablePropagator _dpllProcessor;
+    readonly IConflictDrivenClauseLearner _cdclProcessor;
+    readonly IActivityManager _activityManager;
+    readonly bool _onlyPoorMansVSIDS;
+    readonly Queue<(ConstraintLiteral UnitLiteral, Constraint Reason)> _unitsToPropagate;
+    readonly PropagationRateTracker _propagationRateTracker;
+    readonly IReduceLearnedConstraints _learnedConstraintsReducer;
+    readonly Variable[] _variables;
 
-    SatSolver(Problem problem, Options options, CancellationToken cancellationToken)
+
+    SatSolver(IInitializeSatSolver initializer)
     {
-        if (options.VariableActivityDecayFactor == 0 || options.ClauseActivityDecayFactor == 0) throw new ArgumentException(paramName: nameof(options), message: "A decay factor must not be zero.");
-
-        _options = options;
-        _cancellationToken = cancellationToken;
-        _variables = [..Enumerable.Range(0, problem.NumberOfLiterals).Select(index => new Variable(index))];
-
-        _literalBlockDistanceTracker = new(_options.LiteralBlockDistanceTracking.RecentCount, _options.LiteralBlockDistanceTracking.Decay);
-        _propagationRateTracker = new(_options.PropagationRateTracking.ConflictInterval, _options.PropagationRateTracking.SampleSize, _options.PropagationRateTracking.Decay);
-
-        // it is very important to do this before we 
-        // initialize the heap with the variables and
-        // activities!
-        _originalClauseCount = BuildConstraints(problem.Clauses);
-
-        _candidateHeap = new (_variables);
-        _activityManager = new ActivityManager(
-            variables: _variables, 
-            learnedConstraints: _learnedConstraints, 
-            variableActivityDecay: _options.VariableActivityDecayFactor, 
-            constraintActivityDecay: _options.ClauseActivityDecayFactor, 
-            candidateHeap: _candidateHeap);
-        _trail = new(problem.NumberOfLiterals, _candidateHeap);
-        _dpllProcessor = new(_trail, _unitLiterals, _activityManager, _cancellationToken);
-
-        _learnedConstraintsReducer = new(_options, _propagationRateTracker, _literalBlockDistanceTracker, _learnedConstraints, _originalClauseCount);
-        var learnedConstraintCreator = new LearnedConstraintCreator(_trail, _activityManager, new ConstraintMinimizer(_options), _variables);
-        _cdclProcessor = new(_options, _activityManager, _trail, _literalBlockDistanceTracker, learnedConstraintCreator, _learnedConstraints);
-
-        _restartManager = new(_options, _trail, _propagationRateTracker, _literalBlockDistanceTracker, _unitLiterals);
-    }
-    int BuildConstraints(IEnumerable<Clause> clauses)
-    {
-        var clauseCount = 0;
-        var scores = new double[_variables.Length << 1];
-        var literals = new HashSet<ConstraintLiteral>();
-        var tautologyTest = new HashSet<int>();
-        var variables = _variables;
-        
-        foreach (var clause in clauses)
-        {
-            literals.Clear();
-
-            foreach (var literal in clause.Literals)
-                literals.Add(literal.Sense ? variables[literal.Id-1].PositiveLiteral : variables[literal.Id-1].NegativeLiteral);
-
-            // test for tautology (a | !a)
-            tautologyTest.Clear();
-            if (literals.Any(l => !tautologyTest.Add(l.Variable.Index))) continue;
-
-            clauseCount++;
-            
-            var constraint = new Constraint(literals);
-            if (constraint.Literals.Length == 1)
-                _unitLiterals.Enqueue((constraint.Watched1, constraint));
-
-            foreach (var literal in literals)
-            {
-                var index = literal.Variable.Index << 1;
-                if (!literal.Orientation) index+=1;
-                scores[index] += Math.Pow(2, -constraint.Literals.Length);
-            }
-        }
-
-        var maxActivity = double.MinValue;
-        for (var i = 0; i<variables.Length; i++)
-        {
-            var ps = scores[i<<1];
-            var ns = scores[(i<<1)+1];
-            var activity = ps + ns;
-            if (activity > maxActivity) maxActivity = activity;
-            variables[i].Activity = activity;
-            variables[i].Polarity = ps > ns;
-        }
-        maxActivity /= _options.VariableActivityDecayFactor;
-        for (var i = 0; i<variables.Length; i++)        
-            variables[i].Activity /= maxActivity;
-
-        return clauseCount;
+        var state = initializer.Initialize();
+        _dpllProcessor = state.VariablePropagator;
+        _cdclProcessor = state.CdclProcessor;
+        _activityManager = state.ActivityManager;
+        _trail = state.VariableTrail;
+        _candidateHeap = state.CandidateHeap;
+        _restartManager = state.RestartManager;
+        _unitsToPropagate = state.UnitsToPropagate;
+        _propagationRateTracker = state.PropagationRateTracker;
+        _restartManager = state.RestartManager;
+        _cancellationToken = state.CancellationToken;
+        _onlyPoorMansVSIDS = state.Options.OnlyPoorMansVSIDS;
+        _variables = state.Variables;
+        _learnedConstraintsReducer = state.LearnedConstraintsReducer;
     }
 
     Literal[]? Solve()
@@ -124,7 +51,7 @@ public sealed partial class SatSolver
         if (_dpllProcessor.PropagateUnits(ref propagationCount) is not null)
             return null;
         _trail.Clear();
-        return _options.OnlyPoorMansVSIDS ? SolvePoor() : SolveCDCL();
+        return _onlyPoorMansVSIDS ? SolvePoor() : SolveCDCL();
     }
 
     Literal[]? SolvePoor()
@@ -164,7 +91,7 @@ public sealed partial class SatSolver
             if (_restartManager.RestartIfNecessary()) continue;
             
             Debug.WriteLine("Backtracking.");
-            _unitLiterals.Clear();
+            _unitsToPropagate.Clear();
             (candidateVariable, candidateSense) = _trail.Backtrack();
             if (candidateVariable is null) return null;
         }
@@ -203,7 +130,7 @@ public sealed partial class SatSolver
             _propagationRateTracker.AddConflict();
             _restartManager.AddConflict();
             _activityManager.IncreaseConstraintActivity(conflictingConstraint);
-            _unitLiterals.Clear();
+            _unitsToPropagate.Clear();
 
             var (candidateLiteral, candidateReason) = _cdclProcessor.PerformClauseLearning(conflictingConstraint);
             _learnedConstraintsReducer.ReduceLearnedConstraintsIfNecessary();
@@ -218,6 +145,10 @@ public sealed partial class SatSolver
 
     Literal[] BuildSolution() => [.. _variables.Select(v => new Literal(v.Index+1, v.Sense!.Value))];
 
+    // This is the entry point for unit tests. We can provide an alternative initializer
+    // and via that mocks for all the required algorithm parts.
+    static Literal[]? Solve(IInitializeSatSolver initializer) => new SatSolver(initializer).Solve();
+
     /// <summary>
     /// Finds a variable configuration that satisfies the SATisfiability <paramref name="problem"/>.
     /// If there is no solution the method return, <c>null</c>.
@@ -229,14 +160,12 @@ public sealed partial class SatSolver
     /// their senses that solve the problem. If no solution was found the method returns <c>null</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="problem"/> was <c>null</c>.</exception>
     /// <exception cref="ArgumentException">The problem contains either invalid literal IDs or no literals at all.</exception>
-    public static Literal[]? Solve(Problem problem, Options? options = null, CancellationToken cancellationToken = default)
+    public static Literal[]? Solve(Problem problem, SatSolverOptions? options = null, CancellationToken cancellationToken = default)
     {
         _ = problem ?? throw new ArgumentNullException(nameof(problem));
         if (problem.Clauses.Any(clause => clause.Literals.Length == 0)) return null;
         if (problem.NumberOfLiterals == 0) return [];
         if (problem.Clauses.Length == 0) return [.. Enumerable.Range(1, problem.NumberOfLiterals).Select(i => new Literal(i, true))];
-
-        var solver = new SatSolver(problem, options ?? Options.Default, cancellationToken);
-        return solver.Solve();        
+        return Solve(new SatSolverInitializer(problem, options ?? SatSolverOptions.Default, cancellationToken));
     }
 }

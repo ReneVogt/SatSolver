@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace Revo.SatSolver.DataStructures;
+﻿namespace Revo.SatSolver.DataStructures;
 sealed class Constraint
 {
     public ConstraintLiteral[] Literals { get; }

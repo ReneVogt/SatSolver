@@ -1,13 +1,19 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.DPLL;
+using Revo.SatSolver.Tools;
 using System.Diagnostics;
 
-namespace Revo.SatSolver.CDCL;
+namespace Revo.SatSolver.Processors;
 
-sealed class CdclProcessor(SatSolver.Options _options, IActivityManager _activityManager, IVariableTrail _trail, EmaTracker _literalBlockDistanceTracker, ICreateLearnedConstraints _learnedConstraintCreator, List<Constraint> _learnedConstraints)
+sealed class ConflictDrivenClauseLearner(SatSolverState _state) : IConflictDrivenClauseLearner
 {
-    readonly int _literalBlockDistanceDeletionLimit = _options.ClauseDeletion.LiteralBlockDistanceToKeep;
-    readonly int _literalBlockDistanceMaximum = _options.MaximumLiteralBlockDistance;
+    readonly int _literalBlockDistanceDeletionLimit = _state.Options.ConstraintDeletion.LiteralBlockDistanceToKeep;
+    readonly int _literalBlockDistanceMaximum = _state.Options.MaximumLiteralBlockDistance;
+    readonly IActivityManager _activityManager = _state.ActivityManager;
+    readonly IVariableTrail _trail = _state.VariableTrail;
+    readonly EmaTracker _literalBlockDistanceTracker = _state.LiteralBlockDistanceTracker;
+    readonly ICreateLearnedConstraints _learnedConstraintCreator = _state.LearnedConstraintCreator;
+    readonly List<Constraint> _learnedConstraints = _state.LearnedConstraints;
 
     public (ConstraintLiteral uip, Constraint reason) PerformClauseLearning(Constraint conflictingConstraint)
     {

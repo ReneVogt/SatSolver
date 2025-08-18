@@ -2,6 +2,7 @@
 using Revo.SatSolver.DPLL;
 
 namespace SatSolverTests.Stubs;
+
 sealed class TestActivityManager : IActivityManager
 {
     public int DecayCount { get; private set; }

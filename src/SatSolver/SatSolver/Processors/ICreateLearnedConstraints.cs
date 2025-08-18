@@ -1,6 +1,6 @@
 ﻿using Revo.SatSolver.DataStructures;
 
-namespace Revo.SatSolver.CDCL;
+namespace Revo.SatSolver.Processors;
 
 interface ICreateLearnedConstraints 
 {

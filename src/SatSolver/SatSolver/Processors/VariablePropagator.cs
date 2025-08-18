@@ -1,13 +1,15 @@
 ﻿using Revo.SatSolver.DataStructures;
+using Revo.SatSolver.DPLL;
 using System.Diagnostics;
 
-namespace Revo.SatSolver.DPLL;
-sealed class DpllProcessor(IVariableTrail trail, Queue<(ConstraintLiteral, Constraint Reason)> unitLiterals, IActivityManager activityManager, CancellationToken cancellationToken)
+namespace Revo.SatSolver.Processors;
+
+sealed class VariablePropagator(SatSolverState _state) : IVariablePropagator
 {
-    readonly CancellationToken _cancellationToken = cancellationToken;
-    readonly IVariableTrail _trail = trail;
-    readonly Queue<(ConstraintLiteral, Constraint Reason)> _unitLiterals = unitLiterals;
-    readonly IActivityManager _activityManager = activityManager;
+    readonly CancellationToken _cancellationToken = _state.CancellationToken;
+    readonly IVariableTrail _trail = _state.VariableTrail;
+    readonly Queue<(ConstraintLiteral, Constraint Reason)> _unitLiterals = _state.UnitsToPropagate;
+    readonly IActivityManager _activityManager = _state.ActivityManager;
 
     public Constraint? PropagateVariable(Variable variable, bool sense, Constraint? reason, out int propagationCount)
     {
@@ -48,7 +50,7 @@ sealed class DpllProcessor(IVariableTrail trail, Queue<(ConstraintLiteral, Const
             }
 
             if (nextLiteral is null)
-            {               
+            {
                 _unitLiterals.Enqueue((constraint.Watched1, constraint));
                 _activityManager.IncreaseConstraintActivity(constraint, 0.5);
                 propagationCount++;

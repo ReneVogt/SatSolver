@@ -1,8 +1,10 @@
-﻿using Revo.SatSolver.DataStructures;
+﻿using Revo.SatSolver;
+using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.DPLL;
+using Revo.SatSolver.Tools;
 using SatSolverTests.Stubs;
 
-namespace SatSolverTests.DPLL;
+namespace SatSolverTests.Tools;
 
 public sealed class ActivityManagerTests
 {
@@ -12,7 +14,20 @@ public sealed class ActivityManagerTests
         var candidateHeap = new TestCandidateHeap();
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i) { Activity = i}).ToArray();
 
-        var sut = new ActivityManager(variables, [], 0.5, 0.7, candidateHeap);
+        var options = new SatSolverOptions
+        {
+            VariableActivityDecayFactor = 0.5d,
+            ConstraintActivityDecayFactor = 0.7d
+        };
+        IActivityManager? sut = null;
+        var testState = new TestState(options, 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => candidateHeap,
+            nameof(TestState.ActivityManager) => sut ??= new ActivityManager(state),
+            _ => throw new NotImplementedException()
+        });
+
+        sut = testState.ActivityManager;
 
         Assert.Equal(1, sut.VariableActivityIncrement);
         Assert.All(variables, v => Assert.Equal(v.Index, v.Activity));
@@ -40,7 +55,20 @@ public sealed class ActivityManagerTests
         var candidateHeap = new TestCandidateHeap();
         var variables = new[] { new Variable(0) { Activity = 1e100 - 1 } };
 
-        var sut = new ActivityManager(variables, [], 0.5, 0.7, candidateHeap);
+        var options = new SatSolverOptions
+        {
+            VariableActivityDecayFactor = 0.5d,
+            ConstraintActivityDecayFactor = 0.7d
+        };
+        IActivityManager? sut = null;
+        var testState = new TestState(options, 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => candidateHeap,
+            nameof(TestState.ActivityManager) => sut ??= new ActivityManager(state),
+            _ => throw new NotImplementedException()
+        });
+
+        sut = testState.ActivityManager;
         var constraint = new Constraint([variables[0].PositiveLiteral]);
         sut.IncreaseVariableActivity(constraint);
         Assert.Equal(1, candidateHeap.RescaleCalls);
@@ -51,9 +79,24 @@ public sealed class ActivityManagerTests
     public void IncreaseConstraintActivity_OnlyIfTracked()
     {
         var candidateHeap = new TestCandidateHeap();
-        var constraints = new List<Constraint> { new([new Variable(0).PositiveLiteral]) { Activity = 12, IsTracked = true} };
+        var variables = Enumerable.Range(0, 10).Select(i => new Variable(i) { Activity = i }).ToArray();
+
+        var options = new SatSolverOptions
+        {
+            VariableActivityDecayFactor = 0.7d,
+            ConstraintActivityDecayFactor = 0.5d
+        };
+        IActivityManager? sut = null;
+        var testState = new TestState(options, 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => candidateHeap,
+            nameof(TestState.ActivityManager) => sut ??= new ActivityManager(state),
+            _ => throw new NotImplementedException()
+        });
+        var constraints = testState.LearnedConstraints;
+        constraints.Add(new([new Variable(0).PositiveLiteral]) { Activity = 12, IsTracked = true });
+        sut = testState.ActivityManager;
         var constraint = new Constraint([new Variable(1).PositiveLiteral]) { Activity = 23, IsTracked = false };
-        var sut = new ActivityManager([], constraints, 0.7, 0.5, candidateHeap);
 
         Assert.Equal(1, sut.ConstraintActivityIncrement);
 
@@ -75,9 +118,24 @@ public sealed class ActivityManagerTests
     public void DecayConstraintActivity_HigherIncrement()
     {
         var candidateHeap = new TestCandidateHeap();
-        var constraints = new List<Constraint> { new([new Variable(0).PositiveLiteral]) { Activity = 12, IsTracked = true } };
         var constraint = new Constraint([new Variable(1).PositiveLiteral]) { Activity = 23, IsTracked = true };
-        var sut = new ActivityManager([], constraints, 0.7, 0.5, candidateHeap);
+        var options = new SatSolverOptions
+        {
+            VariableActivityDecayFactor = 0.7d,
+            ConstraintActivityDecayFactor = 0.5d
+        };
+        IActivityManager? sut = null;
+        var testState = new TestState(options, 0, [], [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => candidateHeap,
+            nameof(TestState.ActivityManager) => sut ??= new ActivityManager(state),
+            _ => throw new NotImplementedException()
+        });
+
+        var constraints = testState.LearnedConstraints;
+        constraints.Add(new([new Variable(0).PositiveLiteral]) { Activity = 12, IsTracked = true });
+
+        sut = testState.ActivityManager;
 
         Assert.Equal(1, sut.ConstraintActivityIncrement);
 
@@ -100,12 +158,25 @@ public sealed class ActivityManagerTests
     public void IncreaseConstraintActivity_RescaleWhenNeeded()
     {
         var candidateHeap = new TestCandidateHeap();
-        var constraints = new List<Constraint> { 
-            new([new Variable(0).PositiveLiteral]) { Activity = 1, IsTracked = true },
-            new ([new Variable(1).PositiveLiteral]) { Activity = 1e100-1, IsTracked = true }
+        var options = new SatSolverOptions
+        {
+            VariableActivityDecayFactor = 0.7d,
+            ConstraintActivityDecayFactor = 0.5d
         };
+        IActivityManager? sut = null;
+        var testState = new TestState(options, 0, [], [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => candidateHeap,
+            nameof(TestState.ActivityManager) => sut ??= new ActivityManager(state),
+            _ => throw new NotImplementedException()
+        });
+        var constraints = testState.LearnedConstraints;
+        constraints.AddRange([
+            new([new Variable(0).PositiveLiteral]) { Activity = 1, IsTracked = true },
+            new ([new Variable(1).PositiveLiteral]) { Activity = 1e100-1, IsTracked = true }]);
         var constraint = constraints[1];
-        var sut = new ActivityManager([], constraints, 0.7, 0.5, candidateHeap);
+
+        sut = testState.ActivityManager;
 
         Assert.Equal(1, sut.ConstraintActivityIncrement);
 

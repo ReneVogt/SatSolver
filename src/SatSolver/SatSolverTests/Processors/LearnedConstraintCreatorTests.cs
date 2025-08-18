@@ -1,8 +1,9 @@
-﻿using Revo.SatSolver.CDCL;
+﻿using Revo.SatSolver;
 using Revo.SatSolver.DataStructures;
+using Revo.SatSolver.Processors;
 using SatSolverTests.Stubs;
 
-namespace SatSolverTests.CDCL;
+namespace SatSolverTests.Processors;
 
 public sealed class LearnedConstraintCreatorTests
 {
@@ -15,13 +16,21 @@ public sealed class LearnedConstraintCreatorTests
          * shown here: https://users.aalto.fi/~tjunttil/2020-DP-AUT/notes-sat/cdcl.html
          * 
          */
-      
+
+        var candidateHeap = new TestCandidateHeap();
         var variables = Enumerable.Range(0, 12).Select(i => new Variable(i)).ToArray();
-        var trail = new VariableTrail(12, new TestCandidateHeap());
+        IVariableTrail? trail = null;
         var activityManager = new TestActivityManager();
         var constraintMinimizer = new TestConstraintMinimizer();
-        
-        var sut = new LearnedConstraintCreator(trail, activityManager, constraintMinimizer, variables);
+        var testState = new TestState(SatSolverOptions.Default, 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.VariableTrail) => trail ??= new VariableTrail(state),
+            nameof(TestState.ActivityManager) => activityManager,
+            nameof(TestState.ConstraintMinimizer) => constraintMinimizer,
+            nameof(TestState.CandidateHeap) => candidateHeap,
+            _ => throw new NotImplementedException()
+        });
+        var sut = new LearnedConstraintCreator(testState);
 
         // introduce variables for easy comparison to the diagram
         var x1 = variables[0];
@@ -37,6 +46,7 @@ public sealed class LearnedConstraintCreatorTests
         var x11 = variables[10];
         var x12 = variables[11];
 
+        trail = testState.VariableTrail;
         trail.Push();
         trail.Add(x1);
         x1.Sense = true;

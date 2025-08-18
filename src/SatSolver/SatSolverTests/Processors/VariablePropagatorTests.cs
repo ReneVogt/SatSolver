@@ -1,10 +1,10 @@
 ﻿using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.DPLL;
+using Revo.SatSolver.Processors;
 using SatSolverTests.Stubs;
 
-namespace SatSolverTests.DPLL;
+namespace SatSolverTests.Processors;
 
-public sealed class DpllProcessorTests
+public sealed class VariablePropagatorTests
 {
     [Fact]
     public void PropagateVariable_NoConflict_NoPropagations()
@@ -34,7 +34,15 @@ public sealed class DpllProcessorTests
         var activityManager = new TestActivityManager();
         var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
 
-        var sut = new DpllProcessor(trail, units, activityManager, default);
+        IVariablePropagator? sut = null;
+        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
+        {
+            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
+            nameof(TestState.VariableTrail) => trail,
+            nameof(TestState.ActivityManager) => activityManager,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariablePropagator;
 
         var conflict = sut.PropagateVariable(variables[0], true, null, out var propagations);
         Assert.Null(conflict);
@@ -81,7 +89,15 @@ public sealed class DpllProcessorTests
         var activityManager = new TestActivityManager();
         var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
 
-        var sut = new DpllProcessor(trail, units, activityManager, default);
+        IVariablePropagator? sut = null;
+        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
+        {
+            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
+            nameof(TestState.VariableTrail) => trail,
+            nameof(TestState.ActivityManager) => activityManager,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariablePropagator;
 
         var conflict = sut.PropagateVariable(variables[0], false, null, out var propagations);
         Assert.Null(conflict);
@@ -127,7 +143,15 @@ public sealed class DpllProcessorTests
         var activityManager = new TestActivityManager();
         var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
 
-        var sut = new DpllProcessor(trail, units, activityManager, default);
+        IVariablePropagator? sut = null;
+        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
+        {
+            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
+            nameof(TestState.VariableTrail) => trail,
+            nameof(TestState.ActivityManager) => activityManager,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariablePropagator;
 
         var conflict = sut.PropagateVariable(variables[0], true, null, out var propagations);
         Assert.Equal(constraint1, conflict);
@@ -163,7 +187,15 @@ public sealed class DpllProcessorTests
         var activityManager = new TestActivityManager();
         var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
 
-        var sut = new DpllProcessor(trail, units, activityManager, default);
+        IVariablePropagator? sut = null;
+        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
+        {
+            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
+            nameof(TestState.VariableTrail) => trail,
+            nameof(TestState.ActivityManager) => activityManager,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariablePropagator;
 
         var conflict = sut.PropagateVariable(variables[0], false, null, out var propagations);
         Assert.Null(conflict);
@@ -200,7 +232,15 @@ public sealed class DpllProcessorTests
         units.Enqueue((variables[1].PositiveLiteral, constraint0));
         units.Enqueue((variables[2].PositiveLiteral, constraint0));
 
-        var sut = new DpllProcessor(trail, units, activityManager, default);
+        IVariablePropagator? sut = null;
+        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
+        {
+            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
+            nameof(TestState.VariableTrail) => trail,
+            nameof(TestState.ActivityManager) => activityManager,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariablePropagator;
 
         var propagations = 0;
         var conflict = sut.PropagateUnits(ref propagations);
@@ -233,7 +273,15 @@ public sealed class DpllProcessorTests
         units.Enqueue((variables[0].PositiveLiteral, constraint0));
         units.Enqueue((variables[1].PositiveLiteral, constraint0));
 
-        var sut = new DpllProcessor(trail, units, activityManager, default);
+        IVariablePropagator? sut = null;
+        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
+        {
+            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
+            nameof(TestState.VariableTrail) => trail,
+            nameof(TestState.ActivityManager) => activityManager,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariablePropagator;
 
         var propagations = 0;
         var conflict = sut.PropagateUnits(ref propagations);
@@ -269,7 +317,15 @@ public sealed class DpllProcessorTests
         variables[0].Sense = false; // this should avoid propagation of -v0
         variables[1].Sense = false; // this should lead to a conflict if -v0 is propagated
 
-        var sut = new DpllProcessor(trail, units, activityManager, default);
+        IVariablePropagator? sut = null;
+        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
+        {
+            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
+            nameof(TestState.VariableTrail) => trail,
+            nameof(TestState.ActivityManager) => activityManager,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariablePropagator;
 
         var propagations = 0;
         var conflict = sut.PropagateUnits(ref propagations);
@@ -314,7 +370,15 @@ public sealed class DpllProcessorTests
         var activityManager = new TestActivityManager();
         var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
 
-        var sut = new DpllProcessor(trail, units, activityManager, default);
+        IVariablePropagator? sut = null;
+        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
+        {
+            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
+            nameof(TestState.VariableTrail) => trail,
+            nameof(TestState.ActivityManager) => activityManager,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariablePropagator;
 
         var conflict = sut.PropagateVariable(variables[0], false, null, out var propagations);
         Assert.Null(conflict);

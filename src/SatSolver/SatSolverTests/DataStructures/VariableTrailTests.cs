@@ -10,7 +10,14 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i =>  new Variable(i)).ToArray();
         var heap = new TestCandidateHeap();
-        var sut = new VariableTrail(10, heap);
+        IVariableTrail? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.VariableTrail) => sut ??= new VariableTrail(state),
+            nameof(TestState.CandidateHeap) => heap,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariableTrail;
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -62,7 +69,14 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var heap = new TestCandidateHeap();
-        var sut = new VariableTrail(10, heap);
+        IVariableTrail? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.VariableTrail) => sut ??= new VariableTrail(state),
+            nameof(TestState.CandidateHeap) => heap,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariableTrail;
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -117,7 +131,14 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var heap = new TestCandidateHeap();
-        var sut = new VariableTrail(10, heap);
+        IVariableTrail? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.VariableTrail) => sut ??= new VariableTrail(state),
+            nameof(TestState.CandidateHeap) => heap,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariableTrail;
 
         sut.Push(false);
         Assert.Equal(1, sut.DecisionLevel);
@@ -171,7 +192,14 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var heap = new TestCandidateHeap();
-        var sut = new VariableTrail(10, heap);
+        IVariableTrail? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.VariableTrail) => sut ??= new VariableTrail(state),
+            nameof(TestState.CandidateHeap) => heap,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariableTrail;
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -224,7 +252,14 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var heap = new TestCandidateHeap();
-        var sut = new VariableTrail(10, heap);
+        IVariableTrail? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.VariableTrail) => sut ??= new VariableTrail(state),
+            nameof(TestState.CandidateHeap) => heap,
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.VariableTrail;
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);

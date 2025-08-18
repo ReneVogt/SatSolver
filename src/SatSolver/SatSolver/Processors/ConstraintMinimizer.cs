@@ -1,11 +1,11 @@
 ﻿using Revo.SatSolver.DataStructures;
 using System.Diagnostics;
 
-namespace Revo.SatSolver.CDCL;
+namespace Revo.SatSolver.Processors;
 
-sealed class ConstraintMinimizer(SatSolver.Options _options) : IMinimizeConstraints
+sealed class ConstraintMinimizer(SatSolverState _state) : IMinimizeConstraints
 {
-    readonly int _maxDepth = _options.MaximumClauseMinimizationDepth;
+    readonly int _maxDepth = _state.Options.MaximumConstraintMinimizationDepth;
     public void MinimizeConstraint(HashSet<ConstraintLiteral> literals, int decisionLevel)
     {
         Debug.WriteLine($"Minimizing constraint ({literals.Count}).");

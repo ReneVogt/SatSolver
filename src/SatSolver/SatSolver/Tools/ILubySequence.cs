@@ -1,5 +1,4 @@
-﻿
-namespace Revo.SatSolver.Helpers;
+﻿namespace Revo.SatSolver.Tools;
 
 interface ILubySequence
 {

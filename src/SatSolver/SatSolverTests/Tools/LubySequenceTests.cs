@@ -1,6 +1,6 @@
-﻿using Revo.SatSolver.Helpers;
+﻿using Revo.SatSolver.Tools;
 
-namespace SatSolverTests.Helpers;
+namespace SatSolverTests.Tools;
 
 public sealed class LubySequenceTests
 {

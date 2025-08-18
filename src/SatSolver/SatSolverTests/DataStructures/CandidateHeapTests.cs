@@ -1,4 +1,5 @@
 ﻿using Revo.SatSolver.DataStructures;
+using SatSolverTests.Stubs;
 
 namespace SatSolverTests.DataStructures;
 
@@ -14,7 +15,13 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap(variables);
+        ICandidateHeap? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => sut ??= new CandidateHeap(state),
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.CandidateHeap;
 
         Assert.Equal(4, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);
@@ -36,7 +43,13 @@ public sealed class CandidateHeapTests
         variables[2].Sense = true;
         variables[4].Sense = false;
 
-        var sut = new CandidateHeap(variables);
+        ICandidateHeap? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => sut ??= new CandidateHeap(state),
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.CandidateHeap;
 
         Assert.Equal(1, sut.Dequeue()!.Index);
         Assert.Equal(3, sut.Dequeue()!.Index);
@@ -54,7 +67,13 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap(variables);
+        ICandidateHeap? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => sut ??= new CandidateHeap(state),
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.CandidateHeap;
         Assert.Equal(4, sut.Dequeue()!.Index);
 
         variables[4].Activity = 3;
@@ -83,7 +102,13 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap(variables);
+        ICandidateHeap? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => sut ??= new CandidateHeap(state),
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.CandidateHeap;
         Assert.Equal(4, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);
         variables[1].Activity = 10;
@@ -111,7 +136,13 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap(variables);
+        ICandidateHeap? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => sut ??= new CandidateHeap(state),
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.CandidateHeap;
         variables[4].Activity = 3;
         variables[4].DecisionLevel = 12;
         variables[4].Reason = new Constraint([variables[4].PositiveLiteral]);
@@ -138,7 +169,13 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap(variables);
+        ICandidateHeap? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => sut ??= new CandidateHeap(state),
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.CandidateHeap;
         variables[4].Activity = 12;
         variables[4].DecisionLevel = 12;
         variables[4].Reason = new Constraint([variables[4].PositiveLiteral]);
@@ -165,7 +202,13 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 4;
         variables[4].Activity = 2;
 
-        var sut = new CandidateHeap(variables);
+        ICandidateHeap? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => sut ??= new CandidateHeap(state),
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.CandidateHeap;
         variables[4].Activity = 1;
         variables[4].DecisionLevel = 12;
         variables[4].Reason = new Constraint([variables[4].PositiveLiteral]);
@@ -192,7 +235,13 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 4;
         variables[4].Activity = 2;
 
-        var sut = new CandidateHeap(variables);
+        ICandidateHeap? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => sut ??= new CandidateHeap(state),
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.CandidateHeap;
         variables[4].Activity = 5;
         variables[4].DecisionLevel = 12;
         variables[4].Reason = new Constraint([variables[4].PositiveLiteral]);
@@ -219,7 +268,13 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 4;
         variables[4].Activity = 2;
 
-        var sut = new CandidateHeap(variables);
+        ICandidateHeap? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => sut ??= new CandidateHeap(state),
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.CandidateHeap;
         variables[2].Activity = 3;
         variables[2].DecisionLevel = 12;
         variables[2].Reason = new Constraint([variables[2].PositiveLiteral]);
@@ -246,7 +301,13 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 4;
         variables[4].Activity = 2;
 
-        var sut = new CandidateHeap(variables);
+        ICandidateHeap? sut = null;
+        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
+        {
+            nameof(TestState.CandidateHeap) => sut ??= new CandidateHeap(state),
+            _ => throw new NotImplementedException()
+        });
+        sut = testState.CandidateHeap;
         variables[2].Activity = 9;
         variables[2].DecisionLevel = 12;
         variables[2].Reason = new Constraint([variables[2].PositiveLiteral]);

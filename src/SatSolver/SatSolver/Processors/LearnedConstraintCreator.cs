@@ -2,18 +2,24 @@
 using Revo.SatSolver.DPLL;
 using System.Diagnostics;
 
-namespace Revo.SatSolver.CDCL;
+namespace Revo.SatSolver.Processors;
 
-sealed class LearnedConstraintCreator(IVariableTrail _trail, IActivityManager _activityManager, IMinimizeConstraints _constraintMinimizer, Variable[] _variables) : ICreateLearnedConstraints
+sealed class LearnedConstraintCreator(SatSolverState _state) : ICreateLearnedConstraints
 {
+    readonly IVariableTrail _trail = _state.VariableTrail;
+    readonly IActivityManager _activityManager = _state.ActivityManager;
+    readonly IMinimizeConstraints _constraintMinimizer = _state.ConstraintMinimizer;
+    readonly Variable[] _variables = _state.Variables;
+    readonly ConstraintLiteral[] _literals = _state.Literals;
     readonly StampArray _literalBlockDistanceCounter = new();
     readonly StampArray _learnedLiterals = new();
     readonly StampArray _seenVariables = new();
-    readonly ConstraintLiteral[] _finalLiterals = new ConstraintLiteral[_variables.Length];
+    readonly ConstraintLiteral[] _finalLiterals = new ConstraintLiteral[_state.Variables.Length];
 
     public Constraint CreateLearnedConstraint(Constraint conflictingConstraint, out ConstraintLiteral uipLiteral, out int jumpBackLevel)
     {
         var variables = _variables;
+        var literals = _literals;
         var conflicts = 0;
 
         Debug.Assert(conflictingConstraint.Literals.All(l => l.Sense == false));
@@ -30,7 +36,7 @@ sealed class LearnedConstraintCreator(IVariableTrail _trail, IActivityManager _a
             if (literal.Variable.DecisionLevel == _trail.DecisionLevel) conflicts++;
         }
 
-        for (int trailIndex = _trail.Count-1; conflicts > 1; trailIndex--)
+        for (var trailIndex = _trail.Count-1; conflicts > 1; trailIndex--)
         {
             var trailedVariable = _trail[trailIndex];
             _seenVariables.Add(trailedVariable.Index);
@@ -59,7 +65,7 @@ sealed class LearnedConstraintCreator(IVariableTrail _trail, IActivityManager _a
         }
 
         var count = 0;
-        foreach (var literal in learnedLiterals.EnumerateIndices().Select(ToLiteral))
+        foreach (var literal in learnedLiterals.EnumerateIndices().Select(i => literals[i]))
             _finalLiterals[count++] = literal;
 
         var finalLiterals = _finalLiterals.AsSpan(0, count);
@@ -86,7 +92,4 @@ sealed class LearnedConstraintCreator(IVariableTrail _trail, IActivityManager _a
         Debug.WriteLine($"Created learned constraint: {learnedConstraint}, uip: {(uipLiteral.Orientation ? "" : "-")}{uipLiteral.Variable.Index+1}.");
         return learnedConstraint;
     }
-
-    ConstraintLiteral ToLiteral(int index) => ((index & 1) == 1) ? _variables[index >> 1].NegativeLiteral : _variables[index >> 1].PositiveLiteral;
-   
 }

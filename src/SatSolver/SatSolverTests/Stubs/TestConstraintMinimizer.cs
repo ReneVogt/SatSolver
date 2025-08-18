@@ -1,5 +1,5 @@
-﻿using Revo.SatSolver.CDCL;
-using Revo.SatSolver.DataStructures;
+﻿using Revo.SatSolver.DataStructures;
+using Revo.SatSolver.Processors;
 
 namespace SatSolverTests.Stubs;
 

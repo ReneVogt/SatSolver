@@ -10,7 +10,7 @@ namespace SatSolverBenchmark;
 [GcConcurrent(false)]
 public class SatSolverBenchmark
 {
-    readonly SatSolver.Options _options = SatSolver.Options.CDCL;
+    readonly SatSolverOptions _options = SatSolverOptions.CDCL;
 
     (string Name, Problem Problem)[]? _satProblems;
     (string Name, Problem Problem)[]? _unsatProblems;

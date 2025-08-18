@@ -4,7 +4,8 @@ sealed class StampArray
 {
     int[] _buffer = new int[1024];
     int _currentStamp = 1;
-    
+    int _maximum = -1;
+
     public int Count { get; private set; }
     public bool Add(int index)
     {
@@ -13,6 +14,7 @@ sealed class StampArray
         if (_buffer[index] == _currentStamp) return false;
         _buffer[index] = _currentStamp;
         Count++;
+        if (index > _maximum) _maximum = index;
         return true;
     }
     public bool Remove(int index)
@@ -27,6 +29,7 @@ sealed class StampArray
     {
         _currentStamp++;
         Count = 0;
+        _maximum = -1;
         if (_currentStamp == int.MaxValue)
         {
             Array.Clear(_buffer);
@@ -36,7 +39,7 @@ sealed class StampArray
 
     public IEnumerable<int> EnumerateIndices()
     {
-        for(var i=0; i<_buffer.Length; i++) if (_buffer[i] == _currentStamp) yield return i;
+        for(var i=0; i<=_maximum; i++) if (_buffer[i] == _currentStamp) yield return i;
     }
 }
 

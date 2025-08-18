@@ -31,9 +31,9 @@ sealed class CandidateHeap : ICandidateHeap
     }
 #endif
 
-    public CandidateHeap(Variable[] variables)
+    public CandidateHeap(SatSolverState state)
     {
-        _variables = variables;
+        _variables = state.Variables;
         _nodes = [.. _variables.Select(v => (v.Index, v.Activity))];
         _indices = [.. Enumerable.Range(0, _nodes.Length)];
         _size = _nodes.Length;

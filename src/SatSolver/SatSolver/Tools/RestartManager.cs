@@ -1,8 +1,7 @@
 ﻿using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.Helpers;
 using System.Diagnostics;
 
-namespace Revo.SatSolver.DPLL;
+namespace Revo.SatSolver.Tools;
 
 sealed class RestartManager
 {
@@ -17,15 +16,15 @@ sealed class RestartManager
 
     int _restartCounter, _nextRestartThreshold;
 
-    public RestartManager(SatSolver.Options options, IVariableTrail trail, PropagationRateTracker propagationRateTracker, EmaTracker literalBlockDistanceTracker, Queue<(ConstraintLiteral, Constraint Reason)> unitLiterals)
+    public RestartManager(SatSolverState state)
     {
-        _trail = trail;
-        _propagationRateTracker = propagationRateTracker;
-        _literalBlockDistanceTracker = literalBlockDistanceTracker;
-        _unitLiterals = unitLiterals;
+        _trail = state.VariableTrail;
+        _propagationRateTracker = state.PropagationRateTracker;
+        _literalBlockDistanceTracker = state.LiteralBlockDistanceTracker;
+        _unitLiterals = state.UnitsToPropagate;
+        var options = state.Options;
 
         if (options.Restart.Interval is { } restartInterval)
-        {
             if (options.Restart.Luby)
             {
                 _lubySequence = new LubySequence(restartInterval);
@@ -33,7 +32,6 @@ sealed class RestartManager
             }
             else
                 _nextRestartThreshold = restartInterval;
-        }
 
         _useRestarts = options.Restart.Interval is not null || options.Restart.LiteralBlockDistanceThreshold is not null || options.Restart.PropagationRateThreshold is not null;
         _propagationRateThreshold = options.Restart.PropagationRateThreshold ?? 0;

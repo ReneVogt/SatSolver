@@ -1,4 +1,4 @@
-﻿namespace Revo.SatSolver.Helpers;
+﻿namespace Revo.SatSolver.Tools;
 
 sealed class LubySequence(long baseValue = 1) : ILubySequence
 {
