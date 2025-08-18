@@ -17,8 +17,8 @@ public sealed partial class SatSolver
     readonly CancellationToken _cancellationToken;
     readonly ICandidateHeap _candidateHeap;
     readonly IVariableTrail _trail;
-    readonly IVariablePropagator _dpllProcessor;
-    readonly IConflictDrivenClauseLearner _cdclProcessor;
+    readonly IVariablePropagator _variablePropagator;
+    readonly IConflictDrivenConstraintLearner _conflictDrivenConstraintLearner;
     readonly IActivityManager _activityManager;
     readonly bool _onlyPoorMansVSIDS;
     readonly Queue<(ConstraintLiteral UnitLiteral, Constraint Reason)> _unitsToPropagate;
@@ -30,8 +30,8 @@ public sealed partial class SatSolver
     SatSolver(IInitializeSatSolver initializer)
     {
         var state = initializer.Initialize();
-        _dpllProcessor = state.VariablePropagator;
-        _cdclProcessor = state.CdclProcessor;
+        _variablePropagator = state.VariablePropagator;
+        _conflictDrivenConstraintLearner = state.ConflictDrivenConstraintLearner;
         _activityManager = state.ActivityManager;
         _trail = state.VariableTrail;
         _candidateHeap = state.CandidateHeap;
@@ -45,22 +45,26 @@ public sealed partial class SatSolver
         _learnedConstraintsReducer = state.LearnedConstraintsReducer;
     }
 
-    Literal[]? Solve()
+    IEnumerable<Literal[]> EnumerateSolutions()
     {
         var propagationCount = 0;
-        if (_dpllProcessor.PropagateUnits(ref propagationCount) is not null)
-            return null;
+        if (_variablePropagator.PropagateUnits(ref propagationCount) is not null)
+            yield break;
         _trail.Clear();
-        return _onlyPoorMansVSIDS ? SolvePoor() : SolveCDCL();
+        var solutions = _onlyPoorMansVSIDS ? SolvePoor() : SolveCDCL();
+        foreach(var solution in solutions)
+            yield return solution;
     }
 
-    Literal[]? SolvePoor()
+    IEnumerable<Literal[]> SolvePoor()
     {
         Variable? candidateVariable = null;
         var candidateSense = true;
 
         for(; ; )
         {
+            Constraint? conflictingConstraint = null;
+
             _cancellationToken.ThrowIfCancellationRequested();
 
             var firstTry = false;
@@ -68,17 +72,30 @@ public sealed partial class SatSolver
             if (candidateVariable is null)
             {
                 candidateVariable = _candidateHeap.Dequeue();
-                if (candidateVariable is null) return BuildSolution();
-                candidateSense = candidateVariable.Polarity;
-                firstTry = true;
+                if (candidateVariable is null)
+                {
+                    var solution = BuildSolution();
+                    Debug.WriteLine($"Delivering solution {solution} and creating inverse conflict.");
+                    yield return solution;
+                    conflictingConstraint = CreateConflictFromSolution();
+                }
+                else
+                {
+                    candidateSense = candidateVariable.Polarity;
+                    firstTry = true;
+                }
             }
 
-            _trail.Push(firstTry);
-            Debug.WriteLine($"[{_trail.DecisionLevel}] Decided {candidateVariable.Index+1} to {candidateSense}.");
-            var conflictingConstraint = _dpllProcessor.PropagateVariable(candidateVariable, candidateSense, null, out var propagationCount);
-            conflictingConstraint ??= _dpllProcessor.PropagateUnits(ref propagationCount);
+            if (conflictingConstraint is null)
+            {
+                _trail.Push(firstTry);
+                Debug.WriteLine($"[{_trail.DecisionLevel}] Decided {candidateVariable!.Index+1} to {candidateSense}.");
+                conflictingConstraint = 
+                    _variablePropagator.PropagateVariable(candidateVariable, candidateSense, null, out var propagationCount) ?? 
+                    _variablePropagator.PropagateUnits(ref propagationCount);
 
-            _propagationRateTracker.AddPropagations(propagationCount);
+                _propagationRateTracker.AddPropagations(propagationCount);
+            }
 
             candidateVariable = null;
             if (conflictingConstraint is null) continue;
@@ -93,10 +110,10 @@ public sealed partial class SatSolver
             Debug.WriteLine("Backtracking.");
             _unitsToPropagate.Clear();
             (candidateVariable, candidateSense) = _trail.Backtrack();
-            if (candidateVariable is null) return null;
+            if (candidateVariable is null) yield break;
         }
     }
-    Literal[]? SolveCDCL()
+    IEnumerable<Literal[]> SolveCDCL()
     {
         Variable? candidateVariable = null;
         Constraint? learnedConstraint = null;
@@ -104,35 +121,49 @@ public sealed partial class SatSolver
 
         for (;;)
         {
+            Constraint? conflictingConstraint = null;
+
             _cancellationToken.ThrowIfCancellationRequested();
 
             if (candidateVariable is null)
             {
                 candidateVariable = _candidateHeap.Dequeue();
-                if (candidateVariable is null) return BuildSolution();
-                candidateSense = candidateVariable.Polarity;
-                _trail.Push();
-                Debug.WriteLine($"[{_trail.DecisionLevel}] Decided {candidateVariable.Index+1} to {candidateSense}.");
+                if (candidateVariable is null)
+                {
+                    var solution = BuildSolution();
+                    Debug.WriteLine($"Delivering solution {solution} and creating inverse conflict.");
+                    yield return solution;
+                    conflictingConstraint = CreateConflictFromSolution();
+                }
+                else
+                {
+                    candidateSense = candidateVariable.Polarity;
+                    _trail.Push();
+                    Debug.WriteLine($"[{_trail.DecisionLevel}] Decided {candidateVariable.Index+1} to {candidateSense}.");
+                }
             }
 
-            var conflictingConstraint = 
-                _dpllProcessor.PropagateVariable(candidateVariable, candidateSense, learnedConstraint, out var propagationCount) ??
-                _dpllProcessor.PropagateUnits(ref propagationCount);
+            if (conflictingConstraint is null)
+            {
+                conflictingConstraint =
+                    _variablePropagator.PropagateVariable(candidateVariable!, candidateSense, learnedConstraint, out var propagationCount) ??
+                    _variablePropagator.PropagateUnits(ref propagationCount);
 
-            _propagationRateTracker.AddPropagations(propagationCount);
+                _propagationRateTracker.AddPropagations(propagationCount);
+            }
 
             candidateVariable = null;
             learnedConstraint = null;
             if (conflictingConstraint is null) continue;
             Debug.WriteLine($"Conflict in {conflictingConstraint} (learned: {conflictingConstraint.IsLearned}).");
-            if (_trail.DecisionLevel == 0) return null;
+            if (_trail.DecisionLevel == 0) yield break;
 
             _propagationRateTracker.AddConflict();
             _restartManager.AddConflict();
             _activityManager.IncreaseConstraintActivity(conflictingConstraint);
             _unitsToPropagate.Clear();
 
-            var (candidateLiteral, candidateReason) = _cdclProcessor.PerformClauseLearning(conflictingConstraint);
+            var (candidateLiteral, candidateReason) = _conflictDrivenConstraintLearner.PerformClauseLearning(conflictingConstraint);
             _learnedConstraintsReducer.ReduceLearnedConstraintsIfNecessary();
             if (_restartManager.RestartIfNecessary()) continue;
 
@@ -142,12 +173,26 @@ public sealed partial class SatSolver
             Debug.WriteLine($"[{_trail.DecisionLevel}] Propagating uip {candidateVariable.Index+1} to {candidateSense}.");
         }
     }
-
     Literal[] BuildSolution() => [.. _variables.Select(v => new Literal(v.Index+1, v.Sense!.Value))];
+
+    Constraint CreateConflictFromSolution()
+    {
+        var literals = _variables.Select(variable => variable.Sense!.Value ? variable.NegativeLiteral : variable.PositiveLiteral);
+        var trailedVariable = _trail[^1];
+        var firstWatched = trailedVariable.Sense!.Value ? trailedVariable.NegativeLiteral : trailedVariable.PositiveLiteral;
+        var secondWatched = firstWatched;
+        if (_trail.Count > 1)
+        {
+            trailedVariable = _trail[^2];
+            secondWatched = trailedVariable.Sense!.Value ? trailedVariable.NegativeLiteral : trailedVariable.PositiveLiteral;
+        }
+        return new(literals, firstWatched, secondWatched);
+    } 
+
 
     // This is the entry point for unit tests. We can provide an alternative initializer
     // and via that mocks for all the required algorithm parts.
-    static Literal[]? Solve(IInitializeSatSolver initializer) => new SatSolver(initializer).Solve();
+    static IEnumerable<Literal[]> EnumerateSolutions(IInitializeSatSolver initializer) => new SatSolver(initializer).EnumerateSolutions();
 
     /// <summary>
     /// Finds a variable configuration that satisfies the SATisfiability <paramref name="problem"/>.
@@ -160,12 +205,12 @@ public sealed partial class SatSolver
     /// their senses that solve the problem. If no solution was found the method returns <c>null</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="problem"/> was <c>null</c>.</exception>
     /// <exception cref="ArgumentException">The problem contains either invalid literal IDs or no literals at all.</exception>
-    public static Literal[]? Solve(Problem problem, SatSolverOptions? options = null, CancellationToken cancellationToken = default)
+    public static IEnumerable<Literal[]> EnumerateSolutions(Problem problem, SatSolverOptions? options = null, CancellationToken cancellationToken = default)
     {
         _ = problem ?? throw new ArgumentNullException(nameof(problem));
-        if (problem.Clauses.Any(clause => clause.Literals.Length == 0)) return null;
-        if (problem.NumberOfLiterals == 0) return [];
-        if (problem.Clauses.Length == 0) return [.. Enumerable.Range(1, problem.NumberOfLiterals).Select(i => new Literal(i, true))];
-        return Solve(new SatSolverInitializer(problem, options ?? SatSolverOptions.Default, cancellationToken));
+        if (problem.Clauses.Any(clause => clause.Literals.Length == 0)) return [];
+        if (problem.NumberOfLiterals == 0) return [[]];
+        if (problem.Clauses.Length == 0) return [[.. Enumerable.Range(1, problem.NumberOfLiterals).Select(i => new Literal(i, true))]];
+        return EnumerateSolutions(new SatSolverInitializer(problem, options ?? SatSolverOptions.Default, cancellationToken));
     }
 }

@@ -98,10 +98,12 @@ namespace SatSolverDemo
                 if (problem.NumberOfLiterals == 0) return;
 
                 var watch = Stopwatch.StartNew();
-                var solution = SatSolver.Solve(problem, cancellationToken: cancellationToken);
-                var elapsed = watch.Elapsed;
-                if (solution is not null)
-                    BeginInvoke(() => AddSolution(solution, elapsed));
+                foreach (var solution in SatSolver.EnumerateSolutions(problem, cancellationToken: cancellationToken))
+                {
+                    var elapsed = watch.Elapsed;
+                    if (solution is not null)
+                        BeginInvoke(() => AddSolution(solution, elapsed));
+                }
             }
             catch (Exception exception)
             {

@@ -1,5 +1,8 @@
-﻿using Revo.SatSolver.DataStructures;
+﻿using Revo.SatSolver;
+using Revo.SatSolver.DataStructures;
+using Revo.SatSolver.Parsing;
 using Revo.SatSolver.Processors;
+using SatSolverTests.Parsing;
 using SatSolverTests.Stubs;
 
 namespace SatSolverTests.Processors;
@@ -125,7 +128,6 @@ public sealed class VariablePropagatorTests
         Assert.Equal([(variables[1].PositiveLiteral, constraint5), (variables[2].PositiveLiteral, constraint6)], units);
         Assert.Equal(2, propagations);
     }
-
     [Fact]
     public void PropagateVariable_WithConflict()
     {
@@ -170,7 +172,6 @@ public sealed class VariablePropagatorTests
         Assert.Empty(units);
         Assert.Equal(0, propagations);
     }
-
     [Fact]
     public void PropagateVariable_AlreadyTrueConstraints()
     {
@@ -214,6 +215,7 @@ public sealed class VariablePropagatorTests
         Assert.Empty(units);
         Assert.Equal(0, propagations);
     }
+
     [Fact]
     public void PropagateUnits_WithConflict() 
     {
@@ -339,8 +341,6 @@ public sealed class VariablePropagatorTests
         Assert.Empty(units);
         Assert.Equal(0, propagations);
     }
-
-
     [Fact]
     public void PropagateUnits_ConflictingPropagations()
     {
@@ -351,20 +351,8 @@ public sealed class VariablePropagatorTests
         var variables = Enumerable.Range(0, 2).Select(i => new Variable(i)).ToArray();
         var v0 = variables[0]; var v0p = v0.PositiveLiteral; var v0n = v0.NegativeLiteral;
         var v1 = variables[1]; var v1p = v1.PositiveLiteral; var v1n = v1.NegativeLiteral;
-        var constraint0 = new Constraint([v0p, v1p], 0, 0)
-        {
-            Watched1 = v0p,
-            Watched2 = v1p
-        };
-        v0p.Watchers.Add(constraint0);
-        v1p.Watchers.Add(constraint0);
-        var constraint1 = new Constraint([v0p, v1n], 0, 0)
-        {
-            Watched1 = v0p,
-            Watched2 = v1n
-        };
-        v0p.Watchers.Add(constraint1);
-        v1n.Watchers.Add(constraint1);
+        var constraint0 = new Constraint([v0p, v1p], v0p, v1p);
+        var constraint1 = new Constraint([v0p, v1n], v0p, v1n);
 
         var trail = new TestVariableTrail();
         var activityManager = new TestActivityManager();
@@ -380,13 +368,14 @@ public sealed class VariablePropagatorTests
         });
         sut = testState.VariablePropagator;
 
-        var conflict = sut.PropagateVariable(variables[0], false, null, out var propagations);
+        var conflict = sut.PropagateVariable(v0, false, null, out var propagations);
         Assert.Null(conflict);
-        Assert.Equal([(v1p, constraint0), (v1n, constraint1)], units);
+        Assert.Equal([(v1p, constraint0), (v1n, constraint1)], units.OrderBy(x => x.Literal.StampIndex));
 
         var props = 0;
         conflict = sut.PropagateUnits(ref props);
         Assert.Equal(constraint1, conflict);
         Assert.Equal(0, props);
     }
+
 }

@@ -77,8 +77,8 @@ public sealed class CandidateHeapTests
         Assert.Equal(4, sut.Dequeue()!.Index);
 
         variables[4].Activity = 3;
-        variables[4].DecisionLevel = 12;
         variables[4].Reason = new Constraint([variables[4].PositiveLiteral]);
+        variables[4].DecisionLevel = 12;
         variables[4].Sense = true;
         sut.Enqueue([variables[4]]);
         Assert.Equal(0, variables[4].DecisionLevel);
@@ -112,8 +112,8 @@ public sealed class CandidateHeapTests
         Assert.Equal(4, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);
         variables[1].Activity = 10;
-        variables[1].DecisionLevel = 12;
         variables[1].Reason = new Constraint([variables[1].PositiveLiteral]);
+        variables[1].DecisionLevel = 12;
         variables[1].Sense = true;
         sut.Enqueue([variables[1]]);
         Assert.Equal(0, variables[1].DecisionLevel);
@@ -144,8 +144,8 @@ public sealed class CandidateHeapTests
         });
         sut = testState.CandidateHeap;
         variables[4].Activity = 3;
-        variables[4].DecisionLevel = 12;
         variables[4].Reason = new Constraint([variables[4].PositiveLiteral]);
+        variables[4].DecisionLevel = 12;
         variables[4].Sense = true;
         sut.Enqueue([variables[4]]);
         Assert.Equal(0, variables[4].DecisionLevel);
@@ -177,8 +177,8 @@ public sealed class CandidateHeapTests
         });
         sut = testState.CandidateHeap;
         variables[4].Activity = 12;
-        variables[4].DecisionLevel = 12;
         variables[4].Reason = new Constraint([variables[4].PositiveLiteral]);
+        variables[4].DecisionLevel = 12;
         variables[4].Sense = true;
         sut.Enqueue([variables[4]]);
         Assert.Equal(0, variables[4].DecisionLevel);
@@ -210,8 +210,8 @@ public sealed class CandidateHeapTests
         });
         sut = testState.CandidateHeap;
         variables[4].Activity = 1;
-        variables[4].DecisionLevel = 12;
         variables[4].Reason = new Constraint([variables[4].PositiveLiteral]);
+        variables[4].DecisionLevel = 12;
         variables[4].Sense = true;
         sut.Enqueue([variables[4]]);
         Assert.Equal(0, variables[4].DecisionLevel);
@@ -243,8 +243,8 @@ public sealed class CandidateHeapTests
         });
         sut = testState.CandidateHeap;
         variables[4].Activity = 5;
-        variables[4].DecisionLevel = 12;
         variables[4].Reason = new Constraint([variables[4].PositiveLiteral]);
+        variables[4].DecisionLevel = 12;
         variables[4].Sense = true;
         sut.Enqueue([variables[4]]);
         Assert.Equal(0, variables[4].DecisionLevel);
@@ -276,8 +276,8 @@ public sealed class CandidateHeapTests
         });
         sut = testState.CandidateHeap;
         variables[2].Activity = 3;
-        variables[2].DecisionLevel = 12;
         variables[2].Reason = new Constraint([variables[2].PositiveLiteral]);
+        variables[2].DecisionLevel = 12;
         variables[2].Sense = true;
         sut.Enqueue([variables[2]]);
         Assert.Equal(0, variables[2].DecisionLevel);
@@ -309,8 +309,8 @@ public sealed class CandidateHeapTests
         });
         sut = testState.CandidateHeap;
         variables[2].Activity = 9;
-        variables[2].DecisionLevel = 12;
         variables[2].Reason = new Constraint([variables[2].PositiveLiteral]);
+        variables[2].DecisionLevel = 12;
         variables[2].Sense = true;
         sut.Enqueue([variables[2]]);
         Assert.Equal(0, variables[2].DecisionLevel);

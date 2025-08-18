@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class ConflictDrivenClauseLearner(SatSolverState _state) : IConflictDrivenClauseLearner
+sealed class ConflictDrivenConstraintLearner(SatSolverState _state) : IConflictDrivenConstraintLearner
 {
     readonly int _literalBlockDistanceDeletionLimit = _state.Options.ConstraintDeletion.LiteralBlockDistanceToKeep;
     readonly int _literalBlockDistanceMaximum = _state.Options.MaximumLiteralBlockDistance;
@@ -40,19 +40,9 @@ sealed class ConflictDrivenClauseLearner(SatSolverState _state) : IConflictDrive
         else
             Debug.WriteLine($"LBD {learnedConstraint.LiteralBlockDistance} so good, we keep this forever.");
 
-        learnedConstraint.Watched1 = uipLiteral;
-        uipLiteral.Watchers.Add(learnedConstraint);
-        if (learnedConstraint.Literals.Length == 1)
-            learnedConstraint.Watched2 = uipLiteral;
-        else
-        {
-            // it is important to set the watcher to the literal
-            // that was assigned just before the uip to avoid
-            // it watching a false literal while there are unassigned
-            // literals after another backjump
-            learnedConstraint.Watched2 = learnedConstraint.Literals.Where(l => l != uipLiteral).MaxBy(l => l.Variable.DecisionLevel)!;
+        learnedConstraint.Watched1.Watchers.Add(learnedConstraint);
+        if (learnedConstraint.Watched2 != learnedConstraint.Watched1)
             learnedConstraint.Watched2.Watchers.Add(learnedConstraint);
-        }
 
         _trail.JumpBack(jumpBackLevel);
         _activityManager.DecayConstraintActivity();

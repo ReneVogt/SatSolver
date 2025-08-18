@@ -11,7 +11,7 @@ sealed class SatSolverStateInternal : SatSolverState
     IVariableTrail? _trail;
     IVariablePropagator? _variablePropagator;
 
-    IConflictDrivenClauseLearner? _cdclProcessor;
+    IConflictDrivenConstraintLearner? _cdclProcessor;
     ICreateLearnedConstraints? _learnedConstraintCreator;
     IReduceLearnedConstraints? _learnedConstraintsReducer;
     IMinimizeConstraints? _constraintMinizer;
@@ -25,7 +25,7 @@ sealed class SatSolverStateInternal : SatSolverState
     public override ICandidateHeap CandidateHeap => _candidateHeap ??= new CandidateHeap(this);
     public override IVariableTrail VariableTrail => _trail ??= new VariableTrail(this);
     public override IVariablePropagator VariablePropagator => _variablePropagator ??= new VariablePropagator(this);
-    public override IConflictDrivenClauseLearner CdclProcessor => _cdclProcessor ??= new ConflictDrivenClauseLearner(this);
+    public override IConflictDrivenConstraintLearner ConflictDrivenConstraintLearner => _cdclProcessor ??= new ConflictDrivenConstraintLearner(this);
 
     public override IActivityManager ActivityManager => _activityManager ??= new ActivityManager(this);
     public override EmaTracker LiteralBlockDistanceTracker => _literalBlockDistanceTracker ??= new EmaTracker(Options.LiteralBlockDistanceTracking.RecentCount, Options.LiteralBlockDistanceTracking.Decay);

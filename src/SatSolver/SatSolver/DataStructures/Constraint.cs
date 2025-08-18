@@ -1,4 +1,7 @@
-﻿namespace Revo.SatSolver.DataStructures;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Revo.SatSolver.DataStructures;
 sealed class Constraint
 {
     public ConstraintLiteral[] Literals { get; }
@@ -11,27 +14,58 @@ sealed class Constraint
 
     public bool IsLearned { get; init; }
 
+    /// <summary>
+    /// This constructor is used by the initial constraint creation.
+    /// It sets and connects the watchers to the first literals, not regarding
+    /// decision levels as they should be zero.
+    /// </summary>
+    /// <param name="literals">The <see cref="ConstraintLiteral"/>s contained in this constraint.</param>
     public Constraint(IEnumerable<ConstraintLiteral> literals)
     {
         Literals = [.. literals];
         Watched1 = Literals[0];
-        Watched1.Watchers.Add(this);        
-        if (Literals.Length > 1)
-        {
-            Watched2 = Literals[1];
-            Watched2.Watchers.Add(this);
-        }
-        else
-            Watched2 = Watched1;
+        Watched2 = Literals.Length > 1 ? Literals[1] : Watched1;
+        Watched1.Watchers.Add(this);
+        if (Watched2 != Watched1) Watched2.Watchers.Add(this);
     }
-    public Constraint(Span<ConstraintLiteral> literals, double activity, int literalBlockDistance)
+
+    /// <summary>
+    /// This constructor is used for creating a constraint from a found solution,
+    /// to force finding further solutions.
+    /// </summary>
+    /// <param name="literals">The <see cref="ConstraintLiteral"/>s contained in this constraint.</param>
+    /// <param name="firstWatcher">The first watched literal (end of trail).</param>
+    /// <param name="secondWatcher">The second watched literal (second last in trail).</param>
+    public Constraint(IEnumerable<ConstraintLiteral> literals, ConstraintLiteral firstWatcher, ConstraintLiteral secondWatcher)
+    {
+        Literals = [.. literals];
+        IsLearned = true;
+        Watched1 = firstWatcher;
+        Watched2 = secondWatcher;
+        Watched1.Watchers.Add(this);
+        if (Watched2 != Watched1) Watched2.Watchers.Add(this);
+    }
+    /// <summary>
+    /// This constructor is used for creating a learned constraint.
+    /// The watchers are not wired up here, because the constraint may
+    /// be totally ommitted if the literal block distance is too high.
+    /// </summary>
+    /// <param name="literals">The <see cref="ConstraintLiteral"/>s contained in this constraint.</param>
+    /// <param name="firstWatcher">The first watched literal (end of trail).</param>
+    /// <param name="secondWatcher">The second watched literal (second last in trail).</param>
+    /// <param name="activity">Initial activity of this constraint.</param>
+    /// <param name="literalBlockDistance">Literal block distance of this learned constraint.</param>
+    public Constraint(Span<ConstraintLiteral> literals, ConstraintLiteral firstWatcher, ConstraintLiteral secondWatcher, double activity, int literalBlockDistance)
     {
         Literals = [.. literals];
         IsLearned = true;
         Activity = activity;
         LiteralBlockDistance = literalBlockDistance;
-        Watched1 = Literals[0];
-        Watched2 = Literals.Length > 1 ? Literals[1] : Watched1;
+        Watched1 = firstWatcher;
+        Watched1 = firstWatcher;
+        Watched2 = secondWatcher;
+        Watched1.Watchers.Add(this);
+        if (Watched2 != Watched1) Watched2.Watchers.Add(this);
     }
 
     public override string ToString() => string.Join(" ", Literals.Select(l => $"{(l.Orientation ? "" : "-")}{l.Variable.Index+1}"));

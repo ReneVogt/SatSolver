@@ -16,7 +16,7 @@ sealed class TestState(
     public override ICandidateHeap CandidateHeap => (ICandidateHeap)_stateGetter(this, nameof(CandidateHeap));
     public override IVariableTrail VariableTrail => (IVariableTrail)_stateGetter(this, nameof(VariableTrail));
     public override IVariablePropagator VariablePropagator => (IVariablePropagator)_stateGetter(this, nameof(VariablePropagator));
-    public override IConflictDrivenClauseLearner CdclProcessor => (IConflictDrivenClauseLearner)_stateGetter(this, nameof(CdclProcessor));
+    public override IConflictDrivenConstraintLearner ConflictDrivenConstraintLearner => (IConflictDrivenConstraintLearner)_stateGetter(this, nameof(ConflictDrivenConstraintLearner));
     public override IActivityManager ActivityManager => (IActivityManager)_stateGetter(this, nameof(ActivityManager));
     public override EmaTracker LiteralBlockDistanceTracker => (EmaTracker)_stateGetter(this, nameof(LiteralBlockDistanceTracker));
     public override PropagationRateTracker PropagationRateTracker => (PropagationRateTracker)_stateGetter(this, nameof(PropagationRateTracker));

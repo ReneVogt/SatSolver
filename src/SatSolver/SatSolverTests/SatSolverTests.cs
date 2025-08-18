@@ -2,61 +2,82 @@
 using Revo.SatSolver.Parsing;
 using Xunit.Abstractions;
 using static Revo.SatSolver.SatSolver;
+using static SatSolverTests.Problems;
 
 namespace SatSolverTests;
 
 public sealed partial class SatSolverTests(ITestOutputHelper _output)
 {
     [Fact]
-    public void Solve_Null_ArgumentNullException()
+    public void EnumerateSolutions_Null_ArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => Solve(null!));
+        Assert.Throws<ArgumentNullException>(() => EnumerateSolutions(null!));
     }
     [Fact]
-    public void Solve_NoLiterals_EmptySolution()
+    public void EnumerateSolutions_NoLiterals_EmptySolution()
     {
-        var solution = Solve(new(0, []));
+        var solution = EnumerateSolutions(new(0, [])).Single();
         Assert.NotNull(solution);
         Assert.Empty(solution);
     }
     [Fact]
-    public void Solve_EmptyClause_Null()
+    public void EnumerateSolutions_EmptyClause_NoSolution()
     {
-        var solution = Solve(new(2, [new([1, 2]), new([1]), new([]), new([2])]));
-        Assert.Null(solution);
+        var solutions = EnumerateSolutions(new(2, [new([1, 2]), new([1]), new([]), new([2])]));
+        Assert.Empty(solutions);
+    }
+
+    [Theory]
+    [
+        InlineData(SimpleOr, 3, false),
+        InlineData(SimpleOr, 3, true),
+        InlineData(TwoStateSudoku, 2, false),
+        InlineData(TwoStateSudoku, 2, true),
+        InlineData(ThreeStateSudoku, 6, false),
+        InlineData(ThreeStateSudoku, 6, true),
+        InlineData(FourStateSudoku, 24, false),
+        InlineData(FourStateSudoku, 24, true)        
+    ]
+    public void EnumerateMutlipleSolutions(string dimacs, int expectedSolutions, bool cdcl)
+    {
+        using var logger = DebugLogger.Log(_output);
+        var problem = DimacsParser.Parse(dimacs).Single();
+        var solutions = EnumerateSolutions(problem, cdcl ? SatSolverOptions.CDCL : SatSolverOptions.PoorMansVSIDS).ToArray();
+        Assert.Equal(expectedSolutions, solutions.Length);
+        SolutionValidator.Validate(problem, solutions);
     }
 
     [Theory]
     [Trait("Category", "Simple Cases")]
     [Trait("Options", "Poor Man's VSIDS")]
     [MemberData(nameof(ProvideSimpleTestCases))]
-    public void Solve_SimpleCases_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), SatSolverOptions.PoorMansVSIDS);
+    public void EnumerateSolutions_SimpleCases_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), SatSolverOptions.PoorMansVSIDS);
     [Theory]
     [Trait("Category", "Benchmark")]
     [Trait("Options", "Poor Man's VSIDS")]
     [MemberData(nameof(ProvideSatTestCases))]
-    public void Solve_SAT_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, SatSolverOptions.PoorMansVSIDS);
+    public void EnumerateSolutions_SAT_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, SatSolverOptions.PoorMansVSIDS);
     [Theory]
     [Trait("Category", "Benchmark")]
     [Trait("Options", "Poor Man's VSIDS")]
     [MemberData(nameof(ProvideUnsatTestCases))]
-    public void Solve_UNSAT_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.PoorMansVSIDS);
+    public void EnumerateSolutions_UNSAT_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.PoorMansVSIDS);
 
     [Theory]
     [Trait("Category", "Simple Cases")]
     [Trait("Options", "CDCL")]
     [MemberData(nameof(ProvideSimpleTestCases))]
-    public void Solve_SimpleCases_CDCL(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), SatSolverOptions.CDCL);
+    public void EnumerateSolutions_SimpleCases_CDCL(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), SatSolverOptions.CDCL);
     [Theory]
     [Trait("Category", "Benchmark")]
     [Trait("Options", "CDCL")]
     [MemberData(nameof(ProvideSatTestCases))]
-    public void Solve_SAT_CDCL(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, SatSolverOptions.CDCL);
+    public void EnumerateSolutions_SAT_CDCL(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, SatSolverOptions.CDCL);
     [Theory]
     [Trait("Category", "Benchmark")]
     [Trait("Options", "CDCL")]
     [MemberData(nameof(ProvideUnsatTestCases))]
-    public void Solve_UNSAT_CDCL(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.CDCL);
+    public void EnumerateSolutions_UNSAT_CDCL(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.CDCL);
 
     void SolveFile(string file, SatSolverOptions options)
     {
@@ -78,14 +99,14 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         
         using var logging = DebugLogger.Log(_output);
         
-        var solution = Solve(problem, options);
+        var solutions = EnumerateSolutions(problem, options);
         if (sat)
         {
-            Assert.NotNull(solution);
-            SolutionValidator.Validate(problem, solution);
+            Assert.NotEmpty(solutions);
+            SolutionValidator.Validate(problem, solutions.First());
         }
         else
-            Assert.Null(Solve(problem, options));
+            Assert.Empty(solutions);
     }
 
     public static TheoryData<string> ProvideSatTestCases() => ProvideTestCases("SAT");

@@ -49,7 +49,7 @@ static class ManualBenchmark
                 var estimated = i > 0 ? (double)problems.Length / i * elapsed : TimeSpan.Zero;
                 Write($"{i}/{problems.Length} [{dots}{spaces}] {elapsed:mm\\:ss\\.ff} {estimated:mm\\:ss\\:ff}");
                 var watch = Stopwatch.StartNew();
-                var solution = SatSolver.Solve(problems[i].problem, SatSolverOptions.CDCL);
+                var solution = SatSolver.EnumerateSolutions(problems[i].problem, SatSolverOptions.CDCL).FirstOrDefault(); ;
                 watch.Stop();
                 elapsed += watch.Elapsed;
                 if (sat)

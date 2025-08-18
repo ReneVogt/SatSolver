@@ -73,8 +73,9 @@ sealed class LearnedConstraintCreator(SatSolverState _state) : ICreateLearnedCon
         //_constraintMinimizer.MinimizeConstraint(learnedLiterals, uipLiteral);
 
         _literalBlockDistanceCounter.Clear();
-        jumpBackLevel = 0;
+        jumpBackLevel = -1;
         ConstraintLiteral? uip = null;
+        ConstraintLiteral? secondWatcher = null;
         foreach (var literal in finalLiterals)
         {
             var level = literal.Variable.DecisionLevel;
@@ -82,13 +83,16 @@ sealed class LearnedConstraintCreator(SatSolverState _state) : ICreateLearnedCon
             if (level == _trail.DecisionLevel)
                 uip = literal;
             else if (level > jumpBackLevel)
+            {
+                secondWatcher = literal;
                 jumpBackLevel = level;
+            }
         }
-
+        if (jumpBackLevel < 0) jumpBackLevel = 0;
         Debug.Assert(uip is not null);
         uipLiteral = uip;
 
-        var learnedConstraint = new Constraint(finalLiterals, _activityManager.ConstraintActivityIncrement, _literalBlockDistanceCounter.Count);
+        var learnedConstraint = new Constraint(finalLiterals, uip, secondWatcher ?? uip, _activityManager.ConstraintActivityIncrement, _literalBlockDistanceCounter.Count);
         Debug.WriteLine($"Created learned constraint: {learnedConstraint}, uip: {(uipLiteral.Orientation ? "" : "-")}{uipLiteral.Variable.Index+1}.");
         return learnedConstraint;
     }

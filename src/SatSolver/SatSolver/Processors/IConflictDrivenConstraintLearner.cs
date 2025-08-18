@@ -1,7 +1,7 @@
 ﻿using Revo.SatSolver.DataStructures;
 
 namespace Revo.SatSolver.Processors;
-interface IConflictDrivenClauseLearner
+interface IConflictDrivenConstraintLearner
 {
     (ConstraintLiteral uip, Constraint reason) PerformClauseLearning(Constraint conflictingConstraint);
 }

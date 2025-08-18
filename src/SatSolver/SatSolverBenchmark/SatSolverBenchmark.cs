@@ -26,7 +26,7 @@ public class SatSolverBenchmark
     {
         foreach (var (name, problem) in _satProblems!)
         {
-            var solution = SatSolver.Solve(problem, _options) ?? throw new Exception($"Problem {name} could not be solved.");
+            var solution = SatSolver.EnumerateSolutions(problem, _options).FirstOrDefault() ?? throw new Exception($"Problem {name} could not be solved.");
             SolutionValidator.Validate(problem, solution);
         }
     }
@@ -35,8 +35,7 @@ public class SatSolverBenchmark
     {
         foreach (var (name, problem) in _unsatProblems!)
         {
-            var solution = SatSolver.Solve(problem, _options);
-            if (solution is not null)
+            if (SatSolver.EnumerateSolutions(problem, _options).Any())
                 throw new Exception($"Problem {name} should not have a solution.");
         }
     }

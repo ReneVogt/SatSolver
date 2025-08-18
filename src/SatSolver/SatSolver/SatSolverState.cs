@@ -18,7 +18,7 @@ abstract class SatSolverState
     public abstract ICandidateHeap CandidateHeap { get; }
     public abstract IVariableTrail VariableTrail { get; }
     public abstract IVariablePropagator VariablePropagator { get; }
-    public abstract IConflictDrivenClauseLearner CdclProcessor { get; }
+    public abstract IConflictDrivenConstraintLearner ConflictDrivenConstraintLearner { get; }
 
     public abstract IActivityManager ActivityManager { get; }
     public abstract EmaTracker LiteralBlockDistanceTracker { get; }
