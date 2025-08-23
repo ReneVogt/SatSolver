@@ -4,9 +4,10 @@ using Revo.SatSolver.Parsing;
 
 namespace SatSolverTests.Parsing;
 
+#pragma warning disable IDE0079
 #pragma warning disable CA1861
 
-public sealed class DimacsCnfParserTests
+public sealed class DimacsParserTests
 {
     [Fact]
     public void Parse_Null_ArgumentNullException()

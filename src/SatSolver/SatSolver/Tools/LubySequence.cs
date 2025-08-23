@@ -6,18 +6,21 @@ sealed class LubySequence(long baseValue = 1) : ILubySequence
 
     public long Next()
     {
-        //
-        // Donald Knuth's 'reluctant doubling' formula
-        //
-        var next = _v;
-        if ((_u & -_u) == _v)
+        checked
         {
-            _u += 1;
-            _v = 1;
-        }
-        else _v *= 2;
+            //
+            // Donald Knuth's 'reluctant doubling' formula
+            //
+            var next = _v;
+            if ((_u & -_u) == _v)
+            {
+                _u += 1;
+                _v = 1;
+            }
+            else _v *= 2;
 
-        return next * baseValue;
+            return next * baseValue;
+        }
     }
 
     public static IEnumerable<long> Enumerate(long baseValue = 1)

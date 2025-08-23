@@ -1,5 +1,4 @@
 ﻿using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.DPLL;
 using Revo.SatSolver.Processors;
 using Revo.SatSolver.Tools;
 using System.Diagnostics;
@@ -13,43 +12,49 @@ namespace Revo.SatSolver;
 /// </summary>
 public sealed partial class SatSolver
 {
-    readonly RestartManager _restartManager;
+    readonly ComponentStore _store;
+    readonly IManageRestart _restartManager;
     readonly CancellationToken _cancellationToken;
     readonly ICandidateHeap _candidateHeap;
     readonly IVariableTrail _trail;
-    readonly IVariablePropagator _variablePropagator;
-    readonly IConflictDrivenConstraintLearner _conflictDrivenConstraintLearner;
-    readonly IActivityManager _activityManager;
+    readonly IPropagateVariables _variablePropagator;
+    readonly IHandleConflicts _conflictHandler;
+    readonly IManageActivities _activityManager;
     readonly bool _onlyPoorMansVSIDS;
-    readonly Queue<(ConstraintLiteral UnitLiteral, Constraint Reason)> _unitsToPropagate;
-    readonly PropagationRateTracker _propagationRateTracker;
+    readonly UnitPropagationQueue _unitPropagationQueue;
+    readonly ITrackPropagationRate _propagationRateTracker;
     readonly IReduceLearnedConstraints _learnedConstraintsReducer;
     readonly Variable[] _variables;
 
 
     SatSolver(IInitializeSatSolver initializer)
     {
-        var state = initializer.Initialize();
-        _variablePropagator = state.VariablePropagator;
-        _conflictDrivenConstraintLearner = state.ConflictDrivenConstraintLearner;
-        _activityManager = state.ActivityManager;
-        _trail = state.VariableTrail;
-        _candidateHeap = state.CandidateHeap;
-        _restartManager = state.RestartManager;
-        _unitsToPropagate = state.UnitsToPropagate;
-        _propagationRateTracker = state.PropagationRateTracker;
-        _restartManager = state.RestartManager;
-        _cancellationToken = state.CancellationToken;
-        _onlyPoorMansVSIDS = state.Options.OnlyPoorMansVSIDS;
-        _variables = state.Variables;
-        _learnedConstraintsReducer = state.LearnedConstraintsReducer;
+        _store = initializer.Initialize();
+        _variablePropagator = _store.VariablePropagator;
+        _conflictHandler = _store.ConflictHandler;
+        _activityManager = _store.ActivityManager;
+        _trail = _store.VariableTrail;
+        _candidateHeap = _store.CandidateHeap;
+        _restartManager = _store.RestartManager;
+        _unitPropagationQueue = _store.UnitPropagationQueue;
+        _propagationRateTracker = _store.PropagationRateTracker;
+        _restartManager = _store.RestartManager;
+        _cancellationToken = _store.CancellationToken;
+        _onlyPoorMansVSIDS = _store.Options.OnlyPoorMansVSIDS;
+        _variables = _store.Variables;
+        _learnedConstraintsReducer = _store.LearnedConstraintsReducer;
     }
 
     IEnumerable<Literal[]> EnumerateSolutions()
     {
-        var propagationCount = 0;
-        if (_variablePropagator.PropagateUnits(ref propagationCount) is not null)
-            yield break;
+        while (_unitPropagationQueue.Count > 0)
+        {
+            (var literal, _) = _unitPropagationQueue.Dequeue();
+            if (literal.Sense is not null) continue;
+            if (_variablePropagator.PropagateVariable(literal.Variable, literal.Orientation, null) is not null)
+                yield break;
+        }
+
         _trail.Clear();
         var solutions = _onlyPoorMansVSIDS ? SolvePoor() : SolveCDCL();
         foreach(var solution in solutions)
@@ -90,11 +95,14 @@ public sealed partial class SatSolver
             {
                 _trail.Push(firstTry);
                 Debug.WriteLine($"[{_trail.DecisionLevel}] Decided {candidateVariable!.Index+1} to {candidateSense}.");
-                conflictingConstraint = 
-                    _variablePropagator.PropagateVariable(candidateVariable, candidateSense, null, out var propagationCount) ?? 
-                    _variablePropagator.PropagateUnits(ref propagationCount);
-
-                _propagationRateTracker.AddPropagations(propagationCount);
+                conflictingConstraint = _variablePropagator.PropagateVariable(candidateVariable, candidateSense, null);
+                while (conflictingConstraint is null && _unitPropagationQueue.Count > 0)
+                {
+                    _cancellationToken.ThrowIfCancellationRequested();
+                    (var literal, _) = _unitPropagationQueue.Dequeue();
+                    if (literal.Sense is not null) continue;
+                    conflictingConstraint = _variablePropagator.PropagateVariable(literal.Variable, literal.Orientation, null);
+                }
             }
 
             candidateVariable = null;
@@ -108,69 +116,55 @@ public sealed partial class SatSolver
             if (_restartManager.RestartIfNecessary()) continue;
             
             Debug.WriteLine("Backtracking.");
-            _unitsToPropagate.Clear();
+            _unitPropagationQueue.Clear();
             (candidateVariable, candidateSense) = _trail.Backtrack();
             if (candidateVariable is null) yield break;
         }
     }
     IEnumerable<Literal[]> SolveCDCL()
     {
-        Variable? candidateVariable = null;
-        Constraint? learnedConstraint = null;
-        var candidateSense = true;
-
         for (;;)
         {
-            Constraint? conflictingConstraint = null;
-
             _cancellationToken.ThrowIfCancellationRequested();
+            _unitPropagationQueue.Clear();
 
-            if (candidateVariable is null)
+            var candidateVariable = _candidateHeap.Dequeue();
+            if (candidateVariable is not null)
+                _unitPropagationQueue.Enqueue((candidateVariable.Polarity ? candidateVariable.PositiveLiteral : candidateVariable.NegativeLiteral, null));
+            else
             {
-                candidateVariable = _candidateHeap.Dequeue();
-                if (candidateVariable is null)
+                var solution = BuildSolution();
+                Debug.WriteLine($"Delivering solution {solution} and creating inverse conflict.");
+                yield return solution;
+                _conflictHandler.HandleConflict(CreateConflictFromSolution());
+            }
+
+            while (_unitPropagationQueue.Count > 0)
+            {
+                _cancellationToken.ThrowIfCancellationRequested();
+                var (unitLiteral, reason) = _unitPropagationQueue.Dequeue();
+                if (unitLiteral.Sense is not null) continue;
+
+                if (reason is null)
                 {
-                    var solution = BuildSolution();
-                    Debug.WriteLine($"Delivering solution {solution} and creating inverse conflict.");
-                    yield return solution;
-                    conflictingConstraint = CreateConflictFromSolution();
+                    _trail.Push();
+                    Debug.WriteLine($"[{_trail.DecisionLevel}] Decided {unitLiteral.Variable.Index+1} to {unitLiteral.Orientation}.");
                 }
                 else
-                {
-                    candidateSense = candidateVariable.Polarity;
-                    _trail.Push();
-                    Debug.WriteLine($"[{_trail.DecisionLevel}] Decided {candidateVariable.Index+1} to {candidateSense}.");
-                }
+                    Debug.WriteLine($"[{_trail.DecisionLevel}] Propagating {unitLiteral.Variable.Index+1} to {unitLiteral.Orientation}.");
+
+
+                var conflictingConstraint = _variablePropagator.PropagateVariable(unitLiteral.Variable, unitLiteral.Orientation, reason);
+                if (conflictingConstraint is null) continue;
+
+                Debug.WriteLine($"Conflict in {conflictingConstraint} (learned: {conflictingConstraint.IsLearned}).");
+                if (_trail.DecisionLevel == 0) yield break;
+                _conflictHandler.HandleConflict(conflictingConstraint);
+
+                Statistics.Dump();
+                _learnedConstraintsReducer.ReduceLearnedConstraintsIfNecessary();
+                if (_restartManager.RestartIfNecessary()) break;
             }
-
-            if (conflictingConstraint is null)
-            {
-                conflictingConstraint =
-                    _variablePropagator.PropagateVariable(candidateVariable!, candidateSense, learnedConstraint, out var propagationCount) ??
-                    _variablePropagator.PropagateUnits(ref propagationCount);
-
-                _propagationRateTracker.AddPropagations(propagationCount);
-            }
-
-            candidateVariable = null;
-            learnedConstraint = null;
-            if (conflictingConstraint is null) continue;
-            Debug.WriteLine($"Conflict in {conflictingConstraint} (learned: {conflictingConstraint.IsLearned}).");
-            if (_trail.DecisionLevel == 0) yield break;
-
-            _propagationRateTracker.AddConflict();
-            _restartManager.AddConflict();
-            _activityManager.IncreaseConstraintActivity(conflictingConstraint);
-            _unitsToPropagate.Clear();
-
-            var (candidateLiteral, candidateReason) = _conflictDrivenConstraintLearner.PerformClauseLearning(conflictingConstraint);
-            _learnedConstraintsReducer.ReduceLearnedConstraintsIfNecessary();
-            if (_restartManager.RestartIfNecessary()) continue;
-
-            candidateVariable = candidateLiteral.Variable;
-            candidateSense = candidateLiteral.Orientation;
-            learnedConstraint = candidateReason;
-            Debug.WriteLine($"[{_trail.DecisionLevel}] Propagating uip {candidateVariable.Index+1} to {candidateSense}.");
         }
     }
     Literal[] BuildSolution() => [.. _variables.Select(v => new Literal(v.Index+1, v.Sense!.Value))];

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Revo.SatSolver;
 
@@ -7,6 +8,8 @@ namespace Revo.SatSolver;
 /// </summary>
 public sealed class Clause : IComparable<Clause>, IEquatable<Clause>
 {
+    int? _hash;
+
     /// <summary>
     /// An array of <see cref="Literal"/>s contained in this clause.
     /// The literals are sorted by their <see cref="Literal.Id"/> and 
@@ -25,18 +28,27 @@ public sealed class Clause : IComparable<Clause>, IEquatable<Clause>
     public Clause(IEnumerable<Literal> literals)
     {
         _ = literals ?? throw new ArgumentNullException(nameof(literals));
-        Literals = [.. literals.Distinct().OrderBy(literal => literal.Id).ThenBy(literal => literal.Sense)];        
+        Literals = [.. literals.Distinct().OrderBy(literal => literal.Id).ThenBy(literal => literal.Sense)];
     }
 
-    public override int GetHashCode() =>  Literals.Aggregate(Literals.Length.GetHashCode(), (hash, literal) => hash * 371 + literal.GetHashCode());
-    public override bool Equals(object? obj) => obj is Clause other && Equals(other); 
+    [ExcludeFromCodeCoverage]
+    public override int GetHashCode()
+    {
+        if (_hash.HasValue) return _hash.Value;
+        var hc = new HashCode();
+        foreach (var literal in Literals)
+            hc.Add(literal.GetHashCode());
+        _hash = hc.ToHashCode();
+        return _hash.Value;
+    }
+    public override bool Equals(object? obj) => obj is Clause other && Equals(other);
     public bool Equals(Clause? other) => other?.Literals.SequenceEqual(Literals) ?? false;
     public int CompareTo(Clause? other)
     {
-        if (other is not { Literals: var literals}) return 1;
+        if (other is not { Literals: var literals }) return 1;
         if (Literals.Length < literals.Length) return -1;
         if (Literals.Length > literals.Length) return 1;
-        for (var i=0; i<Literals.Length; i++)
+        for (var i = 0; i<Literals.Length; i++)
         {
             var mine = Literals[i];
             var others = literals[i];

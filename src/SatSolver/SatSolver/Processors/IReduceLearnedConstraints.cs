@@ -3,4 +3,5 @@
 interface IReduceLearnedConstraints 
 {
     void ReduceLearnedConstraintsIfNecessary();
+    void ReduceLearnedConstraints();
 }

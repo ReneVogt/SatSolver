@@ -23,14 +23,14 @@ public sealed class VariableTests
     {
         var variable = new Variable(12);
         Assert.Equal(12, variable.GetHashCode());
-        Assert.Equal(13, variable.PositiveLiteral.GetHashCode());
-        Assert.Equal(-13, variable.NegativeLiteral.GetHashCode());
+        Assert.Equal(24, variable.PositiveLiteral.GetHashCode());
+        Assert.Equal(25, variable.NegativeLiteral.GetHashCode());
 
 
         variable = new Variable(0);
         Assert.Equal(0, variable.GetHashCode());
-        Assert.Equal(1, variable.PositiveLiteral.GetHashCode());
-        Assert.Equal(-1, variable.NegativeLiteral.GetHashCode());
+        Assert.Equal(0, variable.PositiveLiteral.GetHashCode());
+        Assert.Equal(1, variable.NegativeLiteral.GetHashCode());
     }
     [Fact]
     public void SensePropagated()
@@ -54,5 +54,21 @@ public sealed class VariableTests
         Assert.Null(variable.Sense);
         Assert.Null(variable.PositiveLiteral.Sense);
         Assert.Null(variable.NegativeLiteral.Sense);
+    }
+
+    [Fact]
+    public void PropertiesTested()
+    {
+        var variable = new Variable(12)
+        {
+            Activity = 13,
+            DecisionLevel = 14,
+            Polarity = true
+        };
+        var reason = variable.Reason = new Constraint([variable.PositiveLiteral]);
+
+        Assert.Equal(13, variable.Activity);
+        Assert.Equal(14, variable.DecisionLevel);
+        Assert.True(variable.Polarity);
     }
 }

@@ -35,7 +35,8 @@ public sealed class ConjunctiveNormalFormCheckerTests
         InlineData("(a | b) & (c | d | e) & (!d | e | !f) & !g & !(h & b)", false),
         InlineData("a > b", false),
         InlineData("a < b", false),
-        InlineData("a % b", false)
+        InlineData("a % b", false),
+        InlineData("!!a", false)
     ]
     public void Check_CorrectResults(string input, bool expected) => Assert.Equal(expected, BooleanAlgebraParser.Parse(input).IsConjunctiveNormalForm());
 

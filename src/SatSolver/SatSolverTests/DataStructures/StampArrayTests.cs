@@ -15,7 +15,6 @@ public sealed class StampArrayTests
         Assert.False(sut.Add(1000));
         Assert.Equal(1, sut.Count);
     }
-
     [Fact]
     public void Add_MutlipleValues()
     {
@@ -30,7 +29,6 @@ public sealed class StampArrayTests
         Assert.True(sut.Contains(1000));
         Assert.True(sut.Contains(1001));
     }
-
     [Fact]
     public void Add_Clear_Clears()
     {
@@ -60,7 +58,17 @@ public sealed class StampArrayTests
         Assert.True(sut.Contains(1000));
         Assert.True(sut.Contains(1001));
     }
-
+    [Fact]
+    public void Add_Resize()
+    {
+        var sut = new StampArray(16);
+        Assert.True(sut.Add(1000));
+        Assert.Equal(1, sut.Count);
+        Assert.True(sut.Contains(1000));
+        Assert.True(sut.Remove(1000));
+        Assert.Equal(0, sut.Count);
+    }
+    
     [Fact]
     public void EnumerateIndices_CorrectIndices()
     {
@@ -93,12 +101,26 @@ public sealed class StampArrayTests
         Assert.Equal([17, 18, 20], sut.EnumerateIndices());
 
         Assert.True(sut.Remove(18));
+        Assert.Equal(2, sut.Count);
         Assert.False(sut.Remove(23));
         Assert.False(sut.Remove(18));
         Assert.Equal([17, 20], sut.EnumerateIndices());
 
         Assert.True(sut.Add(18));
+        Assert.Equal(3, sut.Count);
         Assert.True(sut.Remove(20));
+        Assert.Equal(2, sut.Count);
         Assert.Equal([17, 18], sut.EnumerateIndices());
+    }
+
+    [Fact]
+    public void Contains_ToolargeIndex()
+    {
+        var sut = new StampArray(32);
+        sut.Add(17);
+        sut.Add(18);
+        sut.Add(20);
+
+        Assert.False(sut.Contains(64));
     }
 }

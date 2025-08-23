@@ -1,5 +1,6 @@
 ﻿using Revo.BooleanAlgebra.Expressions;
 using Revo.BooleanAlgebra.Transformers;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Revo.SatSolver.Parsing;
 
@@ -103,6 +104,7 @@ public sealed class ExpressionToProblemConverter : BooleanExpressionRewriter
     /// <returns>A <see cref="Problem"/> representation of the <paramref name="expression"/>
     /// that can be processed by the <see cref="SatSolver"/>.</returns>
     /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
+    [ExcludeFromCodeCoverage]
     public static Problem ToProblem(BooleanExpression expression, out BooleanExpression transformedExpression) => ToProblem(expression, out transformedExpression, out _);
 
     /// <summary>

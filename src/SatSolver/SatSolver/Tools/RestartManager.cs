@@ -1,41 +1,50 @@
 ﻿using Revo.SatSolver.DataStructures;
+using Revo.SatSolver.Processors;
 using System.Diagnostics;
 
 namespace Revo.SatSolver.Tools;
 
-sealed class RestartManager
+sealed class RestartManager : IManageRestart
 {
     readonly IVariableTrail _trail;
-    readonly PropagationRateTracker _propagationRateTracker;
-    readonly EmaTracker _literalBlockDistanceTracker;
-    readonly Queue<(ConstraintLiteral, Constraint Reason)> _unitLiterals;
-    readonly LubySequence? _lubySequence;
+    readonly ITrackPropagationRate _propagationRateTracker;
+    readonly ITrackLiteralBlockDistance _literalBlockDistanceTracker;
+    readonly UnitPropagationQueue _unitPropagationQueue;
+    readonly ILubySequence? _lubySequence;
 
     readonly bool _useRestarts;
     readonly double _propagationRateThreshold, _literalBlockDistanceThreshold;
+    readonly IReduceLearnedConstraints _constraintReducer;
+    readonly bool _reduceConstraints;
 
-    int _restartCounter, _nextRestartThreshold;
+    long _restartCounter, _nextRestartThreshold;
 
-    public RestartManager(SatSolverState state)
+    public RestartManager(
+        IVariableTrail trail,
+        ITrackPropagationRate propagationRateTracker,
+        ITrackLiteralBlockDistance literalBlockDistanceTracker,
+        UnitPropagationQueue unitPropagationQueue,
+        IReduceLearnedConstraints constraintReducer,
+        int? restartInterval, ILubySequence? lubySequence,
+        double? propagationRateThreshold, double? literalBlockDistanceThreshold,
+        bool reduceConstraints)
     {
-        _trail = state.VariableTrail;
-        _propagationRateTracker = state.PropagationRateTracker;
-        _literalBlockDistanceTracker = state.LiteralBlockDistanceTracker;
-        _unitLiterals = state.UnitsToPropagate;
-        var options = state.Options;
+        _trail = trail;
+        _propagationRateTracker = propagationRateTracker;
+        _literalBlockDistanceTracker = literalBlockDistanceTracker;
+        _unitPropagationQueue = unitPropagationQueue;
+        _constraintReducer = constraintReducer;
 
-        if (options.Restart.Interval is { } restartInterval)
-            if (options.Restart.Luby)
-            {
-                _lubySequence = new LubySequence(restartInterval);
-                _nextRestartThreshold = (int)_lubySequence.Next();
-            }
-            else
-                _nextRestartThreshold = restartInterval;
+        _lubySequence = lubySequence;
+        _nextRestartThreshold = _lubySequence?.Next() ?? restartInterval ?? long.MaxValue;
+        _reduceConstraints = reduceConstraints;
+        _literalBlockDistanceThreshold = literalBlockDistanceThreshold ?? double.MaxValue;
+        _propagationRateThreshold = propagationRateThreshold ?? 0d;
 
-        _useRestarts = options.Restart.Interval is not null || options.Restart.LiteralBlockDistanceThreshold is not null || options.Restart.PropagationRateThreshold is not null;
-        _propagationRateThreshold = options.Restart.PropagationRateThreshold ?? 0;
-        _literalBlockDistanceThreshold = options.Restart.LiteralBlockDistanceThreshold ?? double.MaxValue;
+        _useRestarts = restartInterval is not null  ||
+            lubySequence is not null ||
+            propagationRateThreshold is not null ||
+            literalBlockDistanceThreshold is not null;
     }
 
     public void AddConflict() => _restartCounter++;
@@ -43,22 +52,25 @@ sealed class RestartManager
     {
         if (!_useRestarts) return false;
 
-        var restart = _nextRestartThreshold > 0 && _restartCounter > _nextRestartThreshold;
-        restart |= _propagationRateTracker.CurrentRatio < _propagationRateThreshold;
-        restart |= _literalBlockDistanceTracker.CurrentRatio > _literalBlockDistanceThreshold;
+        var propagationRateRatio = _propagationRateTracker.CurrentRatio;
+        var literalBlockDistanceRatio = _literalBlockDistanceTracker.CurrentRatio;
 
-        if (!restart) return false;
+        if (!(_restartCounter > _nextRestartThreshold || propagationRateRatio < _propagationRateThreshold || literalBlockDistanceRatio > _literalBlockDistanceThreshold)) return false;
 
-        Debug.WriteLine($"Restarting (counter: {_restartCounter} / {_nextRestartThreshold}, propagation rate: {_propagationRateTracker.CurrentRatio} / {_propagationRateThreshold}, lbd: {_literalBlockDistanceTracker.CurrentRatio} / {_literalBlockDistanceThreshold}).");
+        Debug.WriteLine($"Restarting (counter: {_restartCounter} / {_nextRestartThreshold}, propagation rate: {propagationRateRatio} / {_propagationRateThreshold}, lbd: {literalBlockDistanceRatio} / {_literalBlockDistanceThreshold}).");
 
         _restartCounter = 0;
         if (_lubySequence is not null)
-        {
-            var next = _lubySequence.Next();
-            _nextRestartThreshold = next < int.MaxValue ? (int)next : 0;
-        }
+            _nextRestartThreshold = _lubySequence.Next();
+
         _trail.Reset();
-        _unitLiterals.Clear();
+        _unitPropagationQueue.Clear();
+
+        if (_reduceConstraints)
+        {
+            Debug.WriteLine($"Reducing constraints on restart.");
+            _constraintReducer.ReduceLearnedConstraints();
+        }
 
         return true;
     }

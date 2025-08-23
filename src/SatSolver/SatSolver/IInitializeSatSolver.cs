@@ -2,5 +2,5 @@
 
 interface IInitializeSatSolver
 {
-    SatSolverState Initialize();
+    ComponentStore Initialize();
 }

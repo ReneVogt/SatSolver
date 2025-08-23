@@ -1,7 +1,7 @@
 ﻿using Revo.SatSolver.DataStructures;
 
-namespace Revo.SatSolver.DPLL;
-interface IActivityManager
+namespace Revo.SatSolver.Tools;
+interface IManageActivities
 {
     double ConstraintActivityIncrement { get; }
     double VariableActivityIncrement { get; }

@@ -1,5 +1,6 @@
 ﻿using Revo.SatSolver.Properties;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Revo.SatSolver;
 
@@ -9,6 +10,8 @@ namespace Revo.SatSolver;
 /// </summary>
 public sealed class Problem : IEquatable<Problem>
 {
+    int? _hash;
+
     /// <summary>
     /// The number of literals required by the problem.
     /// </summary>
@@ -35,14 +38,25 @@ public sealed class Problem : IEquatable<Problem>
         _ = clauses ?? throw new ArgumentNullException(nameof(clauses));
         if (numberOfLiterals < 0)
             throw new ArgumentException(message: Resources.ProblemArgumentException_NumberOfLiterals, paramName: nameof(numberOfLiterals));
-        if (clauses.SelectMany(clause => clause.Literals.Select(literal => literal.Id)).Any(id => id < 1 || id > numberOfLiterals))
+        if (clauses.SelectMany(clause => clause.Literals.Select(literal => literal.Id)).Any(id => id > numberOfLiterals))
             throw new ArgumentException(Resources.ProblemrArgumentException_InvalidLiterals, nameof(clauses));
 
         NumberOfLiterals = numberOfLiterals;
         Clauses = [.. clauses.OrderBy(clause => clause)];
     }
 
-    public override int GetHashCode() => Clauses.Aggregate(NumberOfLiterals.GetHashCode(), (hash, clause) => hash * 371 + clause.GetHashCode());
+    [ExcludeFromCodeCoverage]
+    public override int GetHashCode()
+    {
+        if (_hash.HasValue) return _hash.Value;
+
+        var hc = new HashCode();
+        hc.Add(NumberOfLiterals);
+        foreach (var clause in Clauses) hc.Add(clause);
+        _hash = hc.ToHashCode();
+        return _hash.Value;
+    }
+
     public override bool Equals(object? obj) => obj is Problem other && Equals(other);
     public bool Equals(Problem? other) => 
         other is not null && 

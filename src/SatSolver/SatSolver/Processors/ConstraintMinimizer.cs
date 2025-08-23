@@ -3,9 +3,8 @@ using System.Diagnostics;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class ConstraintMinimizer(SatSolverState _state) : IMinimizeConstraints
+sealed class ConstraintMinimizer(int _maxDepth) : IMinimizeConstraints
 {
-    readonly int _maxDepth = _state.Options.MaximumConstraintMinimizationDepth;
     public void MinimizeConstraint(HashSet<ConstraintLiteral> literals, int decisionLevel)
     {
         Debug.WriteLine($"Minimizing constraint ({literals.Count}).");

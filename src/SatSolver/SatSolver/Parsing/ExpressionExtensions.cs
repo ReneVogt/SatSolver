@@ -1,7 +1,9 @@
 ﻿using Revo.BooleanAlgebra.Expressions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Revo.SatSolver.Parsing;
 
+[ExcludeFromCodeCoverage]
 public static class ExpressionExtensions
 {
     /// <summary>

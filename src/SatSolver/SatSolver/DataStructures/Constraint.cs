@@ -1,7 +1,5 @@
-﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+﻿namespace Revo.SatSolver.DataStructures;
 
-namespace Revo.SatSolver.DataStructures;
 sealed class Constraint
 {
     public ConstraintLiteral[] Literals { get; }
@@ -55,15 +53,18 @@ sealed class Constraint
     /// <param name="secondWatcher">The second watched literal (second last in trail).</param>
     /// <param name="activity">Initial activity of this constraint.</param>
     /// <param name="literalBlockDistance">Literal block distance of this learned constraint.</param>
-    public Constraint(Span<ConstraintLiteral> literals, ConstraintLiteral firstWatcher, ConstraintLiteral secondWatcher, double activity, int literalBlockDistance)
+    /// <param name="connectWatchers"><c>true</c> if this constraint should be linked in the watchers, <c>false</c> if not. This
+    /// should depend on the maximum literal block distance settings.</param>
+    public Constraint(ConstraintLiteral[] literals, ConstraintLiteral firstWatcher, ConstraintLiteral secondWatcher, double activity, int literalBlockDistance, bool connectWatchers)
     {
-        Literals = [.. literals];
+        Literals = literals;
         IsLearned = true;
         Activity = activity;
         LiteralBlockDistance = literalBlockDistance;
         Watched1 = firstWatcher;
         Watched1 = firstWatcher;
         Watched2 = secondWatcher;
+        if (!connectWatchers) return;
         Watched1.Watchers.Add(this);
         if (Watched2 != Watched1) Watched2.Watchers.Add(this);
     }

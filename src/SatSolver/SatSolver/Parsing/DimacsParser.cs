@@ -77,10 +77,11 @@ public sealed class DimacsParser
         {
             var start = Column;
             var literal = ReadLiteral();
-            if (literal.Id > _numberOfLiterals) throw LiteralOutOfRange(literal.Id, (int)_numberOfLiterals, _lineNumber, start);
+            if (literal is not null)
+            { 
+                if (literal.Id > _numberOfLiterals) 
+                    throw LiteralOutOfRange(literal.Id, (int)_numberOfLiterals, _lineNumber, start);
 
-            if (literal.Id != 0)
-            {
                 literals.Add(literal);
                 continue;
             }
@@ -91,7 +92,7 @@ public sealed class DimacsParser
             done = true;
         }
     }
-    Literal ReadLiteral()
+    Literal? ReadLiteral()
     {
         var start = _position;
         while (!EndReached && !char.IsWhiteSpace(Current)) _position++;
@@ -99,7 +100,7 @@ public sealed class DimacsParser
         if (!int.TryParse(_input[start.._position], CultureInfo.InvariantCulture, out var literal))
             throw MissingLiteral(_clauses.Count+1, (int)_numberOfClauses, _lineNumber, start-_lineStart);
         SkipWhiteSpacesOnLine();
-        return new(Math.Abs(literal), literal > 0);
+        return literal != 0 ? new(Math.Abs(literal), literal > 0) : null;
     }
 
     void MoveToNextLineStart(bool skipCurrentLine = true)

@@ -1,11 +1,11 @@
 ﻿namespace Revo.SatSolver.Tools;
-sealed class EmaTracker(int size, double decay)
-{    
+sealed class LiteralBlockDistanceTracker(int size, double decay) : ITrackLiteralBlockDistance
+{
     readonly Queue<int> _recent = new(size+1);
     double _ema;
 
     public double CurrentRatio { get; private set; } = 1;
-    public void AddValue(int value) 
+    public void AddValue(int value)
     {
         _recent.Enqueue(value);
         if (_recent.Count > size)

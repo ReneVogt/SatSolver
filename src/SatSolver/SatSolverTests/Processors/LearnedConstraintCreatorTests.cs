@@ -1,7 +1,7 @@
-﻿using Revo.SatSolver;
+﻿using Moq;
 using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Processors;
-using SatSolverTests.Stubs;
+using Revo.SatSolver.Tools;
 
 namespace SatSolverTests.Processors;
 
@@ -17,20 +17,13 @@ public sealed class LearnedConstraintCreatorTests
          * 
          */
 
-        var candidateHeap = new TestCandidateHeap();
+        var candidateHeap = new Mock<ICandidateHeap>();
         var variables = Enumerable.Range(0, 12).Select(i => new Variable(i)).ToArray();
-        IVariableTrail? trail = null;
-        var activityManager = new TestActivityManager();
-        var constraintMinimizer = new TestConstraintMinimizer();
-        var testState = new TestState(SatSolverOptions.Default, 0, variables, [], (state, name) => name switch
-        {
-            nameof(TestState.VariableTrail) => trail ??= new VariableTrail(state),
-            nameof(TestState.ActivityManager) => activityManager,
-            nameof(TestState.ConstraintMinimizer) => constraintMinimizer,
-            nameof(TestState.CandidateHeap) => candidateHeap,
-            _ => throw new NotImplementedException()
-        });
-        var sut = new LearnedConstraintCreator(testState);
+        var trail = new VariableTrail(candidateHeap.Object, variables.Length);
+        var activityManager = new Mock<IManageActivities>();
+        var constraintMinimizer = new Mock<IMinimizeConstraints>();
+        
+        var sut = new LearnedConstraintCreator(trail, activityManager.Object, constraintMinimizer.Object, variables, 8);
 
         // introduce variables for easy comparison to the diagram
         var x1 = variables[0];
@@ -46,7 +39,6 @@ public sealed class LearnedConstraintCreatorTests
         var x11 = variables[10];
         var x12 = variables[11];
 
-        trail = testState.VariableTrail;
         trail.Push();
         trail.Add(x1);
         x1.Sense = true;

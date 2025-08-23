@@ -23,12 +23,12 @@ public sealed record SatSolverOptions
         /// If <see cref="Luby"/> is <c>true</c>, this value
         /// is multiplied by the Luby sequence (<see cref="LubySequence"/>).
         /// </summary>
-        public int? Interval { get; init; } = 2000;
+        public int? Interval { get; init; }
         /// <summary>
         /// Determines if the restartl <see cref="Interval"/> is
         /// multiplied by the Luby sequence (<see cref="LubySequence"/>.
         /// </summary>
-        public bool Luby { get; init; } = true;
+        public bool Luby { get; init; }
         /// <summary>
         /// If not <c>null</c>, the solver will restart if the ratio
         /// of the recent literal block distances found in learned
@@ -68,14 +68,14 @@ public sealed record SatSolverOptions
         /// The constraints are ordered by their activiy so that
         /// only the useless part will be deleted.
         /// </summary>
-        public double RatioToDelete { get; init; } = 0.5;
+        public double RatioToDelete { get; init; } = 0.65;
         /// <summary>
         /// If not <c>null</c>, a constraint deletion will be
         /// performed if the number of learned constraints
         /// exceeds the number of original constraints multiplied
         /// by this value.
         /// </summary>
-        public double? OriginalConstraintCountFactor { get; init; } = 5d;
+        public double? OriginalConstraintCountFactor { get; init; } = 4d;
         /// <summary>
         /// If not <c>null</c>, a constraint deletion will be
         /// performed when the ratio of the recent literal 
@@ -95,6 +95,11 @@ public sealed record SatSolverOptions
         /// must be configured.
         /// </summary>
         public double? PropagationRateThreshold { get; init; }
+        /// <summary>
+        /// Set to <c>true</c> if learned constraints should be
+        /// reduced when the algorithm is restarted during execution.
+        /// </summary>
+        public bool ReduceOnRestart { get; init; } = true;
     }
 
     /// <summary>
@@ -102,7 +107,7 @@ public sealed record SatSolverOptions
     /// a value is tracked. This used for <see cref="Options.LiteralBlockDistanceTracking"/>.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public record EmaOptions
+    public record LiteralBlockDistanceTrackingOptions
     {
         /// <summary>
         /// The number of values counted as "recent".
@@ -128,7 +133,7 @@ public sealed record SatSolverOptions
 
         /// <summary>
         /// The decay value for the exponential 
-        /// moving average of propagation rates..
+        /// moving average of propagation rates.
         /// </summary>
         public double Decay { get; init; } = 0.999d;
 
@@ -238,7 +243,7 @@ public sealed record SatSolverOptions
     /// <summary>
     /// Configures how the literal block distances are tracked.
     /// </summary>
-    public EmaOptions LiteralBlockDistanceTracking { get; init; } = new ();
+    public LiteralBlockDistanceTrackingOptions LiteralBlockDistanceTracking { get; init; } = new ();
 
     /// <summary>
     /// Configures how the propagation rate is tracked.

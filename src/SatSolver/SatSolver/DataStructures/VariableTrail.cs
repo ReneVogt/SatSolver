@@ -3,11 +3,10 @@ using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.DataStructures;
 
-sealed class VariableTrail(SatSolverState _state) : IVariableTrail
+sealed class VariableTrail(ICandidateHeap _candidateHeap, int _capacity) : IVariableTrail
 {
-    readonly ICandidateHeap _candidateHeap = _state.CandidateHeap;
-    readonly Variable[] _trail = new Variable[_state.Variables.Length];
-    readonly Stack<(int TrailIndex, bool FirstTryOfCandidate)> _decisionLevels = new(_state.Variables.Length);
+    readonly Variable[] _trail = new Variable[_capacity];
+    readonly Stack<(int TrailIndex, bool FirstTryOfCandidate)> _decisionLevels = new(_capacity);
 
     int _trailSize;
 

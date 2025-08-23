@@ -43,7 +43,8 @@ public class ExpressionToProblemConverterTests
             { "a | b | c", "p cnf 3 1\r\n1 2 3 0", ["a", "b", "c"] },
             { "a & b", "p cnf 2 2\r\n1 0\r\n2 0", ["a", "b"] },
             { "(a | b) & (!a | c) & (b | !c)", "p cnf 3 3\r\n-1 3 0\r\n1 2 0\r\n2 -3 0", ["a", "b", "c"] },
-            { "!a | !b", "p cnf 2 1\r\n-1 -2 0", ["a", "b"] }
+            { "!a | !b", "p cnf 2 1\r\n-1 -2 0", ["a", "b"] },
+            { "!a", "p cnf 1 1\r\n-1 0", ["a"] }
         };
 
         return data;

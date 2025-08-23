@@ -1,4 +1,5 @@
 ﻿using Revo.SatSolver.Properties;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Revo.SatSolver.Parsing;
@@ -7,6 +8,7 @@ namespace Revo.SatSolver.Parsing;
 /// Exception thrown by the <see cref="DimacsParser"/> when encountering
 /// mistakes in the DIMACS input.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public sealed class DimacsException : Exception
 {
     public enum Reason

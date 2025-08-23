@@ -7,7 +7,9 @@
 /// <param name="Sense">The sense (or value) of this literal.</param>
 public sealed record Literal(int Id, bool Sense) : IEquatable<Literal>
 {
-    public override int GetHashCode() => (Sense ? Id : -Id).GetHashCode();
+    public int Id { get; } = Id > 0 ? Id : throw new ArgumentOutOfRangeException(paramName: nameof(Id), message: "A literal Id must be greater than zero.", actualValue: Id);
+    
+    public override int GetHashCode() => (Sense ? Id : -Id);
     public override string ToString() => $"{(Sense ? Id : -Id)}";
 
     public static implicit operator Literal(int id) => new(Math.Abs(id), id > 0);

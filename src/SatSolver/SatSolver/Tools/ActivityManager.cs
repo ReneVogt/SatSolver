@@ -1,16 +1,12 @@
 ﻿using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.DPLL;
 
 namespace Revo.SatSolver.Tools;
-sealed class ActivityManager(SatSolverState _state) : IActivityManager
+sealed class ActivityManager(Variable[] _variables, List<Constraint> _learnedConstraints, ICandidateHeap _candidateHeap, SatSolverOptions _options) : IManageActivities
 {
     const double _rescaleLimit = 1e100;
 
-    readonly Variable[] _variables = _state.Variables;
-    readonly List<Constraint> _learnedConstraints = _state.LearnedConstraints;
-    readonly double _variableActivityDecay = _state.Options.VariableActivityDecayFactor;
-    readonly double _constraintActivityDecay = _state.Options.ConstraintActivityDecayFactor;
-    readonly ICandidateHeap _candidateHeap = _state.CandidateHeap;
+    readonly double _variableActivityDecay = _options.VariableActivityDecayFactor;
+    readonly double _constraintActivityDecay = _options.ConstraintActivityDecayFactor;
 
     double _constraintActivityIncrement = 1, _variableActivityIncrement = 1;
 

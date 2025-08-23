@@ -1,20 +1,13 @@
 ﻿using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.DPLL;
+using Revo.SatSolver.Tools;
 using System.Diagnostics;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class VariablePropagator(SatSolverState _state) : IVariablePropagator
+sealed class VariablePropagator(IVariableTrail _trail, UnitPropagationQueue _unitPropagationQueue, IManageActivities _activityManager, ITrackPropagationRate _propagationRateTracker) : IPropagateVariables
 {
-    readonly CancellationToken _cancellationToken = _state.CancellationToken;
-    readonly IVariableTrail _trail = _state.VariableTrail;
-    readonly Queue<(ConstraintLiteral, Constraint Reason)> _unitLiterals = _state.UnitsToPropagate;
-    readonly IActivityManager _activityManager = _state.ActivityManager;
-
-    public Constraint? PropagateVariable(Variable variable, bool sense, Constraint? reason, out int propagationCount)
+    public Constraint? PropagateVariable(Variable variable, bool sense, Constraint? reason)
     {
-        propagationCount = 0;
-
         variable.Sense = sense;
         variable.Reason = reason;
         _trail.Add(variable);
@@ -51,9 +44,9 @@ sealed class VariablePropagator(SatSolverState _state) : IVariablePropagator
 
             if (nextLiteral is null)
             {
-                _unitLiterals.Enqueue((constraint.Watched1, constraint));
+                _unitPropagationQueue.Enqueue((constraint.Watched1, constraint));
                 _activityManager.IncreaseConstraintActivity(constraint, 0.5);
-                propagationCount++;
+                _propagationRateTracker.AddPropagation();
                 continue;
             }
 
@@ -63,21 +56,6 @@ sealed class VariablePropagator(SatSolverState _state) : IVariablePropagator
         }
 
         variable.Polarity = sense;
-        return null;
-    }
-    public Constraint? PropagateUnits(ref int propagationCount)
-    {
-        while (_unitLiterals.Count > 0)
-        {
-            _cancellationToken.ThrowIfCancellationRequested();
-            var (literal, reason) = _unitLiterals.Dequeue();
-            if (literal.Sense is not null) continue;
-            Debug.WriteLine($"[{_trail.DecisionLevel}] Propagating {literal.Variable.Index+1} to {literal.Orientation}.");
-            var conflictingConstraint = PropagateVariable(literal.Variable, literal.Orientation, reason, out var props);
-            propagationCount += props;
-            if (conflictingConstraint is not null) return conflictingConstraint;
-        }
-
         return null;
     }
 }

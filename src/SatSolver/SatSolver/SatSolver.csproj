@@ -38,6 +38,7 @@
 		</EmbeddedResource>
 		<InternalsVisibleTo Include="SatSolverTests" />
 		<InternalsVisibleTo Include="SatSolverBenchmark" />
-	</ItemGroup>
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+</ItemGroup>
 
 </Project>

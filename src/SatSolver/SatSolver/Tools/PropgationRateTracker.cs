@@ -1,11 +1,11 @@
 ﻿namespace Revo.SatSolver.Tools;
 
-sealed class PropagationRateTracker(int conflictInterval, int sampleSize, double decay)
-{    
+sealed class PropagationRateTracker(int conflictInterval, int sampleSize, double decay) : ITrackPropagationRate
+{
     readonly Queue<double> _recentRates = new(sampleSize+1);
     double _ema;
 
-    int _conflictCount, _propagationCount; 
+    int _conflictCount, _propagationCount;
 
     public double CurrentRatio { get; private set; } = 1;
 
@@ -17,9 +17,8 @@ sealed class PropagationRateTracker(int conflictInterval, int sampleSize, double
         AddRate(_propagationCount/(double)_conflictCount);
         _conflictCount = _propagationCount = 0;
     }
-    public void AddPropagations(int propgations) => _propagationCount += propgations;
-
-    void AddRate(double rate) 
+    public void AddPropagation() => _propagationCount++;
+    void AddRate(double rate)
     {
         _recentRates.Enqueue(rate);
         if (_recentRates.Count > sampleSize)

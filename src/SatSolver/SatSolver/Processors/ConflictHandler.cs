@@ -1,54 +1,64 @@
 ﻿using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.DPLL;
 using Revo.SatSolver.Tools;
 using System.Diagnostics;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class ConflictDrivenConstraintLearner(SatSolverState _state) : IConflictDrivenConstraintLearner
+sealed class ConflictHandler(
+    SatSolverOptions _options, 
+    IManageActivities _activityManager, 
+    IVariableTrail _trail,
+    ITrackPropagationRate _propagationRateTracker, 
+    ITrackLiteralBlockDistance _literalBlockDistanceTracker,
+    ICreateLearnedConstraints _learnedConstraintCreator,
+    List<Constraint> _learnedConstraints,
+    UnitPropagationQueue _unitPropagationQueue,
+    IManageRestart _restartManager) : IHandleConflicts
 {
-    readonly int _literalBlockDistanceDeletionLimit = _state.Options.ConstraintDeletion.LiteralBlockDistanceToKeep;
-    readonly int _literalBlockDistanceMaximum = _state.Options.MaximumLiteralBlockDistance;
-    readonly IActivityManager _activityManager = _state.ActivityManager;
-    readonly IVariableTrail _trail = _state.VariableTrail;
-    readonly EmaTracker _literalBlockDistanceTracker = _state.LiteralBlockDistanceTracker;
-    readonly ICreateLearnedConstraints _learnedConstraintCreator = _state.LearnedConstraintCreator;
-    readonly List<Constraint> _learnedConstraints = _state.LearnedConstraints;
+    readonly int _literalBlockDistanceDeletionLimit = _options.ConstraintDeletion.LiteralBlockDistanceToKeep;
+    readonly int _literalBlockDistanceMaximum = _options.MaximumLiteralBlockDistance;
 
-    public (ConstraintLiteral uip, Constraint reason) PerformClauseLearning(Constraint conflictingConstraint)
+    public void HandleConflict(Constraint conflictingConstraint)
     {
+        _propagationRateTracker.AddConflict();
+        _restartManager.AddConflict();
+        _activityManager.IncreaseConstraintActivity(conflictingConstraint);
+        _unitPropagationQueue.Clear();
+
         var learnedConstraint = _learnedConstraintCreator.CreateLearnedConstraint(conflictingConstraint, out var uipLiteral, out var jumpBackLevel);
         _activityManager.IncreaseVariableActivity(learnedConstraint);
 
+        _unitPropagationQueue.Enqueue((uipLiteral, learnedConstraint));
+
         if (learnedConstraint.LiteralBlockDistance > _literalBlockDistanceMaximum)
         {
+            Statistics.AddOmittedLearnedConstraint();
             Debug.WriteLine($"LBD {learnedConstraint.LiteralBlockDistance} too high, only jumping back.");
             _trail.JumpBack(jumpBackLevel);
-            return (uipLiteral, learnedConstraint);
+            return;
         }
 
-        // If the learned constraint as an lbd so low that
+        // If the learned constraint has an lbd so low that
         // we will never remove it, we don't need to track
         // it.
         if (learnedConstraint.LiteralBlockDistance > _literalBlockDistanceDeletionLimit)
         {
+            Statistics.AddTrackedLearnedConstraint();
             Debug.WriteLine($"LBD {learnedConstraint.LiteralBlockDistance}, we track this constraint to eventually delete it.");
             _activityManager.IncreaseConstraintActivity(learnedConstraint);
             _learnedConstraints.Add(learnedConstraint);
             learnedConstraint.IsTracked = true;
         }
         else
+        {
+            Statistics.AddPermanentLearnedConstraint();
             Debug.WriteLine($"LBD {learnedConstraint.LiteralBlockDistance} so good, we keep this forever.");
-
-        learnedConstraint.Watched1.Watchers.Add(learnedConstraint);
-        if (learnedConstraint.Watched2 != learnedConstraint.Watched1)
-            learnedConstraint.Watched2.Watchers.Add(learnedConstraint);
+        }
 
         _trail.JumpBack(jumpBackLevel);
         _activityManager.DecayConstraintActivity();
         _literalBlockDistanceTracker.AddValue(learnedConstraint.LiteralBlockDistance);
         Debug.Assert(learnedConstraint.Literals.All(l => l == uipLiteral && l.Sense is null || l != uipLiteral && l.Sense == false));
         Debug.Assert(learnedConstraint.Literals.Contains(uipLiteral));
-        return (uipLiteral, learnedConstraint);
     }
 }

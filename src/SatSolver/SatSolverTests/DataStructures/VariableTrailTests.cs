@@ -1,23 +1,30 @@
-﻿using Revo.SatSolver.DataStructures;
-using SatSolverTests.Stubs;
+﻿using Moq;
+using Revo.SatSolver.DataStructures;
 
 namespace SatSolverTests.DataStructures;
 
 public sealed class VariableTrailTests
 {
+    sealed class TestHeap : ICandidateHeap
+    {
+        public Queue<Variable> Enqueued { get; } = [];
+        public int RescaleCalls { get; set; }
+
+        public int Count => throw new NotImplementedException();
+        public Variable? Dequeue() => Enqueued.Dequeue();
+        public void Enqueue(Span<Variable> variables)
+        {
+            foreach (var variable in variables) Enqueued.Enqueue(variable);
+        }
+        public void Rescale(double scaleLimit) => RescaleCalls++;
+    }
+
     [Fact]
     public void AddFourDecisionLevels_JumpBackTwo()
     {
         var variables = Enumerable.Range(0, 10).Select(i =>  new Variable(i)).ToArray();
-        var heap = new TestCandidateHeap();
-        IVariableTrail? sut = null;
-        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
-        {
-            nameof(TestState.VariableTrail) => sut ??= new VariableTrail(state),
-            nameof(TestState.CandidateHeap) => heap,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariableTrail;
+        var heap = new TestHeap();
+        var sut = new VariableTrail(heap, variables.Length);
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -62,21 +69,15 @@ public sealed class VariableTrailTests
         sut.JumpBack(2);
         Assert.Equal(4, sut.Count);
         Assert.Equal(2, sut.DecisionLevel);
+
         Assert.Equal([4, 5, 6, 7, 8, 9], heap.Enqueued.Select(v => v.Index));
     }
     [Fact]
     public void AddFourDecisionLevels_BacktrackTwo()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
-        var heap = new TestCandidateHeap();
-        IVariableTrail? sut = null;
-        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
-        {
-            nameof(TestState.VariableTrail) => sut ??= new VariableTrail(state),
-            nameof(TestState.CandidateHeap) => heap,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariableTrail;
+        var heap = new TestHeap();
+        var sut = new VariableTrail(heap, variables.Length);
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -130,15 +131,8 @@ public sealed class VariableTrailTests
     public void Backtrack_NoFirstTry_Null()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
-        var heap = new TestCandidateHeap();
-        IVariableTrail? sut = null;
-        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
-        {
-            nameof(TestState.VariableTrail) => sut ??= new VariableTrail(state),
-            nameof(TestState.CandidateHeap) => heap,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariableTrail;
+        var heap = new TestHeap();
+        var sut = new VariableTrail(heap, variables.Length);
 
         sut.Push(false);
         Assert.Equal(1, sut.DecisionLevel);
@@ -191,15 +185,8 @@ public sealed class VariableTrailTests
     public void Reset_ResetsAllVariables()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
-        var heap = new TestCandidateHeap();
-        IVariableTrail? sut = null;
-        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
-        {
-            nameof(TestState.VariableTrail) => sut ??= new VariableTrail(state),
-            nameof(TestState.CandidateHeap) => heap,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariableTrail;
+        var heap = new TestHeap();
+        var sut = new VariableTrail(heap, variables.Length);
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -251,15 +238,8 @@ public sealed class VariableTrailTests
     public void Clear_DoesNotResetVariables()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
-        var heap = new TestCandidateHeap();
-        IVariableTrail? sut = null;
-        var testState = new TestState(new(), 0, variables, [], (state, name) => name switch
-        {
-            nameof(TestState.VariableTrail) => sut ??= new VariableTrail(state),
-            nameof(TestState.CandidateHeap) => heap,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariableTrail;
+        var heap = new TestHeap();
+        var sut = new VariableTrail(heap, variables.Length);
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -306,5 +286,40 @@ public sealed class VariableTrailTests
         Assert.Equal(0, sut.Count);
         Assert.Equal(0, sut.DecisionLevel);
         Assert.Empty(heap.Enqueued);
+    }
+
+    [Fact]
+    public void StartIndexOfCurrentDecisionLevel()
+    {
+        var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
+        var heap = new TestHeap();
+        var sut = new VariableTrail(heap, variables.Length);
+
+        foreach (var v in variables) v.Sense = true;
+
+        Assert.Equal(-1, sut.StartIndexOfCurrentDecisionLevel);
+        
+        sut.Push(true);
+        Assert.Equal(0, sut.StartIndexOfCurrentDecisionLevel);
+        sut.Add(variables[0]);
+        sut.Add(variables[1]);
+        Assert.Equal(0, sut.StartIndexOfCurrentDecisionLevel);
+
+        sut.Push(true);
+        Assert.Equal(2, sut.StartIndexOfCurrentDecisionLevel);
+        sut.Add(variables[2]);
+        sut.Add(variables[3]);
+        sut.Add(variables[4]);
+        Assert.Equal(2, sut.StartIndexOfCurrentDecisionLevel);
+
+        sut.Push(true);
+        Assert.Equal(5, sut.StartIndexOfCurrentDecisionLevel);
+        sut.Add(variables[5]);
+        Assert.Equal(5, sut.StartIndexOfCurrentDecisionLevel);
+
+        sut.Backtrack();
+        Assert.Equal(2, sut.StartIndexOfCurrentDecisionLevel);
+        sut.Backtrack();
+        Assert.Equal(0, sut.StartIndexOfCurrentDecisionLevel);
     }
 }

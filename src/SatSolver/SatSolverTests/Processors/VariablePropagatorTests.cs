@@ -1,9 +1,7 @@
-﻿using Revo.SatSolver;
+﻿using Moq;
 using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.Parsing;
 using Revo.SatSolver.Processors;
-using SatSolverTests.Parsing;
-using SatSolverTests.Stubs;
+using Revo.SatSolver.Tools;
 
 namespace SatSolverTests.Processors;
 
@@ -33,24 +31,18 @@ public sealed class VariablePropagatorTests
         var constraint6 = new Constraint([variables[0].PositiveLiteral, variables[2].PositiveLiteral]);
         var constraint7 = new Constraint([variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
 
-        var trail = new TestVariableTrail();
-        var activityManager = new TestActivityManager();
-        var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
+        var trail = new Mock<IVariableTrail>();
+        var activityManager = new Mock<IManageActivities>();
+        var units = new UnitPropagationQueue();
+        var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        IVariablePropagator? sut = null;
-        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
-        {
-            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
-            nameof(TestState.VariableTrail) => trail,
-            nameof(TestState.ActivityManager) => activityManager,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariablePropagator;
+        var sut = new VariablePropagator(trail.Object, units, activityManager.Object, propagationRateTracker.Object);
 
-        var conflict = sut.PropagateVariable(variables[0], true, null, out var propagations);
+        var conflict = sut.PropagateVariable(variables[0], true, null);
         Assert.Null(conflict);
 
-        Assert.Equal([variables[0]], trail.AddedVariables);
+        trail.Verify(t => t.Add(variables[0]), Times.Once);
+        trail.VerifyNoOtherCalls();
         Assert.True(variables[0].Sense);
         Assert.True(variables[0].Polarity);
 
@@ -60,9 +52,9 @@ public sealed class VariablePropagatorTests
         Assert.Equal(variables[1].PositiveLiteral, constraint2.Watched1);
         Assert.Equal(variables[2].PositiveLiteral, constraint2.Watched2);
 
-        Assert.Empty(activityManager.IncreasedConstraints);
+        activityManager.VerifyNoOtherCalls();
         Assert.Empty(units);
-        Assert.Equal(0, propagations);
+        propagationRateTracker.VerifyNoOtherCalls();        
     }
     [Fact]
     public void PropagateVariable_NoConflict_CorrectPropagations()
@@ -88,24 +80,22 @@ public sealed class VariablePropagatorTests
         var constraint6 = new Constraint([variables[0].PositiveLiteral, variables[2].PositiveLiteral]);
         var constraint7 = new Constraint([variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
 
-        var trail = new TestVariableTrail();
-        var activityManager = new TestActivityManager();
-        var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
+        var trail = new Mock<IVariableTrail>();
+        var activityManager = new Mock<IManageActivities>();
+        var sequence = new MockSequence();
+        activityManager.InSequence(sequence).Setup(a => a.IncreaseConstraintActivity(constraint5, 0.5d));
+        activityManager.InSequence(sequence).Setup(a => a.IncreaseConstraintActivity(constraint6, 0.5d));
 
-        IVariablePropagator? sut = null;
-        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
-        {
-            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
-            nameof(TestState.VariableTrail) => trail,
-            nameof(TestState.ActivityManager) => activityManager,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariablePropagator;
+        var units = new UnitPropagationQueue();
+        var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        var conflict = sut.PropagateVariable(variables[0], false, null, out var propagations);
+        var sut = new VariablePropagator(trail.Object, units, activityManager.Object, propagationRateTracker.Object);
+
+        var conflict = sut.PropagateVariable(variables[0], false, null);
         Assert.Null(conflict);
 
-        Assert.Equal([variables[0]], trail.AddedVariables);
+        trail.Verify(t => t.Add(variables[0]), Times.Once);
+        trail.VerifyNoOtherCalls();
         Assert.False(variables[0].Sense);
         Assert.False(variables[0].Polarity);
 
@@ -124,9 +114,10 @@ public sealed class VariablePropagatorTests
         Assert.Equal(variables[2].PositiveLiteral, constraint6.Watched1);
         Assert.Equal(variables[0].PositiveLiteral, constraint6.Watched2);
 
-        Assert.Equal([(constraint5, 0.5d), (constraint6, 0.5d)], activityManager.IncreasedConstraints);
+        activityManager.VerifyAll();
+        activityManager.VerifyNoOtherCalls();
         Assert.Equal([(variables[1].PositiveLiteral, constraint5), (variables[2].PositiveLiteral, constraint6)], units);
-        Assert.Equal(2, propagations);
+        propagationRateTracker.Verify(p => p.AddPropagation(), Times.Exactly(2));       
     }
     [Fact]
     public void PropagateVariable_WithConflict()
@@ -141,24 +132,18 @@ public sealed class VariablePropagatorTests
         var constraint0 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
         var constraint1 = new Constraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
 
-        var trail = new TestVariableTrail();
-        var activityManager = new TestActivityManager();
-        var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
+        var trail = new Mock<IVariableTrail>();
+        var activityManager = new Mock<IManageActivities>();
+        var units = new UnitPropagationQueue();
+        var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        IVariablePropagator? sut = null;
-        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
-        {
-            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
-            nameof(TestState.VariableTrail) => trail,
-            nameof(TestState.ActivityManager) => activityManager,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariablePropagator;
+        var sut = new VariablePropagator(trail.Object, units, activityManager.Object, propagationRateTracker.Object);
 
-        var conflict = sut.PropagateVariable(variables[0], true, null, out var propagations);
+        var conflict = sut.PropagateVariable(variables[0], true, null);
         Assert.Equal(constraint1, conflict);
 
-        Assert.Equal([variables[0]], trail.AddedVariables);
+        trail.Verify(t => t.Add(variables[0]), Times.Once);
+        trail.VerifyNoOtherCalls();
         Assert.True(variables[0].Sense);
         Assert.False(variables[0].Polarity);
 
@@ -168,9 +153,9 @@ public sealed class VariablePropagatorTests
         Assert.Equal(variables[1].NegativeLiteral, constraint1.Watched1);
         Assert.Equal(variables[0].NegativeLiteral, constraint1.Watched2);
 
-        Assert.Empty(activityManager.IncreasedConstraints);
+        activityManager.VerifyNoOtherCalls();
         Assert.Empty(units);
-        Assert.Equal(0, propagations);
+        propagationRateTracker.Verify(p => p.AddPropagation(), Times.Never);
     }
     [Fact]
     public void PropagateVariable_AlreadyTrueConstraints()
@@ -184,24 +169,18 @@ public sealed class VariablePropagatorTests
         var constraint0 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
         var constraint1 = new Constraint([variables[0].PositiveLiteral, variables[2].PositiveLiteral, variables[1].PositiveLiteral]);
 
-        var trail = new TestVariableTrail();
-        var activityManager = new TestActivityManager();
-        var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
+        var trail = new Mock<IVariableTrail>();
+        var activityManager = new Mock<IManageActivities>();
+        var units = new UnitPropagationQueue();
+        var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        IVariablePropagator? sut = null;
-        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
-        {
-            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
-            nameof(TestState.VariableTrail) => trail,
-            nameof(TestState.ActivityManager) => activityManager,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariablePropagator;
+        var sut = new VariablePropagator(trail.Object, units, activityManager.Object, propagationRateTracker.Object);
 
-        var conflict = sut.PropagateVariable(variables[0], false, null, out var propagations);
+        var conflict = sut.PropagateVariable(variables[0], false, null);
         Assert.Null(conflict);
 
-        Assert.Equal([variables[0]], trail.AddedVariables);
+        trail.Verify(t => t.Add(variables[0]), Times.Once);
+        trail.VerifyNoOtherCalls();
         Assert.False(variables[0].Sense);
         Assert.False(variables[0].Polarity);
 
@@ -211,171 +190,29 @@ public sealed class VariablePropagatorTests
         Assert.Equal(variables[2].PositiveLiteral, constraint1.Watched1);
         Assert.Equal(variables[0].PositiveLiteral, constraint1.Watched2);
 
-        Assert.Empty(activityManager.IncreasedConstraints);
+        activityManager.VerifyNoOtherCalls();
         Assert.Empty(units);
-        Assert.Equal(0, propagations);
+        propagationRateTracker.Verify(p => p.AddPropagation(), Times.Never);
     }
-
     [Fact]
-    public void PropagateUnits_WithConflict() 
+    public void PropagateVariable_FalsifiedUnitConstraint_Conflict()
     {
-        // p cnf 3 2
-        // 1 2 3 0
-        // -1 -2 -3 0
+        // p cnf 1 2
+        // 1 0
+        // -1 0
 
-        var variables = Enumerable.Range(0, 3).Select(i => new Variable(i)).ToArray();
-        var constraint0 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
-        var constraint1 = new Constraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
+        var variables = new[] { new Variable(1) };
+        _ = new Constraint([variables[0].PositiveLiteral]);
+        var constraint1 = new Constraint([variables[0].NegativeLiteral]);
 
-        var trail = new TestVariableTrail();
-        var activityManager = new TestActivityManager();
-        var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
-        units.Enqueue((variables[0].PositiveLiteral, constraint0));
-        units.Enqueue((variables[1].PositiveLiteral, constraint0));
-        units.Enqueue((variables[2].PositiveLiteral, constraint0));
+        var trail = new Mock<IVariableTrail>();
+        var activityManager = new Mock<IManageActivities>();
+        var units = new UnitPropagationQueue();
+        var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        IVariablePropagator? sut = null;
-        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
-        {
-            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
-            nameof(TestState.VariableTrail) => trail,
-            nameof(TestState.ActivityManager) => activityManager,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariablePropagator;
+        var sut = new VariablePropagator(trail.Object, units, activityManager.Object, propagationRateTracker.Object);
 
-        var propagations = 0;
-        var conflict = sut.PropagateUnits(ref propagations);
+        var conflict = sut.PropagateVariable(variables[0], true, null);
         Assert.Equal(constraint1, conflict);
-
-        Assert.Equal([variables[0], variables[1], variables[2]], trail.AddedVariables);
-        Assert.True(variables[1].Sense);
-        Assert.True(variables[1].Polarity);
-        Assert.True(variables[2].Sense);
-        Assert.False(variables[2].Polarity);
-
-        Assert.Equal([(constraint1, 0.5d)], activityManager.IncreasedConstraints);
-        Assert.Equal([(variables[2].NegativeLiteral, constraint1)], units);
-        Assert.Equal(1, propagations);
     }
-    [Fact]
-    public void PropagateUnits_WithoutConflict()
-    {
-        // p cnf 3 2
-        // 1 2 3 0
-        // -1 -2 -3 0
-
-        var variables = Enumerable.Range(0, 3).Select(i => new Variable(i)).ToArray();
-        var constraint0 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
-        var constraint1 = new Constraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
-
-        var trail = new TestVariableTrail();
-        var activityManager = new TestActivityManager();
-        var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
-        units.Enqueue((variables[0].PositiveLiteral, constraint0));
-        units.Enqueue((variables[1].PositiveLiteral, constraint0));
-
-        IVariablePropagator? sut = null;
-        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
-        {
-            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
-            nameof(TestState.VariableTrail) => trail,
-            nameof(TestState.ActivityManager) => activityManager,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariablePropagator;
-
-        var propagations = 0;
-        var conflict = sut.PropagateUnits(ref propagations);
-        Assert.Null(conflict);
-
-        Assert.Equal([variables[0], variables[1], variables[2]], trail.AddedVariables);
-        Assert.True(variables[1].Sense);
-        Assert.True(variables[1].Polarity);
-
-        Assert.Equal([(constraint1, 0.5d)], activityManager.IncreasedConstraints);
-        //Assert.Equal([(variables[2].NegativeLiteral, constraint1)], units);
-        Assert.Empty(units);
-        Assert.Equal(1, propagations);
-    }
-    [Fact]
-    public void PropagateUnits_AlreadyPropagatedSkipped()
-    {
-        // This test would lead to a conflict if
-        // the unit was really propagated. So
-        // we can verify that an already assigned
-        // variable is not propagated again.
-       
-        // p cnf 2 1
-        // 1 2 0
-
-        var variables = Enumerable.Range(0, 2).Select(i => new Variable(i)).ToArray();
-        var constraint = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral]);
-
-        var trail = new TestVariableTrail();
-        var activityManager = new TestActivityManager();
-        var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
-        units.Enqueue((variables[0].NegativeLiteral, constraint));
-        variables[0].Sense = false; // this should avoid propagation of -v0
-        variables[1].Sense = false; // this should lead to a conflict if -v0 is propagated
-
-        IVariablePropagator? sut = null;
-        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
-        {
-            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
-            nameof(TestState.VariableTrail) => trail,
-            nameof(TestState.ActivityManager) => activityManager,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariablePropagator;
-
-        var propagations = 0;
-        var conflict = sut.PropagateUnits(ref propagations);
-        Assert.Null(conflict);
-
-        Assert.Empty(trail.AddedVariables);
-        Assert.False(variables[0].Sense);
-        Assert.False(variables[1].Sense);
-
-        Assert.Empty(activityManager.IncreasedConstraints);
-        Assert.Empty(units);
-        Assert.Equal(0, propagations);
-    }
-    [Fact]
-    public void PropagateUnits_ConflictingPropagations()
-    {
-        // p cnf 2 2
-        // 1 2 0
-        // 1 -2 0
-
-        var variables = Enumerable.Range(0, 2).Select(i => new Variable(i)).ToArray();
-        var v0 = variables[0]; var v0p = v0.PositiveLiteral; var v0n = v0.NegativeLiteral;
-        var v1 = variables[1]; var v1p = v1.PositiveLiteral; var v1n = v1.NegativeLiteral;
-        var constraint0 = new Constraint([v0p, v1p], v0p, v1p);
-        var constraint1 = new Constraint([v0p, v1n], v0p, v1n);
-
-        var trail = new TestVariableTrail();
-        var activityManager = new TestActivityManager();
-        var units = new Queue<(ConstraintLiteral Literal, Constraint Reason)>();
-
-        IVariablePropagator? sut = null;
-        var testState = new TestState(new(), 0, variables, units, (state, name) => name switch
-        {
-            nameof(TestState.VariablePropagator) => sut ??= new VariablePropagator(state),
-            nameof(TestState.VariableTrail) => trail,
-            nameof(TestState.ActivityManager) => activityManager,
-            _ => throw new NotImplementedException()
-        });
-        sut = testState.VariablePropagator;
-
-        var conflict = sut.PropagateVariable(v0, false, null, out var propagations);
-        Assert.Null(conflict);
-        Assert.Equal([(v1p, constraint0), (v1n, constraint1)], units.OrderBy(x => x.Literal.StampIndex));
-
-        var props = 0;
-        conflict = sut.PropagateUnits(ref props);
-        Assert.Equal(constraint1, conflict);
-        Assert.Equal(0, props);
-    }
-
 }

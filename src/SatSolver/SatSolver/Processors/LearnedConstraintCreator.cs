@@ -1,21 +1,37 @@
 ﻿using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.DPLL;
+using Revo.SatSolver.Tools;
 using System.Diagnostics;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class LearnedConstraintCreator(SatSolverState _state) : ICreateLearnedConstraints
+sealed class LearnedConstraintCreator : ICreateLearnedConstraints
 {
-    readonly IVariableTrail _trail = _state.VariableTrail;
-    readonly IActivityManager _activityManager = _state.ActivityManager;
-    readonly IMinimizeConstraints _constraintMinimizer = _state.ConstraintMinimizer;
-    readonly Variable[] _variables = _state.Variables;
-    readonly ConstraintLiteral[] _literals = _state.Literals;
     readonly StampArray _literalBlockDistanceCounter = new();
     readonly StampArray _learnedLiterals = new();
     readonly StampArray _seenVariables = new();
-    readonly ConstraintLiteral[] _finalLiterals = new ConstraintLiteral[_state.Variables.Length];
+    readonly ConstraintLiteral[] _literals;
+    readonly IVariableTrail _trail;
+    readonly IManageActivities _activityManager;
+    readonly IMinimizeConstraints _constraintMinimizer;
+    readonly Variable[] _variables;
+    readonly int _maximumLiteralBlockDistance;
 
+    public LearnedConstraintCreator(IVariableTrail trail, IManageActivities activityManager, IMinimizeConstraints constraintMinimizer, Variable[] variables, int maximumLiteralBlockDistance)
+    {
+        _trail = trail;
+        _activityManager = activityManager;
+        _constraintMinimizer = constraintMinimizer;
+        _variables = variables;
+        _maximumLiteralBlockDistance = maximumLiteralBlockDistance;
+
+        _literals = new ConstraintLiteral[_variables.Length << 1];
+        for (var variableIndex = 0; variableIndex < _variables.Length; variableIndex++)
+        {
+            var literalIndex = variableIndex << 1;
+            _literals[literalIndex] = _variables[variableIndex].PositiveLiteral;
+            _literals[literalIndex+1] = _variables[variableIndex].NegativeLiteral;
+        }
+    }
     public Constraint CreateLearnedConstraint(Constraint conflictingConstraint, out ConstraintLiteral uipLiteral, out int jumpBackLevel)
     {
         var variables = _variables;
@@ -64,11 +80,7 @@ sealed class LearnedConstraintCreator(SatSolverState _state) : ICreateLearnedCon
             conflicts--;
         }
 
-        var count = 0;
-        foreach (var literal in learnedLiterals.EnumerateIndices().Select(i => literals[i]))
-            _finalLiterals[count++] = literal;
-
-        var finalLiterals = _finalLiterals.AsSpan(0, count);
+        var finalLiterals = learnedLiterals.EnumerateIndices().Select(i => literals[i]).ToArray();
 
         //_constraintMinimizer.MinimizeConstraint(learnedLiterals, uipLiteral);
 
@@ -92,7 +104,8 @@ sealed class LearnedConstraintCreator(SatSolverState _state) : ICreateLearnedCon
         Debug.Assert(uip is not null);
         uipLiteral = uip;
 
-        var learnedConstraint = new Constraint(finalLiterals, uip, secondWatcher ?? uip, _activityManager.ConstraintActivityIncrement, _literalBlockDistanceCounter.Count);
+        var lbd = _literalBlockDistanceCounter.Count;
+        var learnedConstraint = new Constraint(finalLiterals, uip, secondWatcher ?? uip, _activityManager.ConstraintActivityIncrement, lbd, lbd <= _maximumLiteralBlockDistance);
         Debug.WriteLine($"Created learned constraint: {learnedConstraint}, uip: {(uipLiteral.Orientation ? "" : "-")}{uipLiteral.Variable.Index+1}.");
         return learnedConstraint;
     }
