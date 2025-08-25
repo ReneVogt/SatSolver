@@ -22,6 +22,7 @@ public sealed class ConstraintTests
         Assert.Equal(0, sut.Activity);
         Assert.False(sut.IsTracked);
         Assert.False(sut.IsLearned);
+        Assert.False(sut.IsOmitted);
     }
     [Fact]
     public void InitialConstructor_MultipleLiteral_WatchersConnected()
@@ -49,6 +50,7 @@ public sealed class ConstraintTests
         Assert.Equal(0, sut.Activity);
         Assert.False(sut.IsTracked);
         Assert.False(sut.IsLearned);
+        Assert.False(sut.IsOmitted);
 
         Assert.Equal([v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral], sut.Literals);
     }
@@ -71,6 +73,7 @@ public sealed class ConstraintTests
         Assert.Equal(0, sut.Activity);
         Assert.False(sut.IsTracked);
         Assert.True(sut.IsLearned);
+        Assert.False(sut.IsOmitted);
     }
     [Fact]
     public void SolutionConstructor_MultipleLiteral_WatchersConnected()
@@ -98,18 +101,19 @@ public sealed class ConstraintTests
         Assert.Equal(0, sut.Activity);
         Assert.False(sut.IsTracked);
         Assert.True(sut.IsLearned);
+        Assert.False(sut.IsOmitted);
 
         Assert.Equal([v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral], sut.Literals);
     }
 
     [Fact]
-    public void LearnedConstructor_SingleWatcher_Connect_WatcherConnectedOnce()
+    public void LearnedConstructor_SingleWatcher_NotOmitted_WatcherConnectedOnce()
     {
         const double activity = 3.1416d;
         const int lbd = 3;
 
         var variable = new Variable(17);
-        var sut = new Constraint([variable.PositiveLiteral], variable.PositiveLiteral, variable.PositiveLiteral, activity, lbd, true);
+        var sut = new Constraint([variable.PositiveLiteral], variable.PositiveLiteral, variable.PositiveLiteral, activity, lbd, true, false);
 
         Assert.Equal(variable.PositiveLiteral, sut.Watched1);
         Assert.Equal(variable.PositiveLiteral, sut.Watched2);
@@ -121,17 +125,18 @@ public sealed class ConstraintTests
 
         Assert.Equal(lbd, sut.LiteralBlockDistance);
         Assert.Equal(activity, sut.Activity);
-        Assert.False(sut.IsTracked);
+        Assert.True(sut.IsTracked);
         Assert.True(sut.IsLearned);
+        Assert.False(sut.IsOmitted);
     }
     [Fact]
-    public void LearnedConstructor_SingleWatcher_DontConnect_WatchersNotConnected()
+    public void LearnedConstructor_SingleWatcher_Omitted_WatchersNotConnected()
     {
         const double activity = 3.1416d;
         const int lbd = 3;
 
         var variable = new Variable(17);
-        var sut = new Constraint([variable.PositiveLiteral], variable.PositiveLiteral, variable.PositiveLiteral, activity, lbd, false);
+        var sut = new Constraint([variable.PositiveLiteral], variable.PositiveLiteral, variable.PositiveLiteral, activity, lbd, false, true);
 
         Assert.Equal(variable.PositiveLiteral, sut.Watched1);
         Assert.Equal(variable.PositiveLiteral, sut.Watched2);
@@ -144,9 +149,10 @@ public sealed class ConstraintTests
         Assert.Equal(activity, sut.Activity);
         Assert.False(sut.IsTracked);
         Assert.True(sut.IsLearned);
+        Assert.True(sut.IsOmitted);
     }
     [Fact]
-    public void LearnedConstructor_MultipleLiteral_Connect_WatchersConnected()
+    public void LearnedConstructor_MultipleLiteral_NotOmitted_WatchersConnected()
     {
         const double activity = 3.1416d;
         const int lbd = 3;
@@ -156,7 +162,7 @@ public sealed class ConstraintTests
         var v3 = new Variable(23);
         var sut = new Constraint([v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral],
             v2.NegativeLiteral, v3.NegativeLiteral,
-            activity, lbd, true);
+            activity, lbd, false, false);
 
         Assert.Empty(v1.PositiveLiteral.Watchers);
         Assert.Empty(v1.NegativeLiteral.Watchers);
@@ -175,11 +181,12 @@ public sealed class ConstraintTests
         Assert.Equal(activity, sut.Activity);
         Assert.False(sut.IsTracked);
         Assert.True(sut.IsLearned);
+        Assert.False(sut.IsOmitted);
 
         Assert.Equal([v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral], sut.Literals);
     }
     [Fact]
-    public void LearnedConstructor_MultipleLiteral_DontConnect_WatchersNotConnected()
+    public void LearnedConstructor_MultipleLiteral_Omitted_WatchersNotConnected()
     {
         const double activity = 3.1416d;
         const int lbd = 3;
@@ -189,7 +196,7 @@ public sealed class ConstraintTests
         var v3 = new Variable(23);
         var sut = new Constraint([v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral],
             v2.NegativeLiteral, v3.NegativeLiteral,
-            activity, lbd, false);
+            activity, lbd, false, true);
 
         Assert.Empty(v1.PositiveLiteral.Watchers);
         Assert.Empty(v1.NegativeLiteral.Watchers);
@@ -206,6 +213,7 @@ public sealed class ConstraintTests
         Assert.Equal(activity, sut.Activity);
         Assert.False(sut.IsTracked);
         Assert.True(sut.IsLearned);
+        Assert.True(sut.IsOmitted);
 
         Assert.Equal([v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral], sut.Literals);
     }

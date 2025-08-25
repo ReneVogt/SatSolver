@@ -4,5 +4,5 @@ namespace Revo.SatSolver.Processors;
 
 interface ICreateLearnedConstraints 
 {
-    Constraint CreateLearnedConstraint(Constraint conflictingConstraint, out ConstraintLiteral uipLiteral, out int jumpBackLevel);
+    void CreateLearnedConstraint(Constraint conflictingConstraint, StampArray learnedLiterals);
 }

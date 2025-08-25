@@ -9,7 +9,7 @@ namespace SatSolverTests.Processors;
 public sealed class LearnedConstraintReducerTests
 {
     [Fact]
-    public void Reduce_DeleteCorrectCosntraints()
+    public void Reduce_DeleteCorrectConstraints()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
 

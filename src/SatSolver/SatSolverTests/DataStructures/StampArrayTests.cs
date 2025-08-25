@@ -82,7 +82,7 @@ public sealed class StampArrayTests
         Assert.Equal([17, 18, 20], sut.EnumerateIndices());
 
         Assert.True(sut.Remove(18));
-        Assert.Equal([17, 20], sut.EnumerateIndices());
+        Assert.Equal([17, 20], sut);
 
         sut.Clear();
         Assert.Empty(sut.EnumerateIndices());
@@ -116,10 +116,12 @@ public sealed class StampArrayTests
     [Fact]
     public void Contains_ToolargeIndex()
     {
-        var sut = new StampArray(32);
-        sut.Add(17);
-        sut.Add(18);
-        sut.Add(20);
+        var sut = new StampArray(32)
+        {
+            17,
+            18,
+            20
+        };
 
         Assert.False(sut.Contains(64));
     }

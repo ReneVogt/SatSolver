@@ -49,9 +49,9 @@ public sealed partial class SatSolver
     {
         while (_unitPropagationQueue.Count > 0)
         {
-            (var literal, _) = _unitPropagationQueue.Dequeue();
+            var (literal, reason) = _unitPropagationQueue.Dequeue();
             if (literal.Sense is not null) continue;
-            if (_variablePropagator.PropagateVariable(literal.Variable, literal.Orientation, null) is not null)
+            if (_variablePropagator.PropagateVariable(literal.Variable, literal.Orientation, reason) is not null)
                 yield break;
         }
 
@@ -186,7 +186,7 @@ public sealed partial class SatSolver
 
     // This is the entry point for unit tests. We can provide an alternative initializer
     // and via that mocks for all the required algorithm parts.
-    static IEnumerable<Literal[]> EnumerateSolutions(IInitializeSatSolver initializer) => new SatSolver(initializer).EnumerateSolutions();
+    internal static IEnumerable<Literal[]> EnumerateSolutions(IInitializeSatSolver initializer) => new SatSolver(initializer).EnumerateSolutions();
 
     /// <summary>
     /// Finds a variable configuration that satisfies the SATisfiability <paramref name="problem"/>.
@@ -204,7 +204,6 @@ public sealed partial class SatSolver
         _ = problem ?? throw new ArgumentNullException(nameof(problem));
         if (problem.Clauses.Any(clause => clause.Literals.Length == 0)) return [];
         if (problem.NumberOfLiterals == 0) return [[]];
-        if (problem.Clauses.Length == 0) return [[.. Enumerable.Range(1, problem.NumberOfLiterals).Select(i => new Literal(i, true))]];
         return EnumerateSolutions(new SatSolverInitializer(problem, options ?? SatSolverOptions.Default, cancellationToken));
     }
 }

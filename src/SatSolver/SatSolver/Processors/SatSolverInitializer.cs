@@ -38,7 +38,7 @@ sealed class SatSolverInitializer : IInitializeSatSolver
         var learnedConstraints = new List<Constraint>();
         var activityManager = new ActivityManager(variables, learnedConstraints, candidateHeap, _options);
         var constraintMinimizer = new ConstraintMinimizer(_options.MaximumConstraintMinimizationDepth);
-        var learnedConstraintCreator = new LearnedConstraintCreator(trail, activityManager, constraintMinimizer, variables, _options.MaximumLiteralBlockDistance);
+        var learnedConstraintCreator = new LearnedConstraintCreator(trail, activityManager);
         var constraintReducer = new LearnedConstraintsReducer(_options, learnedConstraints, originalClauseCount, propagationRateTracker, literalBlockDistanceTracker);
 
         var restartManager = new RestartManager(
@@ -61,7 +61,7 @@ sealed class SatSolverInitializer : IInitializeSatSolver
             candidateHeap,
             trail,
             new VariablePropagator(trail, unitPropagationQueue, activityManager, propagationRateTracker),
-            new ConflictHandler(_options, activityManager, trail, propagationRateTracker, literalBlockDistanceTracker, learnedConstraintCreator, learnedConstraints, unitPropagationQueue, restartManager),
+            new ConflictHandler(_options, variables, activityManager, trail, propagationRateTracker, literalBlockDistanceTracker, learnedConstraintCreator, learnedConstraints, unitPropagationQueue, restartManager, constraintMinimizer),
             learnedConstraintCreator,
             constraintReducer,
             constraintMinimizer,

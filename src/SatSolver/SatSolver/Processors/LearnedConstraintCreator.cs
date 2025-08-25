@@ -4,43 +4,17 @@ using System.Diagnostics;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class LearnedConstraintCreator : ICreateLearnedConstraints
+sealed class LearnedConstraintCreator(IVariableTrail _trail, IManageActivities _activityManager) : ICreateLearnedConstraints
 {
-    readonly StampArray _literalBlockDistanceCounter = new();
-    readonly StampArray _learnedLiterals = new();
-    readonly StampArray _seenVariables = new();
-    readonly ConstraintLiteral[] _literals;
-    readonly IVariableTrail _trail;
-    readonly IManageActivities _activityManager;
-    readonly IMinimizeConstraints _constraintMinimizer;
-    readonly Variable[] _variables;
-    readonly int _maximumLiteralBlockDistance;
+    readonly StampArray _seenVariables = [];
 
-    public LearnedConstraintCreator(IVariableTrail trail, IManageActivities activityManager, IMinimizeConstraints constraintMinimizer, Variable[] variables, int maximumLiteralBlockDistance)
+    public void CreateLearnedConstraint(Constraint conflictingConstraint, StampArray learnedLiterals)
     {
-        _trail = trail;
-        _activityManager = activityManager;
-        _constraintMinimizer = constraintMinimizer;
-        _variables = variables;
-        _maximumLiteralBlockDistance = maximumLiteralBlockDistance;
-
-        _literals = new ConstraintLiteral[_variables.Length << 1];
-        for (var variableIndex = 0; variableIndex < _variables.Length; variableIndex++)
-        {
-            var literalIndex = variableIndex << 1;
-            _literals[literalIndex] = _variables[variableIndex].PositiveLiteral;
-            _literals[literalIndex+1] = _variables[variableIndex].NegativeLiteral;
-        }
-    }
-    public Constraint CreateLearnedConstraint(Constraint conflictingConstraint, out ConstraintLiteral uipLiteral, out int jumpBackLevel)
-    {
-        var variables = _variables;
-        var literals = _literals;
         var conflicts = 0;
+        var decisionLevel = _trail.DecisionLevel;
 
         Debug.Assert(conflictingConstraint.Literals.All(l => l.Sense == false));
 
-        var learnedLiterals = _learnedLiterals;
         var seenVariables = _seenVariables;
         learnedLiterals.Clear();
         seenVariables.Clear();
@@ -49,7 +23,7 @@ sealed class LearnedConstraintCreator : ICreateLearnedConstraints
         {
             seenVariables.Add(literal.Variable.Index);
             learnedLiterals.Add(literal.StampIndex);
-            if (literal.Variable.DecisionLevel == _trail.DecisionLevel) conflicts++;
+            if (literal.Variable.DecisionLevel == decisionLevel) conflicts++;
         }
 
         for (var trailIndex = _trail.Count-1; conflicts > 1; trailIndex--)
@@ -58,7 +32,14 @@ sealed class LearnedConstraintCreator : ICreateLearnedConstraints
             _seenVariables.Add(trailedVariable.Index);
 
             var reason = trailedVariable.Reason;
-            if (reason is null) continue;
+
+            // the reason cannot be null, because
+            // this is only true for the decision
+            // literal on this decision level, and
+            // that could only happen if this already
+            // is the last "conflict" in the constraint,
+            // so we would have exited the loop already.
+            Debug.Assert(reason is not null); 
 
             var literalToResolve = trailedVariable.Sense == true
                 ? trailedVariable.NegativeLiteral
@@ -72,41 +53,12 @@ sealed class LearnedConstraintCreator : ICreateLearnedConstraints
                 if (seenVariables.Contains(reasonLiteral.Variable.Index)) continue;
                 if (!learnedLiterals.Add(reasonLiteral.StampIndex)) continue;
                 used = true;
-                if (reasonLiteral.Variable.DecisionLevel == _trail.DecisionLevel)
+                if (reasonLiteral.Variable.DecisionLevel == decisionLevel)
                     conflicts++;
             }
             if (used) _activityManager.IncreaseConstraintActivity(reason);
 
             conflicts--;
         }
-
-        var finalLiterals = learnedLiterals.EnumerateIndices().Select(i => literals[i]).ToArray();
-
-        //_constraintMinimizer.MinimizeConstraint(learnedLiterals, uipLiteral);
-
-        _literalBlockDistanceCounter.Clear();
-        jumpBackLevel = -1;
-        ConstraintLiteral? uip = null;
-        ConstraintLiteral? secondWatcher = null;
-        foreach (var literal in finalLiterals)
-        {
-            var level = literal.Variable.DecisionLevel;
-            _literalBlockDistanceCounter.Add(level);
-            if (level == _trail.DecisionLevel)
-                uip = literal;
-            else if (level > jumpBackLevel)
-            {
-                secondWatcher = literal;
-                jumpBackLevel = level;
-            }
-        }
-        if (jumpBackLevel < 0) jumpBackLevel = 0;
-        Debug.Assert(uip is not null);
-        uipLiteral = uip;
-
-        var lbd = _literalBlockDistanceCounter.Count;
-        var learnedConstraint = new Constraint(finalLiterals, uip, secondWatcher ?? uip, _activityManager.ConstraintActivityIncrement, lbd, lbd <= _maximumLiteralBlockDistance);
-        Debug.WriteLine($"Created learned constraint: {learnedConstraint}, uip: {(uipLiteral.Orientation ? "" : "-")}{uipLiteral.Variable.Index+1}.");
-        return learnedConstraint;
     }
 }

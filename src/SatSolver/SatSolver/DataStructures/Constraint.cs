@@ -10,7 +10,8 @@ sealed class Constraint
     public double Activity { get; set; }
     public bool IsTracked { get; set; }
 
-    public bool IsLearned { get; init; }
+    public bool IsLearned { get; }
+    public bool IsOmitted { get; }
 
     /// <summary>
     /// This constructor is used by the initial constraint creation.
@@ -53,18 +54,20 @@ sealed class Constraint
     /// <param name="secondWatcher">The second watched literal (second last in trail).</param>
     /// <param name="activity">Initial activity of this constraint.</param>
     /// <param name="literalBlockDistance">Literal block distance of this learned constraint.</param>
-    /// <param name="connectWatchers"><c>true</c> if this constraint should be linked in the watchers, <c>false</c> if not. This
-    /// should depend on the maximum literal block distance settings.</param>
-    public Constraint(ConstraintLiteral[] literals, ConstraintLiteral firstWatcher, ConstraintLiteral secondWatcher, double activity, int literalBlockDistance, bool connectWatchers)
+    /// <param name="tracked"><c>true</c> if this constraint is tracked for constrain deletion.</param>
+    /// <param name="omitted"><c>true</c> if this constraint is only used for jumping back, but no longer useful.</param>
+    public Constraint(ConstraintLiteral[] literals, ConstraintLiteral firstWatcher, ConstraintLiteral secondWatcher, double activity, int literalBlockDistance, bool tracked, bool omitted)
     {
         Literals = literals;
         IsLearned = true;
+        IsTracked = tracked;
+        IsOmitted = omitted;
         Activity = activity;
         LiteralBlockDistance = literalBlockDistance;
         Watched1 = firstWatcher;
         Watched1 = firstWatcher;
         Watched2 = secondWatcher;
-        if (!connectWatchers) return;
+        if (omitted) return;       
         Watched1.Watchers.Add(this);
         if (Watched2 != Watched1) Watched2.Watchers.Add(this);
     }

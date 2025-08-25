@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using Revo.SatSolver.DataStructures;
+using System.Diagnostics;
 
 namespace Revo.SatSolver;
 
@@ -9,43 +10,49 @@ static class Statistics
     [ThreadStatic] static int _omittedLearnedConstraints;
     [ThreadStatic] static int _permantentLearnedConstraints;
     [ThreadStatic] static int _trackedLearnedConstraints;
-    [ThreadStatic] static int _deletedLearnedConstraints;
     [ThreadStatic] static int _totalLearnedConstraints;
 
     [Conditional("DEBUG")]
     public static void Initialize(ComponentStore store)
     {
         _store = store;
-        _omittedLearnedConstraints = _permantentLearnedConstraints = _trackedLearnedConstraints = _deletedLearnedConstraints =  _totalLearnedConstraints = 0;
+        _omittedLearnedConstraints = _permantentLearnedConstraints = _trackedLearnedConstraints = _totalLearnedConstraints = 0;
     }
 
     [Conditional("DEBUG")]
-    public static void AddOmittedLearnedConstraint()
+    public static void AddLearnedConstraint(Constraint constraint)
     {
-        _omittedLearnedConstraints++;
-        _totalLearnedConstraints++;
-    }
-    [Conditional("DEBUG")]
-    public static void AddTrackedLearnedConstraint()
-    {
-        _trackedLearnedConstraints++;
-        _totalLearnedConstraints++;
-    }
-    [Conditional("DEBUG")]
-    public static void AddPermanentLearnedConstraint()
-    {
-        _permantentLearnedConstraints++;
+        var uip = constraint.Literals.MaxBy(l => l.Variable.DecisionLevel)!;
+        Debug.WriteLine($"Created learned constraint: {constraint}");
+        Debug.WriteLine($"UIP: {(uip.Orientation ? "" : "-")}{uip.Variable.Index+1}");
+        Debug.WriteLine($"LBD: {constraint.LiteralBlockDistance}");
+        Debug.WriteLine($"Tracked: {constraint.IsTracked}");
+        Debug.WriteLine($"Omitted: {constraint.IsOmitted}");
+        if (constraint.IsOmitted)
+            _omittedLearnedConstraints++;
+        else if (constraint.IsTracked)
+            _trackedLearnedConstraints++;
+        else
+            _permantentLearnedConstraints++;
+        
         _totalLearnedConstraints++;
     }
     [Conditional("DEBUG")]
     public static void AddReducedLearnedConstraint(int count)
     {
-        _deletedLearnedConstraints += count;
+        _totalLearnedConstraints -= count;
+        _trackedLearnedConstraints -= count;
     }
 
     [Conditional("DEBUG")]
     public static void Dump()
     {
-        Debug.WriteLine($"State: active learned constraints {_totalLearnedConstraints - _deletedLearnedConstraints}, omitted learned constraints {_omittedLearnedConstraints}, propagation rate: {_store?.PropagationRateTracker.CurrentRatio}, lbd: {_store?.LiteralBlockDistanceTracker.CurrentRatio}.");
+        Debug.WriteLine("STATE:");
+        Debug.WriteLine($"Active learned constraints:    {_totalLearnedConstraints}");
+        Debug.WriteLine($"Tracked learned constraints:   {_trackedLearnedConstraints}");
+        Debug.WriteLine($"Omitted learned constraints:   {_omittedLearnedConstraints}");
+        Debug.WriteLine($"Permanent learned constraints: {_permantentLearnedConstraints}");
+        Debug.WriteLine($"Propagation rate:              {_store?.PropagationRateTracker.CurrentRatio}");
+        Debug.WriteLine($"LBD rate:                      {_store?.LiteralBlockDistanceTracker.CurrentRatio}.");
     }
 }

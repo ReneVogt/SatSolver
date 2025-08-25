@@ -19,8 +19,6 @@ public sealed partial class SatSolverTests
         InlineData(FourStateSudoku, 24, true)        
     ]
     [Trait("Category", "Simple Cases")]
-    [Trait("Options", "Poor Man's VSIDS")]
-    [Trait("Options", "CDCL")]
     public void EnumerateMutlipleSolutions(string dimacs, int expectedSolutions, bool cdcl)
     {
         using var logger = DebugLogger.Log(_output);

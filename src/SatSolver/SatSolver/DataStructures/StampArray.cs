@@ -1,12 +1,12 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Revo.SatSolver.DataStructures;
 
-sealed class StampArray(int _initialCapacity)
+sealed class StampArray(int _initialCapacity) : IEnumerable<int>
 {
     int[] _buffer = new int[_initialCapacity];
     int _currentStamp = 1;
-    int _maximum = -1;
 
     public int Count { get; private set; }
 
@@ -19,7 +19,6 @@ sealed class StampArray(int _initialCapacity)
         if (_buffer[index] == _currentStamp) return false;
         _buffer[index] = _currentStamp;
         Count++;
-        if (index > _maximum) _maximum = index;
         return true;
     }
     public bool Remove(int index)
@@ -35,15 +34,18 @@ sealed class StampArray(int _initialCapacity)
     {
         _currentStamp++;
         Count = 0;
-        _maximum = -1;
         CheckStampOverflow();
     }
 
     public IEnumerable<int> EnumerateIndices()
     {
-        for(var i=0; i<=_maximum; i++) if (_buffer[i] == _currentStamp) yield return i;
+        for (int i = 0, count = 0; count<Count; i++)
+            if (_buffer[i] == _currentStamp)
+            {
+                count++;
+                yield return i;
+            }
     }
-
     void CheckArraySize(int required)
     {
         if (required >= _buffer.Length)
@@ -56,5 +58,9 @@ sealed class StampArray(int _initialCapacity)
         Array.Clear(_buffer);
         _currentStamp = 1;        
     }
+
+    public IEnumerator<int> GetEnumerator() => EnumerateIndices().GetEnumerator();
+    [ExcludeFromCodeCoverage]
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
