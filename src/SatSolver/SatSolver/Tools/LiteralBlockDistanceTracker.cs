@@ -1,10 +1,14 @@
-﻿namespace Revo.SatSolver.Tools;
+﻿using System.Runtime.CompilerServices;
+
+namespace Revo.SatSolver.Tools;
 sealed class LiteralBlockDistanceTracker(int size, double decay) : ITrackLiteralBlockDistance
 {
     readonly Queue<int> _recent = new(size+1);
     double _ema;
 
     public double CurrentRatio { get; private set; } = 1;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddValue(int value)
     {
         _recent.Enqueue(value);

@@ -4,5 +4,5 @@ namespace Revo.SatSolver.Processors;
 
 interface IMinimizeConstraints 
 {
-    void MinimizeConstraint(HashSet<ConstraintLiteral> literals, int decisionLevel);
+    void MinimizeConstraint(StampArray constraint, int decisionLevel, ConstraintLiteral[] knownLiterals);
 }

@@ -2,38 +2,53 @@
 using Revo.SatSolver.Tools;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class ConflictHandler : IHandleConflicts
+sealed class ConflictHandler<
+    TActivityManager, 
+    TVariableTrail, 
+    TPropagationRateTracker, 
+    TLiteralBlockDistanceTracker,
+    TLearnedConstraintCreator,
+    TRestartManager,
+    TConstraintMinimizer> : IHandleConflicts
+    where TActivityManager : IManageActivities
+    where TVariableTrail : IVariableTrail
+    where TPropagationRateTracker : ITrackPropagationRate
+    where TLiteralBlockDistanceTracker : ITrackLiteralBlockDistance
+    where TLearnedConstraintCreator : ICreateLearnedConstraints
+    where TRestartManager : IManageRestart
+    where TConstraintMinimizer : IMinimizeConstraints        
 {
-    readonly IManageActivities _activityManager;
-    readonly IVariableTrail _trail;
-    readonly ITrackPropagationRate _propagationRateTracker;
-    readonly ITrackLiteralBlockDistance _literalBlockDistanceTracker;
-    readonly ICreateLearnedConstraints _learnedConstraintCreator;
+    readonly TActivityManager _activityManager;
+    readonly TVariableTrail _trail;
+    readonly TPropagationRateTracker _propagationRateTracker;
+    readonly TLiteralBlockDistanceTracker _literalBlockDistanceTracker;
+    readonly TLearnedConstraintCreator _learnedConstraintCreator;
     readonly List<Constraint> _learnedConstraints;
     readonly UnitPropagationQueue _unitPropagationQueue;
-    readonly IManageRestart _restartManager;
+    readonly TRestartManager _restartManager;
     readonly int _literalBlockDistanceDeletionLimit;
     readonly int _literalBlockDistanceMaximum;
     readonly StampArray _learnedLiterals = [];
     readonly StampArray _literalBlockDistanceCounter = [];
     readonly ConstraintLiteral[] _literals;
-    readonly IMinimizeConstraints _constraintMinimizer;
+    readonly TConstraintMinimizer _constraintMinimizer;
 
     public ConflictHandler(
         SatSolverOptions options,
         Variable[] variables,
-        IManageActivities activityManager,
-        IVariableTrail trail,
-        ITrackPropagationRate propagationRateTracker,
-        ITrackLiteralBlockDistance literalBlockDistanceTracker,
-        ICreateLearnedConstraints learnedConstraintCreator,
+        TActivityManager activityManager,
+        TVariableTrail trail,
+        TPropagationRateTracker propagationRateTracker,
+        TLiteralBlockDistanceTracker literalBlockDistanceTracker,
+        TLearnedConstraintCreator learnedConstraintCreator,
         List<Constraint> learnedConstraints,
         UnitPropagationQueue unitPropagationQueue,
-        IManageRestart restartManager,
-        IMinimizeConstraints constraintMinimizer)
+        TRestartManager restartManager,
+        TConstraintMinimizer constraintMinimizer)
     {
         _literalBlockDistanceDeletionLimit = options.ConstraintDeletion.LiteralBlockDistanceToKeep;
         _literalBlockDistanceMaximum = options.MaximumLiteralBlockDistance;
@@ -57,6 +72,7 @@ sealed class ConflictHandler : IHandleConflicts
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void HandleConflict(Constraint conflictingConstraint)
     {
         _propagationRateTracker.AddConflict();
@@ -64,15 +80,16 @@ sealed class ConflictHandler : IHandleConflicts
         _activityManager.IncreaseConstraintActivity(conflictingConstraint);
         _unitPropagationQueue.Clear();
 
+        var decisionLevel = _trail.DecisionLevel;
+
         _learnedConstraintCreator.CreateLearnedConstraint(conflictingConstraint, _learnedLiterals);
-        //_constraintMinimizer.MinimizeConstraint(learnedLiterals, uipLiteral);
+        _constraintMinimizer.MinimizeConstraint(_learnedLiterals, decisionLevel, _literals);
 
         var literals = _literals;
-        var finalLiterals = _learnedLiterals.EnumerateIndices().Select(i => literals[i]).ToArray();
+        var finalLiterals = _learnedLiterals.Select(i => literals[i]).ToArray();
 
         _literalBlockDistanceCounter.Clear();
         var jumpBackLevel = 0;
-        var decisionLevel = _trail.DecisionLevel;
         ConstraintLiteral? uip = null;
         ConstraintLiteral? secondWatcher = null;
         foreach (var literal in finalLiterals)

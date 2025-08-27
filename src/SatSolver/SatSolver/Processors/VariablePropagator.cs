@@ -1,11 +1,19 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Tools;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class VariablePropagator(IVariableTrail _trail, UnitPropagationQueue _unitPropagationQueue, IManageActivities _activityManager, ITrackPropagationRate _propagationRateTracker) : IPropagateVariables
+sealed class VariablePropagator<
+    TVariableTrail, 
+    TActivityManager, 
+    TPropagationRateTracker>(TVariableTrail _trail, UnitPropagationQueue _unitPropagationQueue, TActivityManager _activityManager, TPropagationRateTracker _propagationRateTracker) : IPropagateVariables
+    where TVariableTrail : IVariableTrail
+    where TActivityManager : IManageActivities
+    where TPropagationRateTracker : ITrackPropagationRate
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Constraint? PropagateVariable(Variable variable, bool sense, Constraint? reason)
     {
         variable.Sense = sense;
@@ -52,7 +60,13 @@ sealed class VariablePropagator(IVariableTrail _trail, UnitPropagationQueue _uni
 
             constraint.Watched2 = nextLiteral;
             nextLiteral.Watchers.Add(constraint);
-            watchers.RemoveAt(watcherIndex--);
+            
+            // swap remove
+            var last = watchers.Count-1;
+            if (last != watcherIndex)            
+                watchers[watcherIndex] = watchers[last];
+            watchers.RemoveAt(last);
+            watcherIndex--;
         }
 
         variable.Polarity = sense;

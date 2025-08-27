@@ -40,7 +40,7 @@ public sealed class ConflictHandlerTests
         var restartManager = new Mock<IManageRestart>(MockBehavior.Strict);
         var constraintMinimizer = new Mock<IMinimizeConstraints>(MockBehavior.Strict);
 
-        var sut = new ConflictHandler(options, variables, activityManager.Object, trail.Object, propagationRateTracker.Object,
+        var sut = new ConflictHandler<IManageActivities, IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, ICreateLearnedConstraints, IManageRestart, IMinimizeConstraints>(options, variables, activityManager.Object, trail.Object, propagationRateTracker.Object,
             literalBlockDistanceTracker.Object, learnedConstraintCreator.Object, learnedConstraints, unitPropagationQueue, restartManager.Object, constraintMinimizer.Object);
 
         var conflictingConstraint = new Constraint([variables[0].PositiveLiteral, variables[1].NegativeLiteral]);
@@ -50,10 +50,14 @@ public sealed class ConflictHandlerTests
         restartManager.InSequence(sequence).Setup(rm => rm.AddConflict());
         activityManager.InSequence(sequence).Setup(am => am.IncreaseConstraintActivity(conflictingConstraint, 1));
 
+        trail.InSequence(sequence).Setup(t => t.DecisionLevel).Returns(10);
+
+        StampArray? learnedLiterals = null;
         learnedConstraintCreator.InSequence(sequence)
             .Setup(lcc => lcc.CreateLearnedConstraint(conflictingConstraint, It.IsAny<StampArray>()))
             .Callback<Constraint, StampArray>((c, target) => 
             {
+                learnedLiterals = target;
                 target.Clear();
                 target.Add(variables[0].NegativeLiteral.StampIndex);
                 target.Add(variables[1].NegativeLiteral.StampIndex);
@@ -61,7 +65,9 @@ public sealed class ConflictHandlerTests
                 target.Add(variables[3].NegativeLiteral.StampIndex);
                 target.Add(variables[4].PositiveLiteral.StampIndex);
             });
-        trail.InSequence(sequence).Setup(t => t.DecisionLevel).Returns(10);
+        constraintMinimizer.InSequence(sequence)
+            .Setup(cm => cm.MinimizeConstraint(It.IsAny<StampArray>(), 10, It.IsAny<ConstraintLiteral[]>()))
+            .Callback<StampArray, int, ConstraintLiteral[]>((target, dl, ls) => Assert.Equal(target, learnedLiterals));
         activityManager.InSequence(sequence).Setup(am => am.ConstraintActivityIncrement).Returns(17);
 
         Constraint? constraintWithIncreasedVariableActivity = null;
@@ -129,7 +135,7 @@ public sealed class ConflictHandlerTests
         var restartManager = new Mock<IManageRestart>(MockBehavior.Strict);
         var constraintMinimizer = new Mock<IMinimizeConstraints>(MockBehavior.Strict);
 
-        var sut = new ConflictHandler(options, variables, activityManager.Object, trail.Object, propagationRateTracker.Object,
+        var sut = new ConflictHandler<IManageActivities, IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, ICreateLearnedConstraints, IManageRestart, IMinimizeConstraints>(options, variables, activityManager.Object, trail.Object, propagationRateTracker.Object,
             literalBlockDistanceTracker.Object, learnedConstraintCreator.Object, learnedConstraints, unitPropagationQueue, restartManager.Object, constraintMinimizer.Object);
 
         var conflictingConstraint = new Constraint([variables[0].PositiveLiteral, variables[1].NegativeLiteral]);
@@ -139,14 +145,20 @@ public sealed class ConflictHandlerTests
         restartManager.InSequence(sequence).Setup(rm => rm.AddConflict());
         activityManager.InSequence(sequence).Setup(am => am.IncreaseConstraintActivity(conflictingConstraint, 1));
 
+        trail.InSequence(sequence).Setup(t => t.DecisionLevel).Returns(3);
+
+        StampArray? learnedLiterals = null;
         learnedConstraintCreator.InSequence(sequence)
             .Setup(lcc => lcc.CreateLearnedConstraint(conflictingConstraint, It.IsAny<StampArray>()))
             .Callback<Constraint, StampArray>((c, target) =>
             {
+                learnedLiterals = target;
                 target.Clear();
                 target.Add(variables[2].PositiveLiteral.StampIndex);
             });
-        trail.InSequence(sequence).Setup(t => t.DecisionLevel).Returns(3);
+        constraintMinimizer.InSequence(sequence)
+            .Setup(cm => cm.MinimizeConstraint(It.IsAny<StampArray>(), 3, It.IsAny<ConstraintLiteral[]>()))
+            .Callback<StampArray, int, ConstraintLiteral[]>((target, dl, ls) => Assert.Equal(target, learnedLiterals));
         activityManager.InSequence(sequence).Setup(am => am.ConstraintActivityIncrement).Returns(17);
 
         Constraint? constraintWithIncreasedVariableActivity = null;

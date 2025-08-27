@@ -1,31 +1,42 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Processors;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Tools;
 
-sealed class RestartManager : IManageRestart
+sealed class RestartManager<
+        TVariableTrail,
+        TPropagationRateTracker,
+        TLiteralBlockDistanceTracker,
+        TLearnedConstraintReducer,
+        TLubySequence> : IManageRestart
+    where TVariableTrail : IVariableTrail
+    where TPropagationRateTracker : ITrackPropagationRate
+    where TLiteralBlockDistanceTracker : ITrackLiteralBlockDistance
+    where TLearnedConstraintReducer : IReduceLearnedConstraints
+    where TLubySequence : ILubySequence
 {
-    readonly IVariableTrail _trail;
-    readonly ITrackPropagationRate _propagationRateTracker;
-    readonly ITrackLiteralBlockDistance _literalBlockDistanceTracker;
+    readonly TVariableTrail _trail;
+    readonly TPropagationRateTracker _propagationRateTracker;
+    readonly TLiteralBlockDistanceTracker _literalBlockDistanceTracker;
     readonly UnitPropagationQueue _unitPropagationQueue;
-    readonly ILubySequence? _lubySequence;
+    readonly TLubySequence? _lubySequence;
 
     readonly bool _useRestarts;
     readonly double _propagationRateThreshold, _literalBlockDistanceThreshold;
-    readonly IReduceLearnedConstraints _constraintReducer;
+    readonly TLearnedConstraintReducer _constraintReducer;
     readonly bool _reduceConstraints;
 
     long _restartCounter, _nextRestartThreshold;
 
     public RestartManager(
-        IVariableTrail trail,
-        ITrackPropagationRate propagationRateTracker,
-        ITrackLiteralBlockDistance literalBlockDistanceTracker,
+        TVariableTrail trail,
+        TPropagationRateTracker propagationRateTracker,
+        TLiteralBlockDistanceTracker literalBlockDistanceTracker,
         UnitPropagationQueue unitPropagationQueue,
-        IReduceLearnedConstraints constraintReducer,
-        int? restartInterval, ILubySequence? lubySequence,
+        TLearnedConstraintReducer constraintReducer,
+        int? restartInterval, TLubySequence? lubySequence,
         double? propagationRateThreshold, double? literalBlockDistanceThreshold,
         bool reduceConstraints)
     {
@@ -47,7 +58,9 @@ sealed class RestartManager : IManageRestart
             literalBlockDistanceThreshold is not null;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddConflict() => _restartCounter++;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool RestartIfNecessary()
     {
         if (!_useRestarts) return false;

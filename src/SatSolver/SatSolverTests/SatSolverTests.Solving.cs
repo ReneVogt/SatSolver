@@ -23,26 +23,26 @@ public sealed partial class SatSolverTests
     {
         using var logger = DebugLogger.Log(_output);
         var problem = DimacsParser.Parse(dimacs).Single();
-        var solutions = EnumerateSolutions(problem, cdcl ? SatSolverOptions.CDCL : SatSolverOptions.PoorMansVSIDS).ToArray();
+        var solutions = EnumerateSolutions(problem, cdcl ? SatSolverOptions.CDCL : SatSolverOptions.DPLL).ToArray();
         Assert.Equal(expectedSolutions, solutions.Length);
         SolutionValidator.Validate(problem, solutions);
     }
 
     [Theory]
     [Trait("Category", "Simple Cases")]
-    [Trait("Options", "Poor Man's VSIDS")]
+    [Trait("Options", "DPLL")]
     [MemberData(nameof(ProvideSimpleTestCases))]
-    public void EnumerateSolutions_SimpleCases_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), SatSolverOptions.PoorMansVSIDS);
+    public void EnumerateSolutions_SimpleCases_DPLL(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), SatSolverOptions.DPLL);
     [Theory]
     [Trait("Category", "Benchmark")]
-    [Trait("Options", "Poor Man's VSIDS")]
+    [Trait("Options", "DPLL")]
     [MemberData(nameof(ProvideSatTestCases))]
-    public void EnumerateSolutions_SAT_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, SatSolverOptions.PoorMansVSIDS);
+    public void EnumerateSolutions_SAT_DPLL(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, SatSolverOptions.DPLL);
     [Theory]
     [Trait("Category", "Benchmark")]
-    [Trait("Options", "Poor Man's VSIDS")]
+    [Trait("Options", "DPLL")]
     [MemberData(nameof(ProvideUnsatTestCases))]
-    public void EnumerateSolutions_UNSAT_PoorMansVSIDS(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.PoorMansVSIDS);
+    public void EnumerateSolutions_UNSAT_DPLL(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.DPLL);
 
     [Theory]
     [Trait("Category", "Simple Cases")]

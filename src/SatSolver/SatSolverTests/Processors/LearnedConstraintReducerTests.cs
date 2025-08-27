@@ -79,7 +79,7 @@ public sealed class LearnedConstraintReducerTests
                 RatioToDelete = 0.6
             }
         };
-        var sut = new LearnedConstraintsReducer(
+        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
             options, 
             learnedConstraints, 
             12, 
@@ -116,7 +116,7 @@ public sealed class LearnedConstraintReducerTests
                 OriginalConstraintCountFactor = null
             }
         };
-        var sut = new LearnedConstraintsReducer(
+        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
             options,
             learnedConstraints,
             10,
@@ -145,7 +145,7 @@ public sealed class LearnedConstraintReducerTests
                 OriginalConstraintCountFactor = 9
             }
         };
-        var sut = new LearnedConstraintsReducer(
+        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
             options,
             learnedConstraints,
             12,
@@ -174,7 +174,7 @@ public sealed class LearnedConstraintReducerTests
                 OriginalConstraintCountFactor = 9
             }
         };
-        var sut = new LearnedConstraintsReducer(
+        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
             options,
             learnedConstraints,
             11,
@@ -206,7 +206,7 @@ public sealed class LearnedConstraintReducerTests
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
         propagationRateTracker.Setup(pt => pt.CurrentRatio).Returns(1.0d);
 
-        var sut = new LearnedConstraintsReducer(
+        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
             options,
             learnedConstraints,
             11,
@@ -237,7 +237,7 @@ public sealed class LearnedConstraintReducerTests
         };
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
         propagationRateTracker.Setup(pt => pt.CurrentRatio).Returns(0.59999d);
-        var sut = new LearnedConstraintsReducer(
+        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
             options,
             learnedConstraints,
             11,
@@ -268,7 +268,7 @@ public sealed class LearnedConstraintReducerTests
         };
         var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>();
         literalBlockDistanceTracker.Setup(pt => pt.CurrentRatio).Returns(1.0d);
-        var sut = new LearnedConstraintsReducer(
+        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
             options,
             learnedConstraints,
             11,
@@ -299,7 +299,7 @@ public sealed class LearnedConstraintReducerTests
         };
         var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>();
         literalBlockDistanceTracker.Setup(pt => pt.CurrentRatio).Returns(1.5001d);
-        var sut = new LearnedConstraintsReducer(
+        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
             options,
             learnedConstraints,
             11,
@@ -332,7 +332,7 @@ public sealed class LearnedConstraintReducerTests
         literalBlockDistanceTracker.Setup(pt => pt.CurrentRatio).Returns(1.5001d);
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
         propagationRateTracker.Setup(pt => pt.CurrentRatio).Returns(0.5999d);
-        var sut = new LearnedConstraintsReducer(
+        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
             options,
             learnedConstraints,
             11,

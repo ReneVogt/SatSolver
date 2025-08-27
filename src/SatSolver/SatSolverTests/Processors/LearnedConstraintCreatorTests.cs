@@ -11,7 +11,7 @@ public sealed class LearnedConstraintCreatorTests
     public void FourStateSudoku_SettingAll1True()
     {
         var variables = Enumerable.Range(0, 16).Select(i => new Variable(i)).ToArray();
-        var trail = new VariableTrail(new CandidateHeap(variables), 16);
+        var trail = new VariableTrail<CandidateHeap>(new CandidateHeap(variables), 16);
 
         Variable v11 = variables[0], v12 = variables[1], v13 = variables[2], v14 = variables[3],
             v21 = variables[4], v22 = variables[5], v23 = variables[6], v24 = variables[7],
@@ -117,7 +117,7 @@ public sealed class LearnedConstraintCreatorTests
         activityManager.InSequence(seq).Setup(am => am.IncreaseConstraintActivity(c423, 1));
         activityManager.InSequence(seq).Setup(am => am.IncreaseConstraintActivity(ca2, 1));
         activityManager.InSequence(seq).Setup(am => am.IncreaseConstraintActivity(c313, 1));
-        var sut = new LearnedConstraintCreator(trail, activityManager.Object);
+        var sut = new LearnedConstraintCreator<IVariableTrail, IManageActivities>(trail, activityManager.Object);
 
         sut.CreateLearnedConstraint(ca3, learnedLiterals);
         Assert.Equal([
@@ -134,7 +134,7 @@ public sealed class LearnedConstraintCreatorTests
     public void MadeUpExample1()
     {
         var variables = Enumerable.Range(0, 13).Select(i => new Variable(i)).ToArray();
-        var trail = new VariableTrail(new CandidateHeap(variables), 16);
+        var trail = new VariableTrail<CandidateHeap>(new CandidateHeap(variables), 16);
 
         Variable v1 = variables[0], v2 = variables[1], v3 = variables[2], v4 = variables[3],
             v5 = variables[4], v6 = variables[5], v7 = variables[6], v8 = variables[7],
@@ -200,7 +200,7 @@ public sealed class LearnedConstraintCreatorTests
         var seq = new MockSequence();
         activityManager.InSequence(seq).Setup(am => am.IncreaseConstraintActivity(c9, 1));
         activityManager.InSequence(seq).Setup(am => am.IncreaseConstraintActivity(c8, 1));
-        var sut = new LearnedConstraintCreator(trail, activityManager.Object);
+        var sut = new LearnedConstraintCreator<IVariableTrail, IManageActivities>(trail, activityManager.Object);
 
         sut.CreateLearnedConstraint(conflictingConstraint, learnedLiterals);
         Assert.Equal([
@@ -215,7 +215,7 @@ public sealed class LearnedConstraintCreatorTests
     public void MadeUpExample2()
     {
         var variables = Enumerable.Range(0, 14).Select(i => new Variable(i)).ToArray();
-        var trail = new VariableTrail(new CandidateHeap(variables), 16);
+        var trail = new VariableTrail<CandidateHeap>(new CandidateHeap(variables), 16);
 
         Variable v1 = variables[0], v2 = variables[1], v3 = variables[2], v4 = variables[3],
             v5 = variables[4], v6 = variables[5], v7 = variables[6], v8 = variables[7],
@@ -283,7 +283,7 @@ public sealed class LearnedConstraintCreatorTests
         var seq = new MockSequence();
         activityManager.InSequence(seq).Setup(am => am.IncreaseConstraintActivity(c10, 1));
         activityManager.InSequence(seq).Setup(am => am.IncreaseConstraintActivity(c9, 1));
-        var sut = new LearnedConstraintCreator(trail, activityManager.Object);
+        var sut = new LearnedConstraintCreator<IVariableTrail, IManageActivities>(trail, activityManager.Object);
 
         sut.CreateLearnedConstraint(conflictingConstraint, learnedLiterals);
         Assert.Equal([
@@ -306,10 +306,10 @@ public sealed class LearnedConstraintCreatorTests
 
         var candidateHeap = new Mock<ICandidateHeap>();
         var variables = Enumerable.Range(0, 12).Select(i => new Variable(i)).ToArray();
-        var trail = new VariableTrail(candidateHeap.Object, variables.Length);
+        var trail = new VariableTrail<ICandidateHeap>(candidateHeap.Object, variables.Length);
         var activityManager = new Mock<IManageActivities>(MockBehavior.Strict);
 
-        var sut = new LearnedConstraintCreator(trail, activityManager.Object);
+        var sut = new LearnedConstraintCreator<IVariableTrail, IManageActivities>(trail, activityManager.Object);
 
         // introduce variables for easy comparison to the diagram
         var x1 = variables[0];

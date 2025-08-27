@@ -34,14 +34,19 @@ sealed class SatSolverInitializer : IInitializeSatSolver
         var originalClauseCount = BuildConstraints(_problem.Clauses, variables, unitPropagationQueue, _options);
 
         var candidateHeap = new CandidateHeap(variables);
-        var trail = new VariableTrail(candidateHeap, variables.Length);
+        var trail = new VariableTrail<CandidateHeap>(candidateHeap, variables.Length);
         var learnedConstraints = new List<Constraint>();
-        var activityManager = new ActivityManager(variables, learnedConstraints, candidateHeap, _options);
-        var constraintMinimizer = new ConstraintMinimizer(_options.MaximumConstraintMinimizationDepth);
-        var learnedConstraintCreator = new LearnedConstraintCreator(trail, activityManager);
-        var constraintReducer = new LearnedConstraintsReducer(_options, learnedConstraints, originalClauseCount, propagationRateTracker, literalBlockDistanceTracker);
+        var activityManager = new ActivityManager<CandidateHeap>(variables, learnedConstraints, candidateHeap, _options);
+        var constraintMinimizer = new ConstraintMinimizer();
+        var learnedConstraintCreator = new LearnedConstraintCreator<VariableTrail<CandidateHeap>, ActivityManager<CandidateHeap>>(trail, activityManager);
+        var constraintReducer = new LearnedConstraintsReducer<PropagationRateTracker, LiteralBlockDistanceTracker>(_options, learnedConstraints, originalClauseCount, propagationRateTracker, literalBlockDistanceTracker);
 
-        var restartManager = new RestartManager(
+        var restartManager = new RestartManager<
+            VariableTrail<CandidateHeap>,
+            PropagationRateTracker,
+            LiteralBlockDistanceTracker,
+            LearnedConstraintsReducer<PropagationRateTracker, LiteralBlockDistanceTracker>,
+            LubySequence>(
             trail,
             propagationRateTracker,
             literalBlockDistanceTracker,
@@ -60,8 +65,16 @@ sealed class SatSolverInitializer : IInitializeSatSolver
             unitPropagationQueue,
             candidateHeap,
             trail,
-            new VariablePropagator(trail, unitPropagationQueue, activityManager, propagationRateTracker),
-            new ConflictHandler(_options, variables, activityManager, trail, propagationRateTracker, literalBlockDistanceTracker, learnedConstraintCreator, learnedConstraints, unitPropagationQueue, restartManager, constraintMinimizer),
+            new VariablePropagator<VariableTrail<CandidateHeap>, ActivityManager<CandidateHeap>, PropagationRateTracker>(trail, unitPropagationQueue, activityManager, propagationRateTracker),
+            new ConflictHandler<
+                ActivityManager<CandidateHeap>, 
+                VariableTrail<CandidateHeap>,
+                PropagationRateTracker, 
+                LiteralBlockDistanceTracker,
+                LearnedConstraintCreator<VariableTrail<CandidateHeap>, ActivityManager<CandidateHeap>>,
+                RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer<PropagationRateTracker, LiteralBlockDistanceTracker>, LubySequence>,
+                ConstraintMinimizer>
+                (_options, variables, activityManager, trail, propagationRateTracker, literalBlockDistanceTracker, learnedConstraintCreator, learnedConstraints, unitPropagationQueue, restartManager, constraintMinimizer),
             learnedConstraintCreator,
             constraintReducer,
             constraintMinimizer,

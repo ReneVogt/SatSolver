@@ -1,15 +1,18 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Tools;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class LearnedConstraintsReducer(
+sealed class LearnedConstraintsReducer<TPropagationRateTracker, TLiteralBlockDistanceTracker>(
     SatSolverOptions _options, 
     List<Constraint> _learnedConstraints, 
     int _originalConstraintCount,
-    ITrackPropagationRate _propagationRateTracker,
-    ITrackLiteralBlockDistance _literalBlockDistanceTracker) : IReduceLearnedConstraints
+    TPropagationRateTracker _propagationRateTracker,
+    TLiteralBlockDistanceTracker _literalBlockDistanceTracker) : IReduceLearnedConstraints
+    where TPropagationRateTracker : ITrackPropagationRate
+    where TLiteralBlockDistanceTracker : ITrackLiteralBlockDistance
 {
     readonly double _originalConstraintCountFactor = _options.ConstraintDeletion.OriginalConstraintCountFactor ?? double.MaxValue;
     readonly double _propagationRateThreshold = _options.ConstraintDeletion.PropagationRateThreshold ?? 0;
@@ -19,6 +22,7 @@ sealed class LearnedConstraintsReducer(
         _options.ConstraintDeletion.PropagationRateThreshold is not null ||
         _options.ConstraintDeletion.LiteralBlockDistanceThreshold is not null);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ReduceLearnedConstraintsIfNecessary()
     {
         if (!_reduceClauses) return;
@@ -32,6 +36,7 @@ sealed class LearnedConstraintsReducer(
 
         if (reduce) ReduceLearnedConstraints();
     }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ReduceLearnedConstraints()
     {
         var previousCount = _learnedConstraints.Count;

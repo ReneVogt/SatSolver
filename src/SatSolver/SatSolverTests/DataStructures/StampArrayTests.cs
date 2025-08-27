@@ -79,13 +79,13 @@ public sealed class StampArrayTests
         Assert.False(sut.Add(18));
         Assert.Equal(3, sut.Count);
 
-        Assert.Equal([17, 18, 20], sut.EnumerateIndices());
+        Assert.Equal([17, 18, 20], sut);
 
         Assert.True(sut.Remove(18));
         Assert.Equal([17, 20], sut);
 
         sut.Clear();
-        Assert.Empty(sut.EnumerateIndices());
+        Assert.Empty(sut);
     }
 
     [Fact]
@@ -98,19 +98,19 @@ public sealed class StampArrayTests
         Assert.False(sut.Add(18));
         Assert.Equal(3, sut.Count);
 
-        Assert.Equal([17, 18, 20], sut.EnumerateIndices());
+        Assert.Equal([17, 18, 20], sut);
 
         Assert.True(sut.Remove(18));
         Assert.Equal(2, sut.Count);
         Assert.False(sut.Remove(23));
         Assert.False(sut.Remove(18));
-        Assert.Equal([17, 20], sut.EnumerateIndices());
+        Assert.Equal([17, 20], sut);
 
         Assert.True(sut.Add(18));
         Assert.Equal(3, sut.Count);
         Assert.True(sut.Remove(20));
         Assert.Equal(2, sut.Count);
-        Assert.Equal([17, 18], sut.EnumerateIndices());
+        Assert.Equal([17, 18], sut);
     }
 
     [Fact]
@@ -124,5 +124,45 @@ public sealed class StampArrayTests
         };
 
         Assert.False(sut.Contains(64));
+    }
+
+    [Fact]
+    public void AddDuringEnumeration_Throws()
+    {
+        var sut = new StampArray
+        {
+            3, 5, 12, 18, 20
+        };
+
+        using var enumerator = sut.GetEnumerator();
+        Assert.True(enumerator.MoveNext());
+        sut.Add(13);
+        Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+    }
+    [Fact]
+    public void RemoveDuringEnumeration_Throws()
+    {
+        var sut = new StampArray
+        {
+            3, 5, 12, 18, 20
+        };
+
+        using var enumerator = sut.GetEnumerator();
+        Assert.True(enumerator.MoveNext());
+        sut.Remove(12);
+        Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+    }
+    [Fact]
+    public void ClearDuringEnumeration_Throws()
+    {
+        var sut = new StampArray
+        {
+            3, 5, 12, 18, 20
+        };
+
+        using var enumerator = sut.GetEnumerator();
+        Assert.True(enumerator.MoveNext());
+        sut.Clear();
+        Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
     }
 }

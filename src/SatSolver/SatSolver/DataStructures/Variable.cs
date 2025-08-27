@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.DataStructures;
 
@@ -10,7 +11,8 @@ sealed class Variable
     public ConstraintLiteral NegativeLiteral { get; }
     public bool? Sense 
     {
-        get =>  PositiveLiteral.Sense; 
+        get =>  PositiveLiteral.Sense;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set
         {
             PositiveLiteral.Sense = value;
@@ -30,5 +32,6 @@ sealed class Variable
         NegativeLiteral = new(this, false);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override int GetHashCode() => Index;
 }

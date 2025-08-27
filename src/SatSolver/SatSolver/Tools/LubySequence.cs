@@ -1,9 +1,12 @@
-﻿namespace Revo.SatSolver.Tools;
+﻿using System.Runtime.CompilerServices;
+
+namespace Revo.SatSolver.Tools;
 
 sealed class LubySequence(long baseValue = 1) : ILubySequence
 {
     long _u = 1, _v = 1;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public long Next()
     {
         checked

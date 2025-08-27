@@ -1,4 +1,6 @@
-﻿namespace Revo.SatSolver.DataStructures;
+﻿using System.Runtime.CompilerServices;
+
+namespace Revo.SatSolver.DataStructures;
 
 sealed class Constraint
 {
@@ -19,6 +21,7 @@ sealed class Constraint
     /// decision levels as they should be zero.
     /// </summary>
     /// <param name="literals">The <see cref="ConstraintLiteral"/>s contained in this constraint.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Constraint(IEnumerable<ConstraintLiteral> literals)
     {
         Literals = [.. literals];
@@ -35,6 +38,7 @@ sealed class Constraint
     /// <param name="literals">The <see cref="ConstraintLiteral"/>s contained in this constraint.</param>
     /// <param name="firstWatcher">The first watched literal (end of trail).</param>
     /// <param name="secondWatcher">The second watched literal (second last in trail).</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Constraint(IEnumerable<ConstraintLiteral> literals, ConstraintLiteral firstWatcher, ConstraintLiteral secondWatcher)
     {
         Literals = [.. literals];
@@ -56,6 +60,7 @@ sealed class Constraint
     /// <param name="literalBlockDistance">Literal block distance of this learned constraint.</param>
     /// <param name="tracked"><c>true</c> if this constraint is tracked for constrain deletion.</param>
     /// <param name="omitted"><c>true</c> if this constraint is only used for jumping back, but no longer useful.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Constraint(ConstraintLiteral[] literals, ConstraintLiteral firstWatcher, ConstraintLiteral secondWatcher, double activity, int literalBlockDistance, bool tracked, bool omitted)
     {
         Literals = literals;

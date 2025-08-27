@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.DataStructures;
 
@@ -12,5 +13,6 @@ sealed class ConstraintLiteral(Variable variable, bool orientation)
 
     public int StampIndex { get; } = orientation ? variable.Index << 1 : ((variable.Index << 1) + 1);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override int GetHashCode() => StampIndex;
 }

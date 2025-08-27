@@ -68,14 +68,14 @@ public sealed record SatSolverOptions
         /// The constraints are ordered by their activiy so that
         /// only the useless part will be deleted.
         /// </summary>
-        public double RatioToDelete { get; init; } = 0.65;
+        public double RatioToDelete { get; init; } = 0.65d;
         /// <summary>
         /// If not <c>null</c>, a constraint deletion will be
         /// performed if the number of learned constraints
         /// exceeds the number of original constraints multiplied
         /// by this value.
         /// </summary>
-        public double? OriginalConstraintCountFactor { get; init; } = 4d;
+        public double? OriginalConstraintCountFactor { get; init; } = 5d;
         /// <summary>
         /// If not <c>null</c>, a constraint deletion will be
         /// performed when the ratio of the recent literal 
@@ -156,9 +156,9 @@ public sealed record SatSolverOptions
     /// Options for a poor man's VSIDS solver without
     /// any restarts or other fancy strategies.
     /// </summary>
-    public static SatSolverOptions PoorMansVSIDS { get; } = new ()
+    public static SatSolverOptions DPLL { get; } = new ()
     {
-        OnlyPoorMansVSIDS = true,
+        Mode = SatSolverMode.DPLL,
         VariableActivityDecayFactor = 0.9995,
         Restart = new()
         {
@@ -189,17 +189,16 @@ public sealed record SatSolverOptions
 
 
     /// <summary>
-    /// If this is <c>true</c>, no constraint learning will
-    /// be performed. Only the activites of variables 
-    /// found in a conflicting constraint will be increased.
+    /// Defines the <see cref="SatSolverMode"/> (<see cref="SatSolverMode.CDCL"/>
+    /// or <see cref="SatSolverMode.DPLL"/> to use.
     /// </summary>
-    public bool OnlyPoorMansVSIDS { get; init; }
+    public SatSolverMode Mode { get; init; } = SatSolverMode.CDCL;
 
     /// <summary>
     /// The activites of variables are incremented when a
     /// they are part of a learned constraint and decayed by
     /// this factor after each conflict.
-    /// If <see cref="OnlyPoorMansVSIDS"/> is <c>true</c>,
+    /// If <see cref="OnlyDpll"/> is <c>true</c>,
     /// the activities of all variables in a conflicting
     /// constraint are incremented.
     /// </summary>
@@ -222,11 +221,6 @@ public sealed record SatSolverOptions
     /// average literal block distance.
     /// </summary>
     public int MaximumLiteralBlockDistance { get; init; } = 8;
-
-    /// <summary>
-    /// The maximum recursion depth for constraint minimization.
-    /// </summary>
-    public int MaximumConstraintMinimizationDepth { get; init; } = 9;
 
     /// <summary>
     /// Configures when and how learned constraints will

@@ -46,7 +46,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
     [Fact]
     public void EnumerateSolutions_NoClauses_AllSolutions_VSIDS()
     {
-        var solutions = EnumerateSolutions(new Problem(3, []), SatSolverOptions.PoorMansVSIDS).ToArray();
+        var solutions = EnumerateSolutions(new Problem(3, []), SatSolverOptions.DPLL).ToArray();
         var clauses = solutions.Select(s => new Clause(s)).OrderBy(c => c).ToArray();
         Assert.Equal([
             [-1, -2, -3],
@@ -128,7 +128,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
         var heap = new Mock<ICandidateHeap>(MockBehavior.Strict);
 
-        var options = SatSolverOptions.PoorMansVSIDS; // just to use that branch, too
+        var options = SatSolverOptions.DPLL; // just to use that branch, too
         var store = new ComponentStore(
             options,
             4,
@@ -171,7 +171,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var conflictHandler = new Mock<IHandleConflicts>(MockBehavior.Strict);
         var reducer = new Mock<IReduceLearnedConstraints>(MockBehavior.Strict);
         var trail = new Mock<IVariableTrail>();
-
+        var activityManager = new Mock<IManageActivities>();
         var sequence = new MockSequence();
 
         var variables = Enumerable.Range(0, 2).Select(i => new Variable(i) { Polarity = true }).ToArray();
@@ -188,12 +188,13 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
             trail.Object,
             propagator.Object,
             conflictHandler.Object, null!, null!, null!, [],
-            null!, null!, null!,
+            activityManager.Object, null!, null!,
             restartManager.Object, default);
 
         var initializer = new Mock<IInitializeSatSolver>();
         initializer.Setup(i => i.Initialize()).Returns(store);
 
+        activityManager.Setup(am => am.ConstraintActivityIncrement).Returns(10);
         trail.Setup(t => t.Count).Returns(2);
         trail.Setup(t => t[0]).Returns(variables[0]);
         trail.Setup(t => t[1]).Returns(variables[1]);
@@ -260,8 +261,10 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
             null!, null!, null!,
             restartManager.Object, default);
 
+#if DEBUG
         // setups for debug outputs
         trail.Setup(t => t.DecisionLevel).Returns(0);
+#endif
 
         initializer.InSequence(sequence).Setup(i => i.Initialize()).Returns(store);
 
@@ -310,7 +313,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var conflictHandler = new Mock<IHandleConflicts>(MockBehavior.Strict);
         var reducer = new Mock<IReduceLearnedConstraints>(MockBehavior.Strict);
         var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
-
+        var activityManager = new Mock<IManageActivities>(MockBehavior.Strict);
         var sequence = new MockSequence();
         var variable = new Variable(0);
         var variables = new[] { variable, new Variable(1) { Sense = true } };
@@ -328,15 +331,19 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
             propagator.Object,
             conflictHandler.Object, null!,
             reducer.Object, null!, [],
-            null!, null!, null!,
+            activityManager.Object, null!, null!,
             restartManager.Object, default);
 
         // setups for debug outputs
         var decisionLevel = 0;
+#if DEBUG
         trail.Setup(t => t.DecisionLevel).Returns(() => decisionLevel);
+#endif
         trail.Setup(t => t[0]).Returns(variable);
         trail.Setup(t => t[1]).Returns(variables[1]);
         trail.Setup(t => t.Count).Returns(2);
+
+        activityManager.Setup(am => am.ConstraintActivityIncrement).Returns(10);
 
         initializer.InSequence(sequence).Setup(i => i.Initialize()).Returns(store);
 
@@ -371,9 +378,10 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
             .Returns(constraint);
         trail.InSequence(sequence).Setup(t => t.DecisionLevel).Returns(0);
 
-        var solution = Assert.Single(SatSolver.EnumerateSolutions(initializer.Object));
+        var solution = Assert.Single(EnumerateSolutions(initializer.Object));
         Assert.Equal([1, 2], solution);
 
+        activityManager.VerifyAll();
         trail.VerifyAll();
         trail.VerifyNoOtherCalls();
         heap.VerifyAll();
@@ -397,6 +405,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var conflictHandler = new Mock<IHandleConflicts>(MockBehavior.Strict);
         var reducer = new Mock<IReduceLearnedConstraints>(MockBehavior.Strict);
         var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
+        var activityManager = new Mock<IManageActivities>(MockBehavior.Strict);
 
         var sequence = new MockSequence();
         var variable = new Variable(0);
@@ -415,16 +424,18 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
             propagator.Object,
             conflictHandler.Object, null!,
             reducer.Object, null!, [],
-            null!, null!, null!,
+            activityManager.Object, null!, null!,
             restartManager.Object, default);
 
         // setups for debug outputs
         var decisionLevel = 0;
+#if DEBUG
         trail.Setup(t => t.DecisionLevel).Returns(() => decisionLevel);
+#endif
         trail.Setup(t => t[0]).Returns(variable);
         trail.Setup(t => t[1]).Returns(variables[1]);
         trail.Setup(t => t.Count).Returns(2);
-
+        activityManager.Setup(am => am.ConstraintActivityIncrement).Returns(10);
         initializer.InSequence(sequence).Setup(i => i.Initialize()).Returns(store);
 
         trail.InSequence(sequence).Setup(t => t.Clear());
@@ -461,6 +472,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var solution = Assert.Single(SatSolver.EnumerateSolutions(initializer.Object));
         Assert.Equal([-1, -2], solution);
 
+        activityManager.VerifyAll();
         trail.VerifyAll();
         trail.VerifyNoOtherCalls();
         heap.VerifyAll();

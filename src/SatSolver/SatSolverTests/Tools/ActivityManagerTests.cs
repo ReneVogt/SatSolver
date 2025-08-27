@@ -19,7 +19,7 @@ public sealed class ActivityManagerTests
             ConstraintActivityDecayFactor = 0.7d
         };
 
-        var sut = new ActivityManager(variables, [], candidateHeap.Object, options);
+        var sut = new ActivityManager<ICandidateHeap>(variables, [], candidateHeap.Object, options);
 
         Assert.Equal(1, sut.VariableActivityIncrement);
         Assert.All(variables, v => Assert.Equal(v.Index, v.Activity));
@@ -52,7 +52,7 @@ public sealed class ActivityManagerTests
             VariableActivityDecayFactor = 0.5d,
             ConstraintActivityDecayFactor = 0.7d
         };
-        var sut = new ActivityManager(variables, [], candidateHeap.Object, options);
+        var sut = new ActivityManager<ICandidateHeap>(variables, [], candidateHeap.Object, options);
         var constraint = new Constraint([variables[0].PositiveLiteral]);
         sut.IncreaseVariableActivity(constraint);
         candidateHeap.Verify(heap => heap.Rescale(It.IsAny<double>()), Times.Once);
@@ -72,7 +72,7 @@ public sealed class ActivityManagerTests
             ConstraintActivityDecayFactor = 0.5d
         };
         constraints.Add(new([new Variable(0).PositiveLiteral]) { Activity = 12, IsTracked = true });
-        var sut = new ActivityManager(variables, constraints, candidateHeap.Object, options);
+        var sut = new ActivityManager<ICandidateHeap>(variables, constraints, candidateHeap.Object, options);
         var constraint = new Constraint([new Variable(1).PositiveLiteral]) { Activity = 23, IsTracked = false };
 
         Assert.Equal(1, sut.ConstraintActivityIncrement);
@@ -104,7 +104,7 @@ public sealed class ActivityManagerTests
         };
         constraints.Add(new([new Variable(0).PositiveLiteral]) { Activity = 12, IsTracked = true });
 
-        var sut = new ActivityManager([], constraints, candidateHeap.Object, options);
+        var sut = new ActivityManager<ICandidateHeap>([], constraints, candidateHeap.Object, options);
 
         Assert.Equal(1, sut.ConstraintActivityIncrement);
 
@@ -138,7 +138,7 @@ public sealed class ActivityManagerTests
             new ([new Variable(1).PositiveLiteral]) { Activity = 1e100-1, IsTracked = true }]);
         var constraint = constraints[1];
 
-        var sut = new ActivityManager([], constraints, candidateHeap.Object, options);
+        var sut = new ActivityManager<ICandidateHeap>([], constraints, candidateHeap.Object, options);
 
         Assert.Equal(1, sut.ConstraintActivityIncrement);
 
