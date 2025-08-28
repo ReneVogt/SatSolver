@@ -79,12 +79,10 @@ public sealed class LearnedConstraintReducerTests
                 RatioToDelete = 0.6
             }
         };
-        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
+        var sut = new LearnedConstraintsReducer(
             options, 
             learnedConstraints, 
-            12, 
-            new Mock<ITrackPropagationRate>().Object,
-            new Mock<ITrackLiteralBlockDistance>().Object);
+            12);
 
         sut.ReduceLearnedConstraints();
 
@@ -111,17 +109,14 @@ public sealed class LearnedConstraintReducerTests
             {
                 RatioToDelete = 0.5,
                 ReduceOnRestart = false,
-                LiteralBlockDistanceThreshold = null,
-                PropagationRateThreshold = null,
+                ConflictInterval = null,
                 OriginalConstraintCountFactor = null
             }
         };
-        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
-            10,
-            new Mock<ITrackPropagationRate>().Object,
-            new Mock<ITrackLiteralBlockDistance>().Object);
+            10);
 
         sut.ReduceLearnedConstraintsIfNecessary();
         Assert.Equal(100, learnedConstraints.Count);
@@ -140,17 +135,14 @@ public sealed class LearnedConstraintReducerTests
             {
                 RatioToDelete = 0.5,
                 ReduceOnRestart = false,
-                LiteralBlockDistanceThreshold = null,
-                PropagationRateThreshold = null,
+                ConflictInterval = null,
                 OriginalConstraintCountFactor = 9
             }
         };
-        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
-            12,
-            new Mock<ITrackPropagationRate>().Object,
-            new Mock<ITrackLiteralBlockDistance>().Object);
+            12);
 
         sut.ReduceLearnedConstraintsIfNecessary();
         Assert.Equal(100, learnedConstraints.Count);
@@ -169,23 +161,20 @@ public sealed class LearnedConstraintReducerTests
             {
                 RatioToDelete = 0.5,
                 ReduceOnRestart = false,
-                LiteralBlockDistanceThreshold = null,
-                PropagationRateThreshold = null,
+                ConflictInterval = null,
                 OriginalConstraintCountFactor = 9
             }
         };
-        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
-            11,
-            new Mock<ITrackPropagationRate>().Object,
-            new Mock<ITrackLiteralBlockDistance>().Object);
+            11);
 
         sut.ReduceLearnedConstraintsIfNecessary();
         Assert.Equal(50, learnedConstraints.Count);
     }
     [Fact]
-    public void ReduceIfNecessary_ByPropagationRate_False()
+    public void ReduceIfNecessary_ByConflictCount_False()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
 
@@ -198,26 +187,20 @@ public sealed class LearnedConstraintReducerTests
             {
                 RatioToDelete = 0.5,
                 ReduceOnRestart = false,
-                LiteralBlockDistanceThreshold = null,
-                PropagationRateThreshold = 0.6,
+                ConflictInterval = 1000,
                 OriginalConstraintCountFactor = null
             }
         };
-        var propagationRateTracker = new Mock<ITrackPropagationRate>();
-        propagationRateTracker.Setup(pt => pt.CurrentRatio).Returns(1.0d);
-
-        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
-            11,
-            propagationRateTracker.Object,
-            new Mock<ITrackLiteralBlockDistance>().Object);
+            11);
 
         sut.ReduceLearnedConstraintsIfNecessary();
         Assert.Equal(100, learnedConstraints.Count);
     }
     [Fact]
-    public void ReduceIfNecessary_ByPropagationRate_True()
+    public void ReduceIfNecessary_ByConflictInterval_True()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
 
@@ -230,82 +213,19 @@ public sealed class LearnedConstraintReducerTests
             {
                 RatioToDelete = 0.5,
                 ReduceOnRestart = false,
-                LiteralBlockDistanceThreshold = null,
-                PropagationRateThreshold = 0.6,
+                ConflictInterval = 2,
                 OriginalConstraintCountFactor = null
             }
         };
-        var propagationRateTracker = new Mock<ITrackPropagationRate>();
-        propagationRateTracker.Setup(pt => pt.CurrentRatio).Returns(0.59999d);
-        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
-            11,
-            propagationRateTracker.Object,
-            new Mock<ITrackLiteralBlockDistance>().Object);
+            11);
 
+        sut.ReduceLearnedConstraintsIfNecessary();
+        Assert.Equal(100, learnedConstraints.Count);
         sut.ReduceLearnedConstraintsIfNecessary();
         Assert.Equal(50, learnedConstraints.Count);
-    }
-    [Fact]
-    public void ReduceIfNecessary_ByLiteralBlockDistance_False()
-    {
-        var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
-
-        var c = new Constraint(variables.Select(v => v.PositiveLiteral));
-        var learnedConstraints = Enumerable.Repeat(c, 100).ToList();
-
-        var options = new SatSolverOptions
-        {
-            ConstraintDeletion = new()
-            {
-                RatioToDelete = 0.5,
-                ReduceOnRestart = false,
-                LiteralBlockDistanceThreshold = 1.5,
-                PropagationRateThreshold = null,
-                OriginalConstraintCountFactor = null
-            }
-        };
-        var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>();
-        literalBlockDistanceTracker.Setup(pt => pt.CurrentRatio).Returns(1.0d);
-        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
-            options,
-            learnedConstraints,
-            11,
-            new Mock<ITrackPropagationRate>().Object,
-            literalBlockDistanceTracker.Object);
-
-        sut.ReduceLearnedConstraintsIfNecessary();
-        Assert.Equal(100, learnedConstraints.Count);
-    }
-    [Fact]
-    public void ReduceIfNecessary_ByLiteralBlockDistance_True()
-    {
-        var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
-
-        var c = new Constraint(variables.Select(v => v.PositiveLiteral));
-        var learnedConstraints = Enumerable.Repeat(c, 100).ToList();
-
-        var options = new SatSolverOptions
-        {
-            ConstraintDeletion = new()
-            {
-                RatioToDelete = 0.5,
-                ReduceOnRestart = false,
-                LiteralBlockDistanceThreshold = 1.5,
-                PropagationRateThreshold = null,
-                OriginalConstraintCountFactor = null
-            }
-        };
-        var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>();
-        literalBlockDistanceTracker.Setup(pt => pt.CurrentRatio).Returns(1.5001d);
-        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
-            options,
-            learnedConstraints,
-            11,
-            new Mock<ITrackPropagationRate>().Object,
-            literalBlockDistanceTracker.Object);
-
         sut.ReduceLearnedConstraintsIfNecessary();
         Assert.Equal(50, learnedConstraints.Count);
     }
@@ -323,21 +243,14 @@ public sealed class LearnedConstraintReducerTests
             {
                 RatioToDelete = 0,
                 ReduceOnRestart = false,
-                LiteralBlockDistanceThreshold = 1.5,
-                PropagationRateThreshold = 0.6,
+                ConflictInterval = 0,
                 OriginalConstraintCountFactor = 9
             }
         };
-        var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>();
-        literalBlockDistanceTracker.Setup(pt => pt.CurrentRatio).Returns(1.5001d);
-        var propagationRateTracker = new Mock<ITrackPropagationRate>();
-        propagationRateTracker.Setup(pt => pt.CurrentRatio).Returns(0.5999d);
-        var sut = new LearnedConstraintsReducer<ITrackPropagationRate, ITrackLiteralBlockDistance>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
-            11,
-            propagationRateTracker.Object,
-            literalBlockDistanceTracker.Object);
+            11);
 
         sut.ReduceLearnedConstraintsIfNecessary();
         Assert.Equal(100, learnedConstraints.Count);

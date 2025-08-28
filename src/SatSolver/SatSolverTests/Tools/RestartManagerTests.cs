@@ -21,7 +21,9 @@ public sealed class RestartManagerTests
     public void NoTriggers_NoRestart()
     {
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
+#if DEBUG
         propagationRateTracker.Setup(p => p.CurrentRatio).Returns(17000);
+#endif
         var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>();
         literalBlockDistanceTracker.Setup(l => l.CurrentRatio).Returns(17000);
         var constraintReducer = new Mock<IReduceLearnedConstraints>();
@@ -34,8 +36,8 @@ public sealed class RestartManagerTests
             constraintReducer.Object,
             null,
             null,
-            null,
-            null,
+            false,
+            false,
             false);
 
         Assert.False(sut.RestartIfNecessary());
@@ -43,12 +45,15 @@ public sealed class RestartManagerTests
         Assert.False(sut.RestartIfNecessary());
         constraintReducer.VerifyNoOtherCalls();
         trail.VerifyNoOtherCalls();
+        propagationRateTracker.VerifyNoOtherCalls();
     }
     [Fact]
     public void Restart_OnInterval_ConstraintReducer()
     {
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
+#if DEBUG
         propagationRateTracker.Setup(p => p.CurrentRatio).Returns(17000);
+#endif
         var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>();
         literalBlockDistanceTracker.Setup(l => l.CurrentRatio).Returns(17000);
         var constraintReducer = new Mock<IReduceLearnedConstraints>();
@@ -61,8 +66,8 @@ public sealed class RestartManagerTests
             constraintReducer.Object,
             23,
             null,
-            null,
-            null,
+            false,
+            false,
             true);
 
         Assert.False(sut.RestartIfNecessary());
@@ -72,6 +77,7 @@ public sealed class RestartManagerTests
             Assert.False(sut.RestartIfNecessary());
         }
 
+        propagationRateTracker.VerifyNoOtherCalls();
         sut.AddConflict();
         Assert.True(sut.RestartIfNecessary());
         constraintReducer.Verify(cr => cr.ReduceLearnedConstraints(), Times.Once);
@@ -101,7 +107,6 @@ public sealed class RestartManagerTests
     public void Restart_OnLuby_NoConstraintReducer()
     {
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
-        propagationRateTracker.Setup(p => p.CurrentRatio).Returns(17000);
         var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>();
         literalBlockDistanceTracker.Setup(l => l.CurrentRatio).Returns(17000);
         var constraintReducer = new Mock<IReduceLearnedConstraints>();
@@ -115,19 +120,27 @@ public sealed class RestartManagerTests
             constraintReducer.Object,
             null,
             new LubyMock([5L, 20L, 100L]),
-            null,
-            null,
+            false,
+            false,
             false);
 
         Assert.False(sut.RestartIfNecessary());
+        propagationRateTracker.VerifyAll();
+        propagationRateTracker.VerifyNoOtherCalls();
         for (var i = 0; i<5; i++)
         {
             sut.AddConflict();
             Assert.False(sut.RestartIfNecessary());
+            propagationRateTracker.VerifyNoOtherCalls();
         }
 
         sut.AddConflict();
         Assert.True(sut.RestartIfNecessary());
+#if DEBUG
+        propagationRateTracker.Verify(p => p.CurrentRatio, Times.Once);
+#endif
+        propagationRateTracker.Verify(p => p.ResetAfterRestart(), Times.Once);
+        propagationRateTracker.VerifyNoOtherCalls();
 
         trail.Verify(t => t.Reset(), Times.Once);
         trail.VerifyNoOtherCalls();
@@ -136,13 +149,21 @@ public sealed class RestartManagerTests
         {
             sut.AddConflict();
             Assert.False(sut.RestartIfNecessary());
+            propagationRateTracker.VerifyNoOtherCalls();
         }
+        propagationRateTracker.VerifyAll();
+        propagationRateTracker.VerifyNoOtherCalls();
         sut.AddConflict();
         Assert.True(sut.RestartIfNecessary());
+#if DEBUG
+        propagationRateTracker.Verify(p => p.CurrentRatio, Times.Exactly(2));
+#endif
+        propagationRateTracker.Verify(p => p.ResetAfterRestart(), Times.Exactly(2));
+        propagationRateTracker.VerifyNoOtherCalls();
         trail.Verify(t => t.Reset(), Times.Exactly(2));
         trail.VerifyNoOtherCalls();
         Assert.False(sut.RestartIfNecessary());
-
+        propagationRateTracker.VerifyNoOtherCalls();
         constraintReducer.VerifyNoOtherCalls();
         trail.VerifyNoOtherCalls();
     }
@@ -150,11 +171,11 @@ public sealed class RestartManagerTests
     public void Restart_OnPropagationRate_ConstraintReducer()
     {
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
-        propagationRateTracker.SetupSequence(p => p.CurrentRatio)
-            .Returns(1)
-            .Returns(0.4)
-            .Returns(0.5)
-            .Returns(0.49);
+        propagationRateTracker.SetupSequence(p => p.ShouldRestart())
+            .Returns(false)
+            .Returns(true)            
+            .Returns(false)
+            .Returns(true);
         var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>();
         literalBlockDistanceTracker.Setup(l => l.CurrentRatio).Returns(1);
         var constraintReducer = new Mock<IReduceLearnedConstraints>();
@@ -167,12 +188,20 @@ public sealed class RestartManagerTests
             constraintReducer.Object,
             null,
             null,
-            0.5,
-            null,
+            true,
+            false,
             true);
 
         Assert.False(sut.RestartIfNecessary());
+        propagationRateTracker.VerifyAll();
+        propagationRateTracker.VerifyNoOtherCalls();
         Assert.True(sut.RestartIfNecessary());
+#if DEBUG
+        propagationRateTracker.Verify(p => p.CurrentRatio, Times.Once);
+#endif
+        propagationRateTracker.Verify(p => p.ResetAfterRestart(), Times.Once);
+        propagationRateTracker.VerifyAll();
+        propagationRateTracker.VerifyNoOtherCalls();
         constraintReducer.Verify(c => c.ReduceLearnedConstraints(), Times.Once());
         constraintReducer.VerifyNoOtherCalls();
         trail.Verify(t => t.Reset(), Times.Once);
@@ -181,12 +210,16 @@ public sealed class RestartManagerTests
         Assert.False(sut.RestartIfNecessary());
 
         Assert.True(sut.RestartIfNecessary());
+#if DEBUG
+        propagationRateTracker.Verify(p => p.CurrentRatio, Times.Exactly(2));
+#endif
+        propagationRateTracker.Verify(p => p.ResetAfterRestart(), Times.Exactly(2));
+        propagationRateTracker.VerifyAll();
+        propagationRateTracker.VerifyNoOtherCalls();
         constraintReducer.Verify(c => c.ReduceLearnedConstraints(), Times.Exactly(2));
         constraintReducer.VerifyNoOtherCalls();
         trail.Verify(t => t.Reset(), Times.Exactly(2));
         trail.VerifyNoOtherCalls();
-
-        propagationRateTracker.VerifyAll();
     }
     [Fact]
     public void Restart_OnLiteralBlockDistance_NoConstraintReducer()
@@ -194,11 +227,11 @@ public sealed class RestartManagerTests
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
         propagationRateTracker.Setup(p => p.CurrentRatio).Returns(1);
         var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>();
-        literalBlockDistanceTracker.SetupSequence(l => l.CurrentRatio)
-            .Returns(1)
-            .Returns(1.6)
-            .Returns(1.5)
-            .Returns(1.51);
+        literalBlockDistanceTracker.SetupSequence(l => l.ShouldRestart())
+            .Returns(false)
+            .Returns(true)
+            .Returns(false)
+            .Returns(true);
         var constraintReducer = new Mock<IReduceLearnedConstraints>();
         var trail = new Mock<IVariableTrail>();
         var sut = new RestartManager<IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, IReduceLearnedConstraints, ILubySequence>(
@@ -209,17 +242,21 @@ public sealed class RestartManagerTests
             constraintReducer.Object,
             null,
             null,
-            null,
-            1.5,
+            false,
+            true,
             false);
 
         Assert.False(sut.RestartIfNecessary());
+        literalBlockDistanceTracker.Verify(l => l.ResetAfterRestart(), Times.Never);
         Assert.True(sut.RestartIfNecessary());
+        literalBlockDistanceTracker.Verify(l => l.ResetAfterRestart(), Times.Once);
         trail.Verify(t => t.Reset(), Times.Once);
         trail.VerifyNoOtherCalls();
 
         Assert.False(sut.RestartIfNecessary());
+        literalBlockDistanceTracker.Verify(l => l.ResetAfterRestart(), Times.Once);
         Assert.True(sut.RestartIfNecessary());
+        literalBlockDistanceTracker.Verify(l => l.ResetAfterRestart(), Times.Exactly(2));
         trail.Verify(t => t.Reset(), Times.Exactly(2));
         trail.VerifyNoOtherCalls();
 

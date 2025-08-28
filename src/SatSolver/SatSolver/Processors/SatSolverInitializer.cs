@@ -23,8 +23,18 @@ sealed class SatSolverInitializer : IInitializeSatSolver
     public ComponentStore Initialize()
     {
         var variables = Enumerable.Range(0, _problem.NumberOfLiterals).Select(index => new Variable(index)).ToArray();
-        var literalBlockDistanceTracker = new LiteralBlockDistanceTracker(_options.LiteralBlockDistanceTracking.RecentCount, _options.LiteralBlockDistanceTracking.Decay);
-        var propagationRateTracker = new PropagationRateTracker(_options.PropagationRateTracking.ConflictInterval, _options.PropagationRateTracking.SampleSize, _options.PropagationRateTracking.Decay);
+        var literalBlockDistanceTracker = new LiteralBlockDistanceTracker(
+            fastHalflife: _options.LiteralBlockDistanceTracking.LocalHalflife,
+            slowHalflife: _options.LiteralBlockDistanceTracking.GlobalHalflife,
+            _threshold: _options.LiteralBlockDistanceTracking.Threshold,
+            _holdForConflicts: _options.LiteralBlockDistanceTracking.HoldForConflicts,
+            _coolDownForConflicts: _options.LiteralBlockDistanceTracking.CoolDownConflicts);
+        var propagationRateTracker = new PropagationRateTracker(
+            fastHalflife: _options.PropagationRateTracking.LocalHalflife, 
+            slowHalflife: _options.PropagationRateTracking.GlobalHalflife,
+            _threshold: _options.PropagationRateTracking.Threshold,
+            _holdForConflicts: _options.PropagationRateTracking.HoldForConflicts,
+            _coolDownForConflicts: _options.PropagationRateTracking.CoolDownConflicts);
 
         var unitPropagationQueue = new UnitPropagationQueue();
 
@@ -39,13 +49,13 @@ sealed class SatSolverInitializer : IInitializeSatSolver
         var activityManager = new ActivityManager<CandidateHeap>(variables, learnedConstraints, candidateHeap, _options);
         var constraintMinimizer = new ConstraintMinimizer();
         var learnedConstraintCreator = new LearnedConstraintCreator<VariableTrail<CandidateHeap>, ActivityManager<CandidateHeap>>(trail, activityManager);
-        var constraintReducer = new LearnedConstraintsReducer<PropagationRateTracker, LiteralBlockDistanceTracker>(_options, learnedConstraints, originalClauseCount, propagationRateTracker, literalBlockDistanceTracker);
+        var constraintReducer = new LearnedConstraintsReducer(_options, learnedConstraints, originalClauseCount);
 
         var restartManager = new RestartManager<
             VariableTrail<CandidateHeap>,
             PropagationRateTracker,
             LiteralBlockDistanceTracker,
-            LearnedConstraintsReducer<PropagationRateTracker, LiteralBlockDistanceTracker>,
+            LearnedConstraintsReducer,
             LubySequence>(
             trail,
             propagationRateTracker,
@@ -54,8 +64,8 @@ sealed class SatSolverInitializer : IInitializeSatSolver
             constraintReducer,
             _options.Restart.Interval,
             _options.Restart.Luby && _options.Restart.Interval is { } restartInterval ? new LubySequence(restartInterval) : null,
-            _options.Restart.PropagationRateThreshold,
-            _options.Restart.LiteralBlockDistanceThreshold,
+            _options.Restart.ByPropagationRate,
+            _options.Restart.ByLiteralBlockDistance,
             _options.ConstraintDeletion.ReduceOnRestart);        
 
         return new ComponentStore(
@@ -72,7 +82,7 @@ sealed class SatSolverInitializer : IInitializeSatSolver
                 PropagationRateTracker, 
                 LiteralBlockDistanceTracker,
                 LearnedConstraintCreator<VariableTrail<CandidateHeap>, ActivityManager<CandidateHeap>>,
-                RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer<PropagationRateTracker, LiteralBlockDistanceTracker>, LubySequence>,
+                RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer, LubySequence>,
                 ConstraintMinimizer>
                 (_options, variables, activityManager, trail, propagationRateTracker, literalBlockDistanceTracker, learnedConstraintCreator, learnedConstraints, unitPropagationQueue, restartManager, constraintMinimizer),
             learnedConstraintCreator,

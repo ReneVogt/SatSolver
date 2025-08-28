@@ -3,7 +3,8 @@
 interface ITrackPropagationRate
 {
     double CurrentRatio { get; }
-
-    void AddConflict();
+    bool ShouldRestart();
+    void ResetAfterRestart();
     void AddPropagation();
+    void AddConflict();
 }

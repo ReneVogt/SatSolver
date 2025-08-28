@@ -23,30 +23,24 @@ public sealed record SatSolverOptions
         /// If <see cref="Luby"/> is <c>true</c>, this value
         /// is multiplied by the Luby sequence (<see cref="LubySequence"/>).
         /// </summary>
-        public int? Interval { get; init; }
+        public int? Interval { get; init; } = 2000;
         /// <summary>
         /// Determines if the restartl <see cref="Interval"/> is
         /// multiplied by the Luby sequence (<see cref="LubySequence"/>.
         /// </summary>
-        public bool Luby { get; init; }
+        public bool Luby { get; init; } = true;
         /// <summary>
-        /// If not <c>null</c>, the solver will restart if the ratio
-        /// of the recent literal block distances found in learned
-        /// constraints to the over all literal block distance average
-        /// is greater than this threshold.
-        /// To use this threshold, <see cref="Options.LiteralBlockDistanceTracking"/> 
-        /// must be configured.
+        /// <c>true</c> if restarts should be triggered by the literal block
+        /// distance development. Set the <see cref="LiteralBlockDistanceTracking"/>
+        /// options to configure this trigger.
         /// </summary>
-        public double? LiteralBlockDistanceThreshold { get; init; }
+        public bool ByLiteralBlockDistance { get; init; } = true;
         /// <summary>
-        /// If not <c>null</c>, the solver will restart if the ratio
-        /// of the recent propagation rates (propagations per conflict)
-        /// to the over all propagation rate average is smaller than 
-        /// this threshold.
-        /// To use this threshold, <see cref="Options.PropagationRateTracking"/> 
-        /// must be configured.
+        /// <c>true</c> if restarts should be triggered by the propagation rate
+        /// development. Set the <see cref="PropagationRateTracking"/>
+        /// options to configure this trigger.
         /// </summary>
-        public double? PropagationRateThreshold { get; init; }
+        public bool ByPropagationRate { get; init; } = true;
     }
 
     /// <summary>
@@ -77,24 +71,10 @@ public sealed record SatSolverOptions
         /// </summary>
         public double? OriginalConstraintCountFactor { get; init; } = 5d;
         /// <summary>
-        /// If not <c>null</c>, a constraint deletion will be
-        /// performed when the ratio of the recent literal 
-        /// block distances found in learned constraints to the 
-        /// over all literal block distance average is 
-        /// greater than this threshold.
-        /// To use this threshold, <see cref="Options.LiteralBlockDistanceTracking"/> 
-        /// must be configured.
+        /// If not null, the number of conflicts after which the learnt
+        /// clause database is autmatically reduced.
         /// </summary>
-        public double? LiteralBlockDistanceThreshold { get; init; }
-        /// <summary>
-        /// If not <c>null</c>, the solver will perform a constraint
-        /// deletion if the ratio of the recent propagation rates 
-        /// (propagations per conflict) to the over all propagation 
-        /// rate average is smaller than this threshold.
-        /// To use this threshold, <see cref="Options.PropagationRateTracking"/> 
-        /// must be configured.
-        /// </summary>
-        public double? PropagationRateThreshold { get; init; }
+        public int? ConflictInterval { get; init; } = 2000;
         /// <summary>
         /// Set to <c>true</c> if learned constraints should be
         /// reduced when the algorithm is restarted during execution.
@@ -103,46 +83,52 @@ public sealed record SatSolverOptions
     }
 
     /// <summary>
-    /// Configures how an exponential moving average of
-    /// a value is tracked. This used for <see cref="Options.LiteralBlockDistanceTracking"/>.
+    /// Configures how values can be tracked during solves.
+    /// This used for <see cref="PropagationRateTracking"/>
+    /// and <see cref="LiteralBlockDistanceTracking"/>.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public record LiteralBlockDistanceTrackingOptions
+    public record ValueTrackingOptions
     {
         /// <summary>
-        /// The number of values counted as "recent".
+        /// The halflife conflict count for the long
+        /// term exponential moving average of the
+        /// propagation rate.
         /// </summary>
-        public int RecentCount { get; init; } = 100;
+        public int GlobalHalflife { get; init; } = 300;
 
         /// <summary>
-        /// The decay value for the exponential moving average.
+        /// The halflife conflict count for the short
+        /// term expnential moving average of the
+        /// propagation rate.
         /// </summary>
-        public double Decay { get; init; } = 0.999d;
+        public int LocalHalflife { get; init; } = 40;
+
+        /// <summary>
+        /// The threshold for the ratio of short term
+        /// to long term propagation rate. If the ratio
+        /// is below (or above, depending on the usage)
+        /// this threshold for <see cref="HoldForConflicts"/> 
+        /// conflicts, a restart is indicated.
+        /// </summary>
+        public double Threshold { get; init; } = 0.75d;
+
+        /// <summary>
+        /// The number of consecutive conflicts with
+        /// a ratio from short term to long term propagation rate
+        /// below (or above, depending on the usage) the 
+        /// <see cref="Threshold"/> required to indicate
+        /// a restart.
+        /// </summary>
+        public int HoldForConflicts { get; init; } = 12;
+
+        /// <summary>
+        /// The number of conflicts after a restart before
+        /// a new restart can be indicated.
+        /// </summary>
+        public int CoolDownConflicts { get; init; } = 200;
     }
 
-    /// <summary>
-    /// Configures how propagation rate will be tracked.
-    /// </summary>
-    [ExcludeFromCodeCoverage]
-    public record PropagationRateTrackingOptions
-    {
-        /// <summary>
-        /// The number of propagation rates counted as "recent".
-        /// </summary>
-        public int SampleSize { get; init; } = 100;
-
-        /// <summary>
-        /// The decay value for the exponential 
-        /// moving average of propagation rates.
-        /// </summary>
-        public double Decay { get; init; } = 0.999d;
-
-        /// <summary>
-        /// The number of conflicts for which the propagations
-        /// should be counted to get a propagation rate.
-        /// </summary>
-        public int ConflictInterval { get; init; } = 100;
-    }
     /// <summary>
     /// The recommended default options set
     /// using CDCL with a restart strategy
@@ -164,15 +150,14 @@ public sealed record SatSolverOptions
         {
             Interval = null,
             Luby = false,
-            LiteralBlockDistanceThreshold = null,
-            PropagationRateThreshold = null
+            ByLiteralBlockDistance = false,
+            ByPropagationRate = false
         },
         ConstraintDeletion = new()
         {
-            LiteralBlockDistanceThreshold = null,
             LiteralBlockDistanceToKeep = 0,
             OriginalConstraintCountFactor = null,
-            PropagationRateThreshold = null,
+            ConflictInterval = null,
             RatioToDelete = 0
         }
     };
@@ -185,8 +170,6 @@ public sealed record SatSolverOptions
     /// average and propagation rate.
     /// </summary>
     public static SatSolverOptions CDCL { get; } = new();
-
-
 
     /// <summary>
     /// Defines the <see cref="SatSolverMode"/> (<see cref="SatSolverMode.CDCL"/>
@@ -235,12 +218,26 @@ public sealed record SatSolverOptions
     public RestartOptions Restart { get; init; } = new ();
 
     /// <summary>
-    /// Configures how the literal block distances are tracked.
+    /// Configures how the propagation rate is tracked and how it indicates restarts.
     /// </summary>
-    public LiteralBlockDistanceTrackingOptions LiteralBlockDistanceTracking { get; init; } = new ();
+    public ValueTrackingOptions PropagationRateTracking { get; init; } = new()
+    {
+        CoolDownConflicts = 200,
+        HoldForConflicts = 12,
+        GlobalHalflife = 300,
+        LocalHalflife = 40,
+        Threshold = 0.7
+    };
 
     /// <summary>
-    /// Configures how the propagation rate is tracked.
+    /// Configures how the literal block distances are tracked.
     /// </summary>
-    public PropagationRateTrackingOptions PropagationRateTracking { get; init; } = new();
+    public ValueTrackingOptions LiteralBlockDistanceTracking { get; init; } = new()
+    {
+        CoolDownConflicts = 200,
+        HoldForConflicts = 12,
+        GlobalHalflife = 300,
+        LocalHalflife = 40,
+        Threshold = 1.3
+    };
 }

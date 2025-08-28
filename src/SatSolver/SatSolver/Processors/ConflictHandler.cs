@@ -122,7 +122,7 @@ sealed class ConflictHandler<
         _activityManager.IncreaseConstraintActivity(learnedConstraint);
         _activityManager.DecayConstraintActivity();
 
-        _literalBlockDistanceTracker.AddValue(learnedConstraint.LiteralBlockDistance);
+        _literalBlockDistanceTracker.AddLiteralBlockDistance(learnedConstraint.LiteralBlockDistance);
 
         if (learnedConstraint.IsTracked) _learnedConstraints.Add(learnedConstraint);
 

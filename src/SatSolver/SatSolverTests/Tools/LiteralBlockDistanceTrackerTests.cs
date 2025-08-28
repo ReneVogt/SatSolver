@@ -1,9 +1,66 @@
-﻿namespace SatSolverTests.Tools;
+﻿using Revo.SatSolver.Tools;
+
+namespace SatSolverTests.Tools;
 
 public sealed class LiteralBlockDistanceTrackerTests
 {
-    [Fact(Skip = "Test LiteralBlockDistanceTracker!")]
+    [Fact]
+    public void NumericStabilityOnZero()
+    {
+        var sut = new LiteralBlockDistanceTracker(1, 100, 1.3, 5, 10);
+        sut.AddLiteralBlockDistance(0);
+        Assert.Equal(1, sut.CurrentRatio);
+    }
+    [Fact]
     public void Test()
     {
+        const double threshold = 1.3d;
+
+        var sut = new LiteralBlockDistanceTracker(1, 100, threshold, 5, 10);
+        Assert.Equal(1, sut.CurrentRatio);
+        Assert.False(sut.ShouldRestart());
+
+        sut.AddLiteralBlockDistance(10);
+        Assert.Equal(1, sut.CurrentRatio);
+        Assert.False(sut.ShouldRestart());
+        sut.AddLiteralBlockDistance(10);
+        Assert.Equal(1, sut.CurrentRatio);
+        Assert.False(sut.ShouldRestart());
+        sut.AddLiteralBlockDistance(10);
+        Assert.Equal(1, sut.CurrentRatio);
+        Assert.False(sut.ShouldRestart());
+        sut.AddLiteralBlockDistance(10);
+        Assert.Equal(1, sut.CurrentRatio);
+        Assert.False(sut.ShouldRestart());
+        sut.AddLiteralBlockDistance(10);
+        Assert.Equal(1, sut.CurrentRatio);
+        Assert.False(sut.ShouldRestart());
+
+        AddLbds(10, 10, 10, 10);
+        Assert.Equal(1, sut.CurrentRatio);
+        Assert.False(sut.ShouldRestart());
+
+        AddLbds(15, 15, 15, 15, 15);
+        Assert.True(sut.CurrentRatio > threshold);
+        Assert.False(sut.ShouldRestart());
+
+        sut.AddLiteralBlockDistance(15);
+        Assert.True(sut.CurrentRatio > threshold);
+        Assert.True(sut.ShouldRestart());
+
+        sut.ResetAfterRestart();
+        Assert.False(sut.ShouldRestart());
+
+        AddLbds(20, 20, 20, 20, 20, 20, 20, 20, 20);
+        Assert.False(sut.ShouldRestart());
+
+        sut.AddLiteralBlockDistance(30);
+        Assert.True(sut.CurrentRatio > threshold);
+        Assert.True(sut.ShouldRestart());
+
+        void AddLbds(params int[] lbds)
+        {
+            foreach (var lbd in lbds) sut.AddLiteralBlockDistance(lbd);
+        }
     }
 }

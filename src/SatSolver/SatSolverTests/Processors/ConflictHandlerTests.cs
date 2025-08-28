@@ -81,7 +81,7 @@ public sealed class ConflictHandlerTests
         activityManager.InSequence(sequence)
             .Setup(am => am.DecayConstraintActivity());
 
-        literalBlockDistanceTracker.InSequence(sequence).Setup(lbd => lbd.AddValue(3));
+        literalBlockDistanceTracker.InSequence(sequence).Setup(lbd => lbd.AddLiteralBlockDistance(3));
 
         // reset uip sense
         trail.InSequence(sequence).Setup(t => t.JumpBack(3)).Callback(() => variables[1].Sense = null);
@@ -172,7 +172,7 @@ public sealed class ConflictHandlerTests
         activityManager.InSequence(sequence)
             .Setup(am => am.DecayConstraintActivity());
 
-        literalBlockDistanceTracker.InSequence(sequence).Setup(lbd => lbd.AddValue(1));
+        literalBlockDistanceTracker.InSequence(sequence).Setup(lbd => lbd.AddLiteralBlockDistance(1));
 
         // reset uip sense
         trail.InSequence(sequence).Setup(t => t.JumpBack(0)).Callback(() => variables[2].Sense = null);

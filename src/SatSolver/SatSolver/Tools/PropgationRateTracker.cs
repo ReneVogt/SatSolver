@@ -1,40 +1,42 @@
-﻿using System.Runtime.CompilerServices;
+﻿using Revo.SatSolver.DataStructures;
+using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Tools;
 
-sealed class PropagationRateTracker(int conflictInterval, int sampleSize, double decay) : ITrackPropagationRate
+sealed class PropagationRateTracker(int fastHalflife, int slowHalflife, double _threshold, int _holdForConflicts, int _coolDownForConflicts) : ITrackPropagationRate
 {
-    readonly Queue<double> _recentRates = new(sampleSize+1);
-    double _ema;
-
-    int _conflictCount, _propagationCount;
+    readonly Ema _fastEma = new(fastHalflife);
+    readonly Ema _slowEma = new(slowHalflife);
 
     public double CurrentRatio { get; private set; } = 1;
+
+    int _propagationsSinceLastConflict;
+    int _conflictsSinceLastRestart;
+    int _conflictsSinceTriggered;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddConflict()
     {
-        _conflictCount++;
-        if (_conflictCount < conflictInterval) return;
+        _fastEma.Push(_propagationsSinceLastConflict);
+        _slowEma.Push(_propagationsSinceLastConflict);
+        _propagationsSinceLastConflict = 0;
 
-        AddRate(_propagationCount/(double)_conflictCount);
-        _conflictCount = _propagationCount = 0;
+        CurrentRatio = _slowEma.Value != 0 ? _fastEma.Value / _slowEma.Value : 1;
+
+        if (CurrentRatio < _threshold)
+            _conflictsSinceTriggered++;
+        else
+            _conflictsSinceTriggered = 0;
+
+        _conflictsSinceLastRestart++;
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddPropagation() => _propagationCount++;
+    public void AddPropagation() => _propagationsSinceLastConflict++;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void AddRate(double rate)
-    {
-        _recentRates.Enqueue(rate);
-        if (_recentRates.Count > sampleSize)
-        {
-            _recentRates.Dequeue();
-            _ema = decay * _ema + (1 - decay) * rate;
-            var recentAverage = _recentRates.Average();
-            CurrentRatio = recentAverage / _ema;
-            return;
-        }
-        if (_recentRates.Count < sampleSize) return;
-        _ema = _recentRates.Average();
-    }
+    public bool ShouldRestart() => _conflictsSinceLastRestart >= _coolDownForConflicts && _conflictsSinceTriggered >= _holdForConflicts;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ResetAfterRestart() => _conflictsSinceLastRestart = _conflictsSinceTriggered = 0;    
 }

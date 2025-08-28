@@ -5,34 +5,30 @@ using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class LearnedConstraintsReducer<TPropagationRateTracker, TLiteralBlockDistanceTracker>(
+sealed class LearnedConstraintsReducer(
     SatSolverOptions _options, 
     List<Constraint> _learnedConstraints, 
-    int _originalConstraintCount,
-    TPropagationRateTracker _propagationRateTracker,
-    TLiteralBlockDistanceTracker _literalBlockDistanceTracker) : IReduceLearnedConstraints
-    where TPropagationRateTracker : ITrackPropagationRate
-    where TLiteralBlockDistanceTracker : ITrackLiteralBlockDistance
+    int _originalConstraintCount) : IReduceLearnedConstraints
 {
     readonly double _originalConstraintCountFactor = _options.ConstraintDeletion.OriginalConstraintCountFactor ?? double.MaxValue;
-    readonly double _propagationRateThreshold = _options.ConstraintDeletion.PropagationRateThreshold ?? 0;
-    readonly double _literalBlockDistanceThreshold = _options.ConstraintDeletion.LiteralBlockDistanceThreshold ?? double.MaxValue;
+    readonly int _conflictInterval = _options.ConstraintDeletion.ConflictInterval ?? int.MaxValue;
     readonly double _ratioToDelete = _options.ConstraintDeletion.RatioToDelete;
     readonly bool _reduceClauses = _options.ConstraintDeletion.RatioToDelete > 0 && (_options.ConstraintDeletion.OriginalConstraintCountFactor is not null ||
-        _options.ConstraintDeletion.PropagationRateThreshold is not null ||
-        _options.ConstraintDeletion.LiteralBlockDistanceThreshold is not null);
+        _options.ConstraintDeletion.ConflictInterval is not null);
+
+    int _conflictCount;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ReduceLearnedConstraintsIfNecessary()
     {
         if (!_reduceClauses) return;
 
+        _conflictCount++;
+
         // reduce clauses if we learned too many already
         var reduce = _learnedConstraints.Count > _originalConstraintCount * _originalConstraintCountFactor;
-        // or if the propagation rate is too low
-        reduce |= _propagationRateTracker.CurrentRatio < _propagationRateThreshold;
         // or if the literal block distance is too high
-        reduce |= _literalBlockDistanceTracker.CurrentRatio > _literalBlockDistanceThreshold;
+        reduce |= _conflictCount >= _conflictInterval;
 
         if (reduce) ReduceLearnedConstraints();
     }
@@ -40,7 +36,8 @@ sealed class LearnedConstraintsReducer<TPropagationRateTracker, TLiteralBlockDis
     public void ReduceLearnedConstraints()
     {
         var previousCount = _learnedConstraints.Count;
-        Debug.WriteLine($"Start reducing learned constraints (currently {previousCount}, factor {previousCount/(double)_originalConstraintCount}): propagation rate {_propagationRateTracker.CurrentRatio} / {_propagationRateThreshold}, lbd {_literalBlockDistanceTracker.CurrentRatio} / {_literalBlockDistanceThreshold}.");
+        Debug.WriteLine($"Start reducing learned constraints (currently {previousCount}, factor {previousCount/(double)_originalConstraintCount}): conflicts {_conflictCount} / {_conflictInterval}.");
+        _conflictCount = 0;
 
         var learnedConstraints = _learnedConstraints;
         learnedConstraints.Sort((left, right) =>

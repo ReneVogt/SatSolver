@@ -52,12 +52,12 @@ public static class SatSolver
                 PropagationRateTracker,
                 LiteralBlockDistanceTracker,
                 LearnedConstraintCreator<VariableTrail<CandidateHeap>, ActivityManager<CandidateHeap>>,
-                RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer<PropagationRateTracker, LiteralBlockDistanceTracker>, LubySequence>,
+                RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer, LubySequence>,
                 ConstraintMinimizer>,
             ActivityManager<CandidateHeap>,
             PropagationRateTracker,
-            LearnedConstraintsReducer<PropagationRateTracker, LiteralBlockDistanceTracker>,
-            RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer<PropagationRateTracker, LiteralBlockDistanceTracker>, LubySequence>>
+            LearnedConstraintsReducer,
+            RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer, LubySequence>>
             (new SatSolverInitializer(problem, options ?? SatSolverOptions.Default, cancellationToken)).EnumerateSolutions();
     }
 }

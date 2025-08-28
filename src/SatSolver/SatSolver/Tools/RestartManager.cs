@@ -23,8 +23,7 @@ sealed class RestartManager<
     readonly UnitPropagationQueue _unitPropagationQueue;
     readonly TLubySequence? _lubySequence;
 
-    readonly bool _useRestarts;
-    readonly double _propagationRateThreshold, _literalBlockDistanceThreshold;
+    readonly bool _useRestarts, _restartOnPropagationRate, _restartOnLiteralBlockDistance;
     readonly TLearnedConstraintReducer _constraintReducer;
     readonly bool _reduceConstraints;
 
@@ -37,7 +36,7 @@ sealed class RestartManager<
         UnitPropagationQueue unitPropagationQueue,
         TLearnedConstraintReducer constraintReducer,
         int? restartInterval, TLubySequence? lubySequence,
-        double? propagationRateThreshold, double? literalBlockDistanceThreshold,
+        bool restartOnPropagationRate, bool restartOnLiteralBlockDistance,
         bool reduceConstraints)
     {
         _trail = trail;
@@ -49,13 +48,12 @@ sealed class RestartManager<
         _lubySequence = lubySequence;
         _nextRestartThreshold = _lubySequence?.Next() ?? restartInterval ?? long.MaxValue;
         _reduceConstraints = reduceConstraints;
-        _literalBlockDistanceThreshold = literalBlockDistanceThreshold ?? double.MaxValue;
-        _propagationRateThreshold = propagationRateThreshold ?? 0d;
-
+        _restartOnPropagationRate = restartOnPropagationRate;
+        _restartOnLiteralBlockDistance = restartOnLiteralBlockDistance;
         _useRestarts = restartInterval is not null  ||
-            lubySequence is not null ||
-            propagationRateThreshold is not null ||
-            literalBlockDistanceThreshold is not null;
+            _lubySequence is not null ||
+            _restartOnPropagationRate ||
+            _restartOnLiteralBlockDistance;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -65,12 +63,11 @@ sealed class RestartManager<
     {
         if (!_useRestarts) return false;
 
-        var propagationRateRatio = _propagationRateTracker.CurrentRatio;
-        var literalBlockDistanceRatio = _literalBlockDistanceTracker.CurrentRatio;
+        if (!(_restartCounter > _nextRestartThreshold || 
+            _restartOnPropagationRate && _propagationRateTracker.ShouldRestart() || 
+            _restartOnLiteralBlockDistance && _literalBlockDistanceTracker.ShouldRestart())) return false;
 
-        if (!(_restartCounter > _nextRestartThreshold || propagationRateRatio < _propagationRateThreshold || literalBlockDistanceRatio > _literalBlockDistanceThreshold)) return false;
-
-        Debug.WriteLine($"Restarting (counter: {_restartCounter} / {_nextRestartThreshold}, propagation rate: {propagationRateRatio} / {_propagationRateThreshold}, lbd: {literalBlockDistanceRatio} / {_literalBlockDistanceThreshold}).");
+        Debug.WriteLine($"Restarting (counter: {_restartCounter} / {_nextRestartThreshold}, propagation rate: {_propagationRateTracker.CurrentRatio}, lbd: {_literalBlockDistanceTracker.CurrentRatio}).");
 
         _restartCounter = 0;
         if (_lubySequence is not null)
@@ -78,6 +75,8 @@ sealed class RestartManager<
 
         _trail.Reset();
         _unitPropagationQueue.Clear();
+        _propagationRateTracker.ResetAfterRestart();
+        _literalBlockDistanceTracker.ResetAfterRestart();
 
         if (_reduceConstraints)
         {

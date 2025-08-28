@@ -3,6 +3,7 @@
 interface ITrackLiteralBlockDistance
 {
     double CurrentRatio { get; }
-
-    void AddValue(int value);
+    bool ShouldRestart();
+    void ResetAfterRestart();
+    void AddLiteralBlockDistance(int literalBlockDistance);
 }
