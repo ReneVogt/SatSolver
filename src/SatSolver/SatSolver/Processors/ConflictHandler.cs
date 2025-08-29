@@ -13,7 +13,8 @@ sealed class ConflictHandler<
     TLiteralBlockDistanceTracker,
     TLearnedConstraintCreator,
     TRestartManager,
-    TConstraintMinimizer> : IHandleConflicts
+    TConstraintMinimizer,
+    TConstraintFactory> : IHandleConflicts
     where TActivityManager : IManageActivities
     where TVariableTrail : IVariableTrail
     where TPropagationRateTracker : ITrackPropagationRate
@@ -21,21 +22,21 @@ sealed class ConflictHandler<
     where TLearnedConstraintCreator : ICreateLearnedConstraints
     where TRestartManager : IManageRestart
     where TConstraintMinimizer : IMinimizeConstraints        
+    where TConstraintFactory : IConstraintFactory
 {
     readonly TActivityManager _activityManager;
     readonly TVariableTrail _trail;
     readonly TPropagationRateTracker _propagationRateTracker;
     readonly TLiteralBlockDistanceTracker _literalBlockDistanceTracker;
     readonly TLearnedConstraintCreator _learnedConstraintCreator;
-    readonly List<Constraint> _learnedConstraints;
     readonly UnitPropagationQueue _unitPropagationQueue;
     readonly TRestartManager _restartManager;
     readonly int _literalBlockDistanceDeletionLimit;
     readonly int _literalBlockDistanceMaximum;
     readonly StampArray _learnedLiterals = [];
-    readonly StampArray _literalBlockDistanceCounter = [];
     readonly ConstraintLiteral[] _literals;
     readonly TConstraintMinimizer _constraintMinimizer;
+    readonly TConstraintFactory _constraintFactory;
 
     public ConflictHandler(
         SatSolverOptions options,
@@ -45,10 +46,10 @@ sealed class ConflictHandler<
         TPropagationRateTracker propagationRateTracker,
         TLiteralBlockDistanceTracker literalBlockDistanceTracker,
         TLearnedConstraintCreator learnedConstraintCreator,
-        List<Constraint> learnedConstraints,
         UnitPropagationQueue unitPropagationQueue,
         TRestartManager restartManager,
-        TConstraintMinimizer constraintMinimizer)
+        TConstraintMinimizer constraintMinimizer,
+        TConstraintFactory constraintFactory)
     {
         _literalBlockDistanceDeletionLimit = options.ConstraintDeletion.LiteralBlockDistanceToKeep;
         _literalBlockDistanceMaximum = options.MaximumLiteralBlockDistance;
@@ -58,10 +59,10 @@ sealed class ConflictHandler<
         _propagationRateTracker = propagationRateTracker;
         _literalBlockDistanceTracker = literalBlockDistanceTracker;
         _learnedConstraintCreator = learnedConstraintCreator;
-        _learnedConstraints = learnedConstraints;
         _unitPropagationQueue = unitPropagationQueue;
         _restartManager = restartManager;
         _constraintMinimizer = constraintMinimizer;
+        _constraintFactory = constraintFactory;
 
         _literals = new ConstraintLiteral[variables.Length << 1];
         for (var variableIndex = 0; variableIndex < variables.Length; variableIndex++)
@@ -70,6 +71,7 @@ sealed class ConflictHandler<
             _literals[literalIndex] = variables[variableIndex].PositiveLiteral;
             _literals[literalIndex+1] = variables[variableIndex].NegativeLiteral;
         }
+
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -88,35 +90,13 @@ sealed class ConflictHandler<
         var literals = _literals;
         var finalLiterals = _learnedLiterals.Select(i => literals[i]).ToArray();
 
-        _literalBlockDistanceCounter.Clear();
-        var jumpBackLevel = 0;
-        ConstraintLiteral? uip = null;
-        ConstraintLiteral? secondWatcher = null;
-        foreach (var literal in finalLiterals)
-        {
-            var level = literal.Variable.DecisionLevel;
-            _literalBlockDistanceCounter.Add(level);
-            if (level == decisionLevel)
-                uip = literal;
-            else if (level > jumpBackLevel)
-            {
-                secondWatcher = literal;
-                jumpBackLevel = level;
-            }
-        }
-        Debug.Assert(uip is not null);
-
-        var lbd = _literalBlockDistanceCounter.Count;
-        var learnedConstraint = new Constraint(
+        var learnedConstraint = _constraintFactory.CreateLearnedConstraint(
             finalLiterals, 
-            uip, 
-            secondWatcher ?? uip, 
+            decisionLevel, 
             _activityManager.ConstraintActivityIncrement, 
-            lbd,
-            tracked: lbd > _literalBlockDistanceDeletionLimit && lbd <= _literalBlockDistanceMaximum,
-            omitted: lbd > _literalBlockDistanceMaximum);
-
-        Statistics.AddLearnedConstraint(learnedConstraint);
+            _literalBlockDistanceMaximum, 
+            _literalBlockDistanceDeletionLimit,
+            out var jumpBackLevel);
 
         _activityManager.IncreaseVariableActivity(learnedConstraint);
         _activityManager.IncreaseConstraintActivity(learnedConstraint);
@@ -124,18 +104,17 @@ sealed class ConflictHandler<
 
         _literalBlockDistanceTracker.AddLiteralBlockDistance(learnedConstraint.LiteralBlockDistance);
 
-        if (learnedConstraint.IsTracked) _learnedConstraints.Add(learnedConstraint);
-
-        _unitPropagationQueue.Enqueue((uip, learnedConstraint));
+        _unitPropagationQueue.Enqueue((learnedConstraint.Watched1, learnedConstraint));
         _trail.JumpBack(jumpBackLevel);
 
-        Assert(learnedConstraint, uip);
+        Assert(learnedConstraint);
     }
 
     [Conditional("DEBUG")]
     [ExcludeFromCodeCoverage]
-    static void Assert(Constraint learnedConstraint, ConstraintLiteral uip)
+    static void Assert(Constraint learnedConstraint)
     {
+        var uip = learnedConstraint.Watched1;
         Debug.Assert(learnedConstraint.Literals.All(l => l == uip && l.Sense is null || l != uip && l.Sense == false));
         Debug.Assert(learnedConstraint.Literals.Contains(uip));
     }

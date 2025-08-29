@@ -8,6 +8,7 @@ sealed record ComponentStore(
     SatSolverOptions Options,
     int OriginalConstraintCount,
     Variable[] Variables,
+    IConstraintFactory ConstriantFactory,
     UnitPropagationQueue UnitPropagationQueue,
     ICandidateHeap CandidateHeap,
     IVariableTrail VariableTrail,

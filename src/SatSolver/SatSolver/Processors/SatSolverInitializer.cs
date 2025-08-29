@@ -37,25 +37,26 @@ sealed class SatSolverInitializer : IInitializeSatSolver
             _coolDownForConflicts: _options.PropagationRateTracking.CoolDownConflicts);
 
         var unitPropagationQueue = new UnitPropagationQueue();
+        var learnedConstraints = new List<Constraint>();
+        var constraintFactory = new ConstraintFactory(learnedConstraints);
 
         // it is very important to do this before we 
         // initialize the heap with the variables and
         // activities!
-        var originalClauseCount = BuildConstraints(_problem.Clauses, variables, unitPropagationQueue, _options);
+        var originalClauseCount = BuildConstraints(_problem.Clauses, variables, constraintFactory, unitPropagationQueue, _options);
 
         var candidateHeap = new CandidateHeap(variables);
         var trail = new VariableTrail<CandidateHeap>(candidateHeap, variables.Length);
-        var learnedConstraints = new List<Constraint>();
         var activityManager = new ActivityManager<CandidateHeap>(variables, learnedConstraints, candidateHeap, _options);
         var constraintMinimizer = new ConstraintMinimizer();
         var learnedConstraintCreator = new LearnedConstraintCreator<VariableTrail<CandidateHeap>, ActivityManager<CandidateHeap>>(trail, activityManager);
-        var constraintReducer = new LearnedConstraintsReducer(_options, learnedConstraints, originalClauseCount);
+        var constraintReducer = new LearnedConstraintsReducer<ConstraintFactory>(_options, learnedConstraints, originalClauseCount, constraintFactory);
 
         var restartManager = new RestartManager<
             VariableTrail<CandidateHeap>,
             PropagationRateTracker,
             LiteralBlockDistanceTracker,
-            LearnedConstraintsReducer,
+            LearnedConstraintsReducer<ConstraintFactory>,
             LubySequence>(
             trail,
             propagationRateTracker,
@@ -72,6 +73,7 @@ sealed class SatSolverInitializer : IInitializeSatSolver
             _options,
             originalClauseCount,
             variables,
+            constraintFactory,
             unitPropagationQueue,
             candidateHeap,
             trail,
@@ -82,9 +84,9 @@ sealed class SatSolverInitializer : IInitializeSatSolver
                 PropagationRateTracker, 
                 LiteralBlockDistanceTracker,
                 LearnedConstraintCreator<VariableTrail<CandidateHeap>, ActivityManager<CandidateHeap>>,
-                RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer, LubySequence>,
-                ConstraintMinimizer>
-                (_options, variables, activityManager, trail, propagationRateTracker, literalBlockDistanceTracker, learnedConstraintCreator, learnedConstraints, unitPropagationQueue, restartManager, constraintMinimizer),
+                RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer<ConstraintFactory>, LubySequence>,
+                ConstraintMinimizer, ConstraintFactory>
+                (_options, variables, activityManager, trail, propagationRateTracker, literalBlockDistanceTracker, learnedConstraintCreator, unitPropagationQueue, restartManager, constraintMinimizer, constraintFactory),
             learnedConstraintCreator,
             constraintReducer,
             constraintMinimizer,
@@ -95,7 +97,7 @@ sealed class SatSolverInitializer : IInitializeSatSolver
             restartManager,
             _cancellationToken);
     }
-    static int BuildConstraints(IEnumerable<Clause> clauses, Variable[] variables, UnitPropagationQueue unitPropagationQueue, SatSolverOptions options)
+    static int BuildConstraints(IEnumerable<Clause> clauses, Variable[] variables, ConstraintFactory constraintFactory, UnitPropagationQueue unitPropagationQueue, SatSolverOptions options)
     {
         var clauseCount = 0;
         var scores = new double[variables.Length << 1];
@@ -126,7 +128,7 @@ sealed class SatSolverInitializer : IInitializeSatSolver
             // Constraints with a single literal are
             // immediate unit propagations.
             //
-            var constraint = new Constraint(literals);
+            var constraint = constraintFactory.CreateInitialConstraint(literals);
             if (constraint.Literals.Length == 1)
                 unitPropagationQueue.Enqueue((constraint.Watched1, constraint));
 

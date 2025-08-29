@@ -60,12 +60,8 @@ sealed class VariablePropagator<
 
             constraint.Watched2 = nextLiteral;
             nextLiteral.Watchers.Add(constraint);
-            
-            // swap remove
-            var last = watchers.Count-1;
-            if (last != watcherIndex)            
-                watchers[watcherIndex] = watchers[last];
-            watchers.RemoveAt(last);
+
+            watchers.SwapRemove(watcherIndex);
             watcherIndex--;
         }
 

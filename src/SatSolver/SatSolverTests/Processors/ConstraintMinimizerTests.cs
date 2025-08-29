@@ -1,10 +1,12 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Processors;
+using Revo.SatSolver.Tools;
 
 namespace SatSolverTests.Processors;
 
 public sealed class ConstraintMinimizerTests
 {
+    readonly ConstraintFactory _constraintFactory = new([]);
     [Fact]
     public void FourStateSudoku_FirstConflict_NoMinimization()
     {
@@ -20,19 +22,19 @@ public sealed class ConstraintMinimizerTests
         variables[0].DecisionLevel = 1;
         variables[1].Sense = false;
         variables[1].DecisionLevel = 1;
-        variables[1].Reason = new Constraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral]);
+        variables[1].Reason = _constraintFactory.CreateInitialConstraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral]);
         variables[2].Sense = false;
         variables[2].DecisionLevel = 1;
-        variables[2].Reason = new Constraint([variables[0].NegativeLiteral, variables[2].NegativeLiteral]);
+        variables[2].Reason = _constraintFactory.CreateInitialConstraint([variables[0].NegativeLiteral, variables[2].NegativeLiteral]);
         
         variables[4].Sense = true;
         variables[4].DecisionLevel = 2;
         variables[5].Sense = false;
         variables[5].DecisionLevel = 2;
-        variables[5].Reason = new Constraint([variables[4].NegativeLiteral, variables[5].NegativeLiteral]);
+        variables[5].Reason = _constraintFactory.CreateInitialConstraint([variables[4].NegativeLiteral, variables[5].NegativeLiteral]);
         variables[6].Sense = false;
         variables[6].DecisionLevel = 2;
-        variables[6].Reason = new Constraint([variables[4].NegativeLiteral, variables[6].NegativeLiteral]);
+        variables[6].Reason = _constraintFactory.CreateInitialConstraint([variables[4].NegativeLiteral, variables[6].NegativeLiteral]);
 
         variables[8].Sense = true;
         variables[8].DecisionLevel = 3;
@@ -70,7 +72,7 @@ public sealed class ConstraintMinimizerTests
         variables[1].DecisionLevel = 2;
         variables[2].Sense = true;
         variables[2].DecisionLevel = 2;
-        variables[2].Reason = new Constraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].PositiveLiteral]);
+        variables[2].Reason = _constraintFactory.CreateInitialConstraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].PositiveLiteral]);
         variables[3].Sense = true;
         variables[3].DecisionLevel = 3;
         var learned = new StampArray

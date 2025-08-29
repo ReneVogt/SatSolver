@@ -65,10 +65,11 @@ public sealed class VariableTests
             DecisionLevel = 14,
             Polarity = true
         };
-        var reason = variable.Reason = new Constraint([variable.PositiveLiteral]);
+        var reason = variable.Reason = new Constraint([variable.PositiveLiteral], variable.PositiveLiteral, variable.PositiveLiteral);
 
         Assert.Equal(13, variable.Activity);
         Assert.Equal(14, variable.DecisionLevel);
         Assert.True(variable.Polarity);
+        Assert.Equal(reason, variable.Reason);
     }
 }

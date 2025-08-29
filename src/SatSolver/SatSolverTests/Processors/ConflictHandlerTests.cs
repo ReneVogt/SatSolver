@@ -4,58 +4,57 @@ using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Processors;
 using Revo.SatSolver.Tools;
 
+#pragma warning disable IDE0079
+#pragma warning disable CA1861
+
 namespace SatSolverTests.Processors;
 
 public sealed class ConflictHandlerTests
 {
-    [Theory]
-    [
-        InlineData(2, 4),
-        InlineData(3, 4),
-        InlineData(0, 2)
-    ]
-    public void OmittedLearnedConstraint(int minimum, int maximum)
+    [Fact]
+    public void HandleConflict_CorrectProcess()
     {
-        var options = new SatSolverOptions() { MaximumLiteralBlockDistance = maximum, ConstraintDeletion = new() { LiteralBlockDistanceToKeep = minimum } };
-        var variables = Enumerable.Range(0, 5).Select(i => new Variable(i)).ToArray();
-        variables[0].DecisionLevel = 1;
-        variables[0].Sense = true;
-        variables[1].DecisionLevel = 10;
-        variables[1].Sense = true;
-        variables[2].DecisionLevel = 3;
-        variables[2].Sense = false;
-        variables[3].DecisionLevel = 3;
-        variables[3].Sense = true;
-        variables[4].DecisionLevel = 1;
-        variables[4].Sense = false;
+        const int maxLBD = 117;
+        const int minLBD = 118;
+        const int lbd = 17;
+        const int decisionLevel = 10;
+        const int activity = 23;
+        const int expectedJumpBackLevel = 37;
 
+        var options = new SatSolverOptions() { MaximumLiteralBlockDistance = maxLBD, ConstraintDeletion = new() { LiteralBlockDistanceToKeep = minLBD } };
+        var variables = Enumerable.Range(0, 5).Select(i => new Variable(i) { Sense = true }).ToArray();
         var activityManager = new Mock<IManageActivities>(MockBehavior.Strict);
         var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
         var propagationRateTracker = new Mock<ITrackPropagationRate>(MockBehavior.Strict);
         var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>(MockBehavior.Strict);
         var learnedConstraintCreator = new Mock<ICreateLearnedConstraints>(MockBehavior.Strict);
-        var learnedConstraints = new List<Constraint>();
+        var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
+
+        var conflictingConstraint = new Constraint([.. variables.Select(v => v.NegativeLiteral)], variables[0].NegativeLiteral, variables[1].NegativeLiteral);
+        var learnedConstraint = new Constraint([variables[1].NegativeLiteral, variables[3].NegativeLiteral], variables[1].NegativeLiteral, variables[2].NegativeLiteral)
+        {
+            LiteralBlockDistance = lbd
+        };
+
         var unitPropagationQueue = new UnitPropagationQueue();
         unitPropagationQueue.Enqueue((variables[0].PositiveLiteral, null));
         var restartManager = new Mock<IManageRestart>(MockBehavior.Strict);
         var constraintMinimizer = new Mock<IMinimizeConstraints>(MockBehavior.Strict);
 
-        var sut = new ConflictHandler<IManageActivities, IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, ICreateLearnedConstraints, IManageRestart, IMinimizeConstraints>(options, variables, activityManager.Object, trail.Object, propagationRateTracker.Object,
-            literalBlockDistanceTracker.Object, learnedConstraintCreator.Object, learnedConstraints, unitPropagationQueue, restartManager.Object, constraintMinimizer.Object);
-
-        var conflictingConstraint = new Constraint([variables[0].PositiveLiteral, variables[1].NegativeLiteral]);
+        var sut = new ConflictHandler<IManageActivities, IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, ICreateLearnedConstraints, IManageRestart, IMinimizeConstraints, IConstraintFactory>(options, variables, activityManager.Object, trail.Object, propagationRateTracker.Object,
+            literalBlockDistanceTracker.Object, learnedConstraintCreator.Object, unitPropagationQueue, restartManager.Object, constraintMinimizer.Object, constraintFactory.Object);
 
         var sequence = new MockSequence();
         propagationRateTracker.InSequence(sequence).Setup(p => p.AddConflict());
         restartManager.InSequence(sequence).Setup(rm => rm.AddConflict());
         activityManager.InSequence(sequence).Setup(am => am.IncreaseConstraintActivity(conflictingConstraint, 1));
 
-        trail.InSequence(sequence).Setup(t => t.DecisionLevel).Returns(10);
+        trail.InSequence(sequence).Setup(t => t.DecisionLevel).Returns(decisionLevel);
 
         StampArray? learnedLiterals = null;
         learnedConstraintCreator.InSequence(sequence)
             .Setup(lcc => lcc.CreateLearnedConstraint(conflictingConstraint, It.IsAny<StampArray>()))
-            .Callback<Constraint, StampArray>((c, target) => 
+            .Callback<Constraint, StampArray>((c, target) =>
             {
                 learnedLiterals = target;
                 target.Clear();
@@ -66,25 +65,26 @@ public sealed class ConflictHandlerTests
                 target.Add(variables[4].PositiveLiteral.StampIndex);
             });
         constraintMinimizer.InSequence(sequence)
-            .Setup(cm => cm.MinimizeConstraint(It.IsAny<StampArray>(), 10, It.IsAny<ConstraintLiteral[]>()))
+            .Setup(cm => cm.MinimizeConstraint(It.IsAny<StampArray>(), decisionLevel, It.IsAny<ConstraintLiteral[]>()))
             .Callback<StampArray, int, ConstraintLiteral[]>((target, dl, ls) => Assert.Equal(target, learnedLiterals));
-        activityManager.InSequence(sequence).Setup(am => am.ConstraintActivityIncrement).Returns(17);
+        activityManager.InSequence(sequence).Setup(am => am.ConstraintActivityIncrement).Returns(activity);
 
-        Constraint? constraintWithIncreasedVariableActivity = null;
+        var jumpBackLevel = 0;
+        constraintFactory.InSequence(sequence)
+            .Setup(cf => cf.CreateLearnedConstraint(It.Is<ConstraintLiteral[]>(a => a.Select(l => l.StampIndex).SequenceEqual(new[] { 1, 3, 4, 7, 8 })), decisionLevel, activity, maxLBD, minLBD, out jumpBackLevel))
+            .Returns(() => { jumpBackLevel = expectedJumpBackLevel; return learnedConstraint; });
+
         activityManager.InSequence(sequence)
-            .Setup(am => am.IncreaseVariableActivity(It.IsAny<Constraint>()))
-            .Callback<Constraint>(c => constraintWithIncreasedVariableActivity = c);
-        Constraint? constraintWithIncreasedConstraintActivity = null;
+            .Setup(am => am.IncreaseVariableActivity(learnedConstraint));
         activityManager.InSequence(sequence)
-            .Setup(am => am.IncreaseConstraintActivity(It.IsAny<Constraint>(), 1))
-            .Callback<Constraint, double>((c, f) => constraintWithIncreasedConstraintActivity = c);
+            .Setup(am => am.IncreaseConstraintActivity(learnedConstraint, 1));
         activityManager.InSequence(sequence)
             .Setup(am => am.DecayConstraintActivity());
 
-        literalBlockDistanceTracker.InSequence(sequence).Setup(lbd => lbd.AddLiteralBlockDistance(3));
+        literalBlockDistanceTracker.InSequence(sequence).Setup(t => t.AddLiteralBlockDistance(lbd));
 
         // reset uip sense
-        trail.InSequence(sequence).Setup(t => t.JumpBack(3)).Callback(() => variables[1].Sense = null);
+        trail.InSequence(sequence).Setup(t => t.JumpBack(jumpBackLevel)).Callback(() => learnedConstraint.Watched1.Variable.Sense = null);
 
         sut.HandleConflict(conflictingConstraint);
 
@@ -95,112 +95,10 @@ public sealed class ConflictHandlerTests
         restartManager.VerifyAll();
         constraintMinimizer.VerifyAll();
         learnedConstraintCreator.VerifyAll();
-        activityManager.VerifyNoOtherCalls();
-        trail.VerifyNoOtherCalls();
-        propagationRateTracker.VerifyNoOtherCalls();
-        literalBlockDistanceTracker.VerifyNoOtherCalls();
-        restartManager.VerifyNoOtherCalls();
-        constraintMinimizer.VerifyNoOtherCalls();
-        learnedConstraintCreator.VerifyNoOtherCalls();
+        constraintFactory.VerifyAll();
 
-        var (unitLiteral, learnedConstraint) = Assert.Single(unitPropagationQueue);
-        Assert.Equal(variables[1].NegativeLiteral, unitLiteral);
-        Assert.NotNull(learnedConstraint);
-        Assert.Equal(3, learnedConstraint.LiteralBlockDistance);
-        Assert.True(learnedConstraint.IsLearned);
-        Assert.Equal(3 > maximum, learnedConstraint.IsOmitted);
-        Assert.Equal(3 > minimum && 3 <= maximum, learnedConstraint.IsTracked);
-        Assert.Equal(17, learnedConstraint.Activity);
-
-        Assert.Equal(learnedConstraint, constraintWithIncreasedVariableActivity);
-        Assert.Equal(learnedConstraint, constraintWithIncreasedConstraintActivity);
-    }
-
-    [Fact]
-    public void SingleLiteralInLearnedConstraint()
-    {
-        var options = new SatSolverOptions() { MaximumLiteralBlockDistance = 2, ConstraintDeletion = new() { LiteralBlockDistanceToKeep = 4 } };
-        var variables = Enumerable.Range(0, 5).Select(i => new Variable(i)).ToArray();
-        variables[2].DecisionLevel = 3;
-        variables[2].Sense = false;
-
-        var activityManager = new Mock<IManageActivities>(MockBehavior.Strict);
-        var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
-        var propagationRateTracker = new Mock<ITrackPropagationRate>(MockBehavior.Strict);
-        var literalBlockDistanceTracker = new Mock<ITrackLiteralBlockDistance>(MockBehavior.Strict);
-        var learnedConstraintCreator = new Mock<ICreateLearnedConstraints>(MockBehavior.Strict);
-        var learnedConstraints = new List<Constraint>();
-        var unitPropagationQueue = new UnitPropagationQueue();
-        unitPropagationQueue.Enqueue((variables[0].PositiveLiteral, null));
-        var restartManager = new Mock<IManageRestart>(MockBehavior.Strict);
-        var constraintMinimizer = new Mock<IMinimizeConstraints>(MockBehavior.Strict);
-
-        var sut = new ConflictHandler<IManageActivities, IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, ICreateLearnedConstraints, IManageRestart, IMinimizeConstraints>(options, variables, activityManager.Object, trail.Object, propagationRateTracker.Object,
-            literalBlockDistanceTracker.Object, learnedConstraintCreator.Object, learnedConstraints, unitPropagationQueue, restartManager.Object, constraintMinimizer.Object);
-
-        var conflictingConstraint = new Constraint([variables[0].PositiveLiteral, variables[1].NegativeLiteral]);
-
-        var sequence = new MockSequence();
-        propagationRateTracker.InSequence(sequence).Setup(p => p.AddConflict());
-        restartManager.InSequence(sequence).Setup(rm => rm.AddConflict());
-        activityManager.InSequence(sequence).Setup(am => am.IncreaseConstraintActivity(conflictingConstraint, 1));
-
-        trail.InSequence(sequence).Setup(t => t.DecisionLevel).Returns(3);
-
-        StampArray? learnedLiterals = null;
-        learnedConstraintCreator.InSequence(sequence)
-            .Setup(lcc => lcc.CreateLearnedConstraint(conflictingConstraint, It.IsAny<StampArray>()))
-            .Callback<Constraint, StampArray>((c, target) =>
-            {
-                learnedLiterals = target;
-                target.Clear();
-                target.Add(variables[2].PositiveLiteral.StampIndex);
-            });
-        constraintMinimizer.InSequence(sequence)
-            .Setup(cm => cm.MinimizeConstraint(It.IsAny<StampArray>(), 3, It.IsAny<ConstraintLiteral[]>()))
-            .Callback<StampArray, int, ConstraintLiteral[]>((target, dl, ls) => Assert.Equal(target, learnedLiterals));
-        activityManager.InSequence(sequence).Setup(am => am.ConstraintActivityIncrement).Returns(17);
-
-        Constraint? constraintWithIncreasedVariableActivity = null;
-        activityManager.InSequence(sequence)
-            .Setup(am => am.IncreaseVariableActivity(It.IsAny<Constraint>()))
-            .Callback<Constraint>(c => constraintWithIncreasedVariableActivity = c);
-        Constraint? constraintWithIncreasedConstraintActivity = null;
-        activityManager.InSequence(sequence)
-            .Setup(am => am.IncreaseConstraintActivity(It.IsAny<Constraint>(), 1))
-            .Callback<Constraint, double>((c, f) => constraintWithIncreasedConstraintActivity = c);
-        activityManager.InSequence(sequence)
-            .Setup(am => am.DecayConstraintActivity());
-
-        literalBlockDistanceTracker.InSequence(sequence).Setup(lbd => lbd.AddLiteralBlockDistance(1));
-
-        // reset uip sense
-        trail.InSequence(sequence).Setup(t => t.JumpBack(0)).Callback(() => variables[2].Sense = null);
-
-        sut.HandleConflict(conflictingConstraint);
-
-        activityManager.VerifyAll();
-        trail.VerifyAll();
-        propagationRateTracker.VerifyAll();
-        literalBlockDistanceTracker.VerifyAll();
-        restartManager.VerifyAll();
-        constraintMinimizer.VerifyAll();
-        learnedConstraintCreator.VerifyAll();
-        activityManager.VerifyNoOtherCalls();
-        trail.VerifyNoOtherCalls();
-        propagationRateTracker.VerifyNoOtherCalls();
-        literalBlockDistanceTracker.VerifyNoOtherCalls();
-        restartManager.VerifyNoOtherCalls();
-        constraintMinimizer.VerifyNoOtherCalls();
-        learnedConstraintCreator.VerifyNoOtherCalls();
-
-        var (unitLiteral, learnedConstraint) = Assert.Single(unitPropagationQueue);
-        Assert.Equal(variables[2].PositiveLiteral, unitLiteral);
-        Assert.NotNull(learnedConstraint);
-        Assert.Equal(1, learnedConstraint.LiteralBlockDistance);
-        Assert.True(learnedConstraint.IsLearned);
-
-        Assert.Equal(learnedConstraint, constraintWithIncreasedVariableActivity);
-        Assert.Equal(learnedConstraint, constraintWithIncreasedConstraintActivity);
+        var (uip, lc) = Assert.Single(unitPropagationQueue);
+        Assert.Equal(learnedConstraint.Watched1, uip);
+        Assert.Equal(learnedConstraint, lc);
     }
 }

@@ -15,15 +15,16 @@ public static class SatSolver
     // This is the entry point for unit tests. We can provide an alternative initializer
     // and via that mocks for all the required algorithm parts.
     internal static IEnumerable<Literal[]> EnumerateSolutions(IInitializeSatSolver initializer) => new SatSolverInternal<
-            ICandidateHeap,
-            IVariableTrail,
-            IPropagateVariables,
-            IHandleConflicts,
-            IManageActivities,
-            ITrackPropagationRate,
-            IReduceLearnedConstraints,
-            IManageRestart>
-            (initializer).EnumerateSolutions();
+        IConstraintFactory,
+        ICandidateHeap,
+        IVariableTrail,
+        IPropagateVariables,
+        IHandleConflicts,
+        IManageActivities,
+        ITrackPropagationRate,
+        IReduceLearnedConstraints,
+        IManageRestart>
+        (initializer).EnumerateSolutions();
 
     /// <summary>
     /// Finds a variable configuration that satisfies the SATisfiability <paramref name="problem"/>.
@@ -43,6 +44,7 @@ public static class SatSolver
         if (problem.NumberOfLiterals == 0) return [[]];
 
         return new SatSolverInternal<
+            ConstraintFactory,
             CandidateHeap,
             VariableTrail<CandidateHeap>,
             VariablePropagator<VariableTrail<CandidateHeap>, ActivityManager<CandidateHeap>, PropagationRateTracker>,
@@ -52,12 +54,13 @@ public static class SatSolver
                 PropagationRateTracker,
                 LiteralBlockDistanceTracker,
                 LearnedConstraintCreator<VariableTrail<CandidateHeap>, ActivityManager<CandidateHeap>>,
-                RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer, LubySequence>,
-                ConstraintMinimizer>,
+                RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer<ConstraintFactory>, LubySequence>,
+                ConstraintMinimizer,
+                ConstraintFactory>,
             ActivityManager<CandidateHeap>,
             PropagationRateTracker,
-            LearnedConstraintsReducer,
-            RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer, LubySequence>>
+            LearnedConstraintsReducer<ConstraintFactory>,
+            RestartManager<VariableTrail<CandidateHeap>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer<ConstraintFactory>, LubySequence>>
             (new SatSolverInitializer(problem, options ?? SatSolverOptions.Default, cancellationToken)).EnumerateSolutions();
     }
 }

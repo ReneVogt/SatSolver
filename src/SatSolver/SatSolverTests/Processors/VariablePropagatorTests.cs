@@ -7,6 +7,8 @@ namespace SatSolverTests.Processors;
 
 public sealed class VariablePropagatorTests
 {
+    static readonly ConstraintFactory _constraintFactory = new([]);
+
     [Fact]
     public void PropagateVariable_NoConflict_NoPropagations()
     {
@@ -22,14 +24,14 @@ public sealed class VariablePropagatorTests
         // 2 3 0
 
         var variables = Enumerable.Range(0, 3).Select(i => new Variable(i)).ToArray();
-        var constraint0 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
-        var constraint1 = new Constraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
-        var constraint2 = new Constraint([variables[0].NegativeLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
-        var constraint3 = new Constraint([variables[0].PositiveLiteral, variables[1].NegativeLiteral, variables[2].PositiveLiteral]);
-        var constraint4 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].NegativeLiteral]);
-        var constraint5 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral]);
-        var constraint6 = new Constraint([variables[0].PositiveLiteral, variables[2].PositiveLiteral]);
-        var constraint7 = new Constraint([variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
+        var constraint0 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
+        var constraint1 = _constraintFactory.CreateInitialConstraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
+        var constraint2 = _constraintFactory.CreateInitialConstraint([variables[0].NegativeLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
+        var constraint3 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].NegativeLiteral, variables[2].PositiveLiteral]);
+        var constraint4 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].NegativeLiteral]);
+        var constraint5 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral]);
+        var constraint6 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[2].PositiveLiteral]);
+        var constraint7 = _constraintFactory.CreateInitialConstraint([variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
 
         var trail = new Mock<IVariableTrail>();
         var activityManager = new Mock<IManageActivities>();
@@ -71,14 +73,14 @@ public sealed class VariablePropagatorTests
         // 2 3 0
 
         var variables = Enumerable.Range(0, 3).Select(i => new Variable(i)).ToArray();
-        var constraint0 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
-        var constraint1 = new Constraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
-        var constraint2 = new Constraint([variables[0].NegativeLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
-        var constraint3 = new Constraint([variables[0].PositiveLiteral, variables[1].NegativeLiteral, variables[2].PositiveLiteral]);
-        var constraint4 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].NegativeLiteral]);
-        var constraint5 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral]);
-        var constraint6 = new Constraint([variables[0].PositiveLiteral, variables[2].PositiveLiteral]);
-        var constraint7 = new Constraint([variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
+        var constraint0 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
+        var constraint1 = _constraintFactory.CreateInitialConstraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
+        var constraint2 = _constraintFactory.CreateInitialConstraint([variables[0].NegativeLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
+        var constraint3 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].NegativeLiteral, variables[2].PositiveLiteral]);
+        var constraint4 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].NegativeLiteral]);
+        var constraint5 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral]);
+        var constraint6 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[2].PositiveLiteral]);
+        var constraint7 = _constraintFactory.CreateInitialConstraint([variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
 
         var trail = new Mock<IVariableTrail>();
         var activityManager = new Mock<IManageActivities>();
@@ -129,8 +131,8 @@ public sealed class VariablePropagatorTests
         var variables = Enumerable.Range(0, 3).Select(i => new Variable(i)).ToArray();
         variables[1].Sense = true;
         variables[2].Sense = true;
-        var constraint0 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
-        var constraint1 = new Constraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
+        var constraint0 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
+        var constraint1 = _constraintFactory.CreateInitialConstraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
 
         var trail = new Mock<IVariableTrail>();
         var activityManager = new Mock<IManageActivities>();
@@ -166,8 +168,8 @@ public sealed class VariablePropagatorTests
 
         var variables = Enumerable.Range(0, 3).Select(i => new Variable(i)).ToArray();
         variables[2].Sense = true;
-        var constraint0 = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
-        var constraint1 = new Constraint([variables[0].PositiveLiteral, variables[2].PositiveLiteral, variables[1].PositiveLiteral]);
+        var constraint0 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
+        var constraint1 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[2].PositiveLiteral, variables[1].PositiveLiteral]);
 
         var trail = new Mock<IVariableTrail>();
         var activityManager = new Mock<IManageActivities>();
@@ -202,8 +204,8 @@ public sealed class VariablePropagatorTests
         // -1 0
 
         var variables = new[] { new Variable(1) };
-        _ = new Constraint([variables[0].PositiveLiteral]);
-        var constraint1 = new Constraint([variables[0].NegativeLiteral]);
+        _ = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral]);
+        var constraint1 = _constraintFactory.CreateInitialConstraint([variables[0].NegativeLiteral]);
 
         var trail = new Mock<IVariableTrail>();
         var activityManager = new Mock<IManageActivities>();

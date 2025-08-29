@@ -10,6 +10,7 @@ static class Statistics
     [ThreadStatic] static ITrackPropagationRate? _propagationRateTracker;
     [ThreadStatic] static ITrackLiteralBlockDistance? _literalBlockDistanceTracker;
 
+    [ThreadStatic] static int _binaryConstraints;
     [ThreadStatic] static int _omittedLearnedConstraints;
     [ThreadStatic] static int _permantentLearnedConstraints;
     [ThreadStatic] static int _trackedLearnedConstraints;
@@ -23,7 +24,7 @@ static class Statistics
     {
         _propagationRateTracker = propagationRateTracker;
         _literalBlockDistanceTracker = literalBlockDistanceTracker;
-        _omittedLearnedConstraints = _permantentLearnedConstraints = _trackedLearnedConstraints = _totalLearnedConstraints = 0;
+        _binaryConstraints = _omittedLearnedConstraints = _permantentLearnedConstraints = _trackedLearnedConstraints = _totalLearnedConstraints = 0;
         _learnedLiteralsCount = _minimizedLiteralsCount = 0;
     }
 
@@ -42,9 +43,14 @@ static class Statistics
             _trackedLearnedConstraints++;
         else
             _permantentLearnedConstraints++;
-        
+
+        if (constraint.Literals.Length == 2)
+            _binaryConstraints++;
+
         _totalLearnedConstraints++;
     }
+    [Conditional("DEBUG")]
+    public static void AddBinaryConstraint() => _binaryConstraints++;
     [Conditional("DEBUG")]
     public static void AddReducedLearnedConstraint(int count)
     {
@@ -60,6 +66,7 @@ static class Statistics
         Debug.WriteLine($"Tracked learned constraints:   {_trackedLearnedConstraints}");
         Debug.WriteLine($"Omitted learned constraints:   {_omittedLearnedConstraints}");
         Debug.WriteLine($"Permanent learned constraints: {_permantentLearnedConstraints}");
+        Debug.WriteLine($"Binary constraints:            {_binaryConstraints}");
         Debug.WriteLine($"Propagation rate:              {_propagationRateTracker?.CurrentRatio}");
         Debug.WriteLine($"LBD rate:                      {_literalBlockDistanceTracker?.CurrentRatio}");
         if (_learnedLiteralsCount != 0)

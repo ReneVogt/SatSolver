@@ -23,12 +23,12 @@ public sealed record SatSolverOptions
         /// If <see cref="Luby"/> is <c>true</c>, this value
         /// is multiplied by the Luby sequence (<see cref="LubySequence"/>).
         /// </summary>
-        public int? Interval { get; init; } = 2000;
+        public int? Interval { get; init; }
         /// <summary>
         /// Determines if the restartl <see cref="Interval"/> is
         /// multiplied by the Luby sequence (<see cref="LubySequence"/>.
         /// </summary>
-        public bool Luby { get; init; } = true;
+        public bool Luby { get; init; }
         /// <summary>
         /// <c>true</c> if restarts should be triggered by the literal block
         /// distance development. Set the <see cref="LiteralBlockDistanceTracking"/>
@@ -69,12 +69,12 @@ public sealed record SatSolverOptions
         /// exceeds the number of original constraints multiplied
         /// by this value.
         /// </summary>
-        public double? OriginalConstraintCountFactor { get; init; } = 5d;
+        public double? OriginalConstraintCountFactor { get; init; } = 4d;
         /// <summary>
         /// If not null, the number of conflicts after which the learnt
         /// clause database is autmatically reduced.
         /// </summary>
-        public int? ConflictInterval { get; init; } = 2000;
+        public int? ConflictInterval { get; init; } = 5000;
         /// <summary>
         /// Set to <c>true</c> if learned constraints should be
         /// reduced when the algorithm is restarted during execution.

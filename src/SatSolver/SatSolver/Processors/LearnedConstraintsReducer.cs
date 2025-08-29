@@ -5,10 +5,12 @@ using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class LearnedConstraintsReducer(
+sealed class LearnedConstraintsReducer<TConstraintFactory>(
     SatSolverOptions _options, 
     List<Constraint> _learnedConstraints, 
-    int _originalConstraintCount) : IReduceLearnedConstraints
+    int _originalConstraintCount,
+    TConstraintFactory _constraintFactory) : IReduceLearnedConstraints
+    where TConstraintFactory : IConstraintFactory
 {
     readonly double _originalConstraintCountFactor = _options.ConstraintDeletion.OriginalConstraintCountFactor ?? double.MaxValue;
     readonly int _conflictInterval = _options.ConstraintDeletion.ConflictInterval ?? int.MaxValue;
@@ -43,15 +45,7 @@ sealed class LearnedConstraintsReducer(
         learnedConstraints.Sort((left, right) =>
             (left.LiteralBlockDistance, -left.Activity, left.Literals.Length)
             .CompareTo((right.LiteralBlockDistance, -right.Activity, right.Literals.Length)));
-        var start = (int)(_learnedConstraints.Count * (1-_ratioToDelete));
-        for (var i = start; i<learnedConstraints.Count; i++)
-        {
-            var constraint = learnedConstraints[i];
-            constraint.IsTracked = false;
-            constraint.Watched1.Watchers.Remove(constraint);
-            constraint.Watched2.Watchers.Remove(constraint);
-        }
-        learnedConstraints.RemoveRange(start, learnedConstraints.Count-start);
+        _constraintFactory.ReleaseLearnedConstraints(_ratioToDelete);
         var countReduced = _learnedConstraints.Count;
         Debug.WriteLine($"Reduced learned constraints to {countReduced}.");
         Statistics.AddReducedLearnedConstraint(previousCount - countReduced);

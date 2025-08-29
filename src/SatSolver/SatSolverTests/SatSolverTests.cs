@@ -10,6 +10,8 @@ namespace SatSolverTests;
 
 public sealed partial class SatSolverTests(ITestOutputHelper _output)
 {
+    static readonly ConstraintFactory _constraintFactory = new([]);
+
     [Fact]
     public void EnumerateSolutions_Null_ArgumentNullException()
     {
@@ -73,6 +75,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
             options,
             4,
             variables,
+            null!,
             unitsToPropagate,
             null!, null!,
             propagator.Object,
@@ -84,15 +87,15 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         unitsToPropagate.Enqueue((variables[4].PositiveLiteral, null));
         variables[4].Sense = true;
 
-        var constraint0 = new Constraint([variables[3].NegativeLiteral]);
+        var constraint0 = _constraintFactory.CreateInitialConstraint([variables[3].NegativeLiteral]);
         unitsToPropagate.Enqueue((variables[3].NegativeLiteral, constraint0));
-        var constraint1 = new Constraint([variables[1].PositiveLiteral]);
+        var constraint1 = _constraintFactory.CreateInitialConstraint([variables[1].PositiveLiteral]);
         unitsToPropagate.Enqueue((variables[1].PositiveLiteral, constraint1));
 
-        var constraint2 = new Constraint([variables[3].PositiveLiteral, variables[0].PositiveLiteral]);
-        var constraint3 = new Constraint([variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
+        var constraint2 = _constraintFactory.CreateInitialConstraint([variables[3].PositiveLiteral, variables[0].PositiveLiteral]);
+        var constraint3 = _constraintFactory.CreateInitialConstraint([variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
 
-        var constraint4 = new Constraint([variables[3].NegativeLiteral, variables[2].NegativeLiteral]);
+        var constraint4 = _constraintFactory.CreateInitialConstraint([variables[3].NegativeLiteral, variables[2].NegativeLiteral]);
 
         initializer.InSequence(sequence).Setup(i => i.Initialize()).Returns(store);
         propagator.InSequence(sequence)
@@ -133,6 +136,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
             options,
             4,
             variables,
+            null!,
             unitsToPropagate,
             heap.Object, trail.Object,
             propagator.Object,
@@ -140,7 +144,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
             null!, null!, null!,
             null!, default);
 
-        var constraint0 = new Constraint([variable.PositiveLiteral]);
+        var constraint0 = _constraintFactory.CreateInitialConstraint([variable.PositiveLiteral]);
         unitsToPropagate.Enqueue((variable.PositiveLiteral, constraint0));
         initializer.InSequence(sequence).Setup(i => i.Initialize()).Returns(store);
         propagator.InSequence(sequence)
@@ -172,10 +176,11 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var reducer = new Mock<IReduceLearnedConstraints>(MockBehavior.Strict);
         var trail = new Mock<IVariableTrail>();
         var activityManager = new Mock<IManageActivities>();
+        var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
         var sequence = new MockSequence();
 
         var variables = Enumerable.Range(0, 2).Select(i => new Variable(i) { Polarity = true }).ToArray();
-        var constraint = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral]);
+        var constraint = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral]);
         var unitsToPropagate = new UnitPropagationQueue();
 
         var options = SatSolverOptions.CDCL;
@@ -183,6 +188,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
             options,
             1,
             variables,
+            constraintFactory.Object,
             unitsToPropagate,
             candidateHeap.Object,
             trail.Object,
@@ -193,11 +199,6 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 
         var initializer = new Mock<IInitializeSatSolver>();
         initializer.Setup(i => i.Initialize()).Returns(store);
-
-        activityManager.Setup(am => am.ConstraintActivityIncrement).Returns(10);
-        trail.Setup(t => t.Count).Returns(2);
-        trail.Setup(t => t[0]).Returns(variables[0]);
-        trail.Setup(t => t[1]).Returns(variables[1]);
 
         trail.InSequence(sequence).Setup(t => t.Clear());
         candidateHeap.InSequence(sequence).Setup(h => h.Dequeue()).Returns(variables[0]);
@@ -213,8 +214,10 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var solution = enumerator.Current;
         Assert.Equal(["1", "2"], solution.Select(l => l.ToString()));
 
-        conflictHandler.InSequence(sequence).Setup(handler => handler.HandleConflict(It.Is<Constraint>(constraint =>
-            constraint.IsLearned && !constraint.IsTracked && constraint.Literals.SequenceEqual(variables.Select(v => v.NegativeLiteral)))));
+        activityManager.InSequence(sequence).Setup(am => am.ConstraintActivityIncrement).Returns(10);
+        var conflictSolution = new Constraint([], null!, null!);
+        constraintFactory.InSequence(sequence).Setup(cf => cf.CreateFromSoluution(variables, trail.Object, 10)).Returns(conflictSolution);
+        conflictHandler.InSequence(sequence).Setup(handler => handler.HandleConflict(conflictSolution));
         candidateHeap.InSequence(sequence).Setup(heap => heap.Dequeue()).Returns((Variable?)null);
 
         Assert.True(enumerator.MoveNext());
@@ -253,6 +256,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
             options,
             1,
             variables,
+            null!,
             unitsToPropagate,
             heap.Object,
             trail.Object,
@@ -272,7 +276,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         heap.InSequence(sequence).Setup(h => h.Dequeue()).Returns(variables[0]);
         trail.InSequence(sequence).Setup(t => t.Push(true));
 
-        var reason = new Constraint([variables[2].NegativeLiteral]); // to avoid trail.Push() 
+        var reason = _constraintFactory.CreateInitialConstraint([variables[2].NegativeLiteral]); // to avoid trail.Push() 
         propagator.InSequence(sequence)
             .Setup(p => p.PropagateVariable(variables[0], false, null))
             .Callback(() =>
@@ -317,14 +321,16 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var sequence = new MockSequence();
         var variable = new Variable(0);
         var variables = new[] { variable, new Variable(1) { Sense = true } };
-        var constraint = new Constraint([variable.PositiveLiteral]);
+        var constraint = _constraintFactory.CreateInitialConstraint([variable.PositiveLiteral]);
         var unitsToPropagate = new UnitPropagationQueue();
+        var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
 
         var options = SatSolverOptions.CDCL;
         var store = new ComponentStore(
             options,
             1,
             variables,
+            constraintFactory.Object,
             unitsToPropagate,
             heap.Object,
             trail.Object,
@@ -339,12 +345,6 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 #if DEBUG
         trail.Setup(t => t.DecisionLevel).Returns(() => decisionLevel);
 #endif
-        trail.Setup(t => t[0]).Returns(variable);
-        trail.Setup(t => t[1]).Returns(variables[1]);
-        trail.Setup(t => t.Count).Returns(2);
-
-        activityManager.Setup(am => am.ConstraintActivityIncrement).Returns(10);
-
         initializer.InSequence(sequence).Setup(i => i.Initialize()).Returns(store);
 
         trail.InSequence(sequence).Setup(t => t.Clear());
@@ -366,8 +366,12 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 
         // now first leave with a solution
         heap.InSequence(sequence).Setup(h => h.Dequeue()).Returns((Variable?)null);
+        var conflictingConstraint = new Constraint([], null!, null!);
+        const int activity = 12;
+        activityManager.InSequence(sequence).Setup(am => am.ConstraintActivityIncrement).Returns(activity);
+        constraintFactory.InSequence(sequence).Setup(cf => cf.CreateFromSoluution(variables, trail.Object, activity)).Returns(conflictingConstraint);
         conflictHandler.InSequence(sequence)
-            .Setup(handler => handler.HandleConflict(It.Is<Constraint>(c => c.Literals.SequenceEqual(new[] { variable.NegativeLiteral, variables[1].NegativeLiteral }))));
+            .Setup(handler => handler.HandleConflict(conflictingConstraint));
 
         // for the continuation
         heap.InSequence(sequence).Setup(h => h.Dequeue()).Callback(() => variable.Sense = null).Returns(variable);
@@ -410,14 +414,16 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var sequence = new MockSequence();
         var variable = new Variable(0);
         var variables = new[] { variable, new Variable(1) { Sense = false } };
-        var constraint = new Constraint([variable.PositiveLiteral]);
+        var constraint = _constraintFactory.CreateInitialConstraint([variable.PositiveLiteral]);
         var unitsToPropagate = new UnitPropagationQueue();
+        var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
 
         var options = SatSolverOptions.CDCL;
         var store = new ComponentStore(
             options,
             1,
             variables,
+            constraintFactory.Object,
             unitsToPropagate,
             heap.Object,
             trail.Object,
@@ -432,10 +438,6 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 #if DEBUG
         trail.Setup(t => t.DecisionLevel).Returns(() => decisionLevel);
 #endif
-        trail.Setup(t => t[0]).Returns(variable);
-        trail.Setup(t => t[1]).Returns(variables[1]);
-        trail.Setup(t => t.Count).Returns(2);
-        activityManager.Setup(am => am.ConstraintActivityIncrement).Returns(10);
         initializer.InSequence(sequence).Setup(i => i.Initialize()).Returns(store);
 
         trail.InSequence(sequence).Setup(t => t.Clear());
@@ -457,8 +459,11 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 
         // now first leave with a solution
         heap.InSequence(sequence).Setup(h => h.Dequeue()).Returns((Variable?)null);
+        activityManager.InSequence(sequence).Setup(am => am.ConstraintActivityIncrement).Returns(10);
+        var conflictSolution = new Constraint([], null!, null!);
+        constraintFactory.Setup(cf => cf.CreateFromSoluution(variables, trail.Object, 10)).Returns(conflictSolution);
         conflictHandler.InSequence(sequence)
-            .Setup(handler => handler.HandleConflict(It.Is<Constraint>(c => c.Literals.SequenceEqual(new[] { variable.PositiveLiteral, variables[1].PositiveLiteral }))));
+            .Setup(handler => handler.HandleConflict(conflictSolution));
 
         // for the continuation
         heap.InSequence(sequence).Setup(h => h.Dequeue()).Callback(() => variable.Sense = null).Returns(variable);

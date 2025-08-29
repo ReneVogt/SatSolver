@@ -11,6 +11,7 @@ namespace Revo.SatSolver;
 /// problem.
 /// </summary>
 sealed partial class SatSolverInternal<
+    TConstraintFactory,
     TCandidateHeap,
     TVariableTrail,
     TVariablePropagator,
@@ -19,6 +20,7 @@ sealed partial class SatSolverInternal<
     TPropagationRateTracker,
     TLearnedConstraintsReducer,
     TRestartManager>
+    where TConstraintFactory : IConstraintFactory
     where TCandidateHeap : ICandidateHeap
     where TVariableTrail : IVariableTrail
     where TVariablePropagator : IPropagateVariables
@@ -31,6 +33,7 @@ sealed partial class SatSolverInternal<
     readonly ComponentStore _store;
     readonly TRestartManager _restartManager;
     readonly CancellationToken _cancellationToken;
+    readonly TConstraintFactory _constraintFactory;
     readonly TCandidateHeap _candidateHeap;
     readonly TVariableTrail _trail;
     readonly TVariablePropagator _variablePropagator;
@@ -46,6 +49,7 @@ sealed partial class SatSolverInternal<
     {
         _store = initializer.Initialize();
         Statistics.Initialize(_store.PropagationRateTracker, _store.LiteralBlockDistanceTracker);
+        _constraintFactory = (TConstraintFactory)_store.ConstriantFactory;
         _variablePropagator = (TVariablePropagator)_store.VariablePropagator;
         _conflictHandler = (TConflictHandler)_store.ConflictHandler;
         _activityManager = (TActivityManager)_store.ActivityManager;
@@ -98,7 +102,7 @@ sealed partial class SatSolverInternal<
                     var solution = BuildSolution();
                     Debug.WriteLine($"Delivering solution [{string.Join(" ", solution.AsEnumerable())}] and creating inverse conflict.");
                     yield return solution;
-                    conflictingConstraint = CreateConflictFromSolution();
+                    conflictingConstraint = _constraintFactory.CreateFromSoluution(_variables, _trail, 0);
                 }
                 else
                 {
@@ -153,7 +157,7 @@ sealed partial class SatSolverInternal<
                 var solution = BuildSolution();
                 Debug.WriteLine($"Delivering solution [{string.Join(" ", solution.AsEnumerable())}] and creating inverse conflict.");
                 yield return solution;
-                _conflictHandler.HandleConflict(CreateConflictFromSolution());
+                _conflictHandler.HandleConflict(_constraintFactory.CreateFromSoluution(_variables, _trail, _activityManager.ConstraintActivityIncrement));
             }
 
             while (_unitPropagationQueue.Count > 0)
@@ -185,18 +189,4 @@ sealed partial class SatSolverInternal<
         }
     }
     Literal[] BuildSolution() => [.. _variables.Select(v => new Literal(v.Index+1, v.Sense!.Value))];
-
-    Constraint CreateConflictFromSolution()
-    {
-        var literals = _variables.Select(variable => variable.Sense!.Value ? variable.NegativeLiteral : variable.PositiveLiteral);
-        var trailedVariable = _trail[^1];
-        var firstWatched = trailedVariable.Sense!.Value ? trailedVariable.NegativeLiteral : trailedVariable.PositiveLiteral;
-        var secondWatched = firstWatched;
-        if (_trail.Count > 1)
-        {
-            trailedVariable = _trail[^2];
-            secondWatched = trailedVariable.Sense!.Value ? trailedVariable.NegativeLiteral : trailedVariable.PositiveLiteral;
-        }
-        return new(literals, firstWatched, secondWatched) { Activity = _activityManager.ConstraintActivityIncrement };
-    } 
 }
