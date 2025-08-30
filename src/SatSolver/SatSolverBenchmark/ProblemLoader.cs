@@ -13,12 +13,5 @@ static class ProblemLoader
 
         return (satProblems, unsatProblems);
     }
-    public static ((string Name, Problem Problem)[] Sat, (string Name, Problem Problem)[] Unsat) LoadTestProblems()
-    {
-        var problem = DimacsParser.Parse(File.ReadAllText("SAT\\uf250-01.cnf")).Single();
-        var satProblems = Enumerable.Range(0, 10)
-            .Select(i => ($"Test{i}", problem)).ToArray();
-
-        return (satProblems, []);
-    }
+    public static Problem LoadSudoku() => DimacsParser.Parse(File.ReadAllText("SimpleCases\\sudoku.cnf")).Single();
 }

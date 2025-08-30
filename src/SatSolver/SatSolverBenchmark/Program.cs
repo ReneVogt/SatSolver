@@ -7,9 +7,11 @@ CursorVisible = false;
 WriteLine("[A]utomatic");
 WriteLine("[M]anual");
 WriteLine("[C]andidateQueue");
+WriteLine("[S]udoku");
 switch (ReadKey(true).Key)
 {
     case ConsoleKey.A: SatSolverBenchmark.SatSolverBenchmark.Run();  break;
     case ConsoleKey.M: ManualBenchmark.Run(); break;
     case ConsoleKey.C: CandidateHeapBenchmark.Run(); break;
+    case ConsoleKey.S: SudokuBenchmark.Run(); break;
 }
