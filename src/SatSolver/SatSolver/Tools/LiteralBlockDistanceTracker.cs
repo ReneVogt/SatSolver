@@ -8,6 +8,7 @@ sealed class LiteralBlockDistanceTracker(int fastHalflife, int slowHalflife, dou
     readonly Ema _fastEma = new(fastHalflife);
     readonly Ema _slowEma = new(slowHalflife);
 
+    public double Average => _slowEma.Value;
     public double CurrentRatio { get; private set; } = 1;
 
     int _conflictsSinceLastRestart;

@@ -2,6 +2,7 @@
 
 interface ITrackLiteralBlockDistance
 {
+    double Average { get; }
     double CurrentRatio { get; }
     bool ShouldRestart();
     void ResetAfterRestart();

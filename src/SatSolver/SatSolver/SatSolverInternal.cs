@@ -156,6 +156,7 @@ sealed partial class SatSolverInternal<
             {
                 var solution = BuildSolution();
                 Debug.WriteLine($"Delivering solution [{string.Join(" ", solution.AsEnumerable())}] and creating inverse conflict.");
+                Statistics.Dump();
                 yield return solution;
                 _conflictHandler.HandleConflict(_constraintFactory.CreateFromSoluution(_variables, _trail, _activityManager.ConstraintActivityIncrement));
             }
@@ -179,7 +180,12 @@ sealed partial class SatSolverInternal<
                 if (conflictingConstraint is null) continue;
 
                 Debug.WriteLine($"Conflict in {conflictingConstraint} (learned: {conflictingConstraint.IsLearned}).");
-                if (_trail.DecisionLevel == 0) yield break;
+                if (_trail.DecisionLevel == 0)
+                {
+                    Debug.WriteLine("NO MORE SOLUTIONS.");
+                    Statistics.Dump();
+                    yield break;
+                }
                 _conflictHandler.HandleConflict(conflictingConstraint);
 
                 Statistics.Dump();

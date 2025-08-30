@@ -39,15 +39,17 @@ static class Statistics
         Debug.WriteLine($"Omitted: {constraint.IsOmitted}");
         if (constraint.IsOmitted)
             _omittedLearnedConstraints++;
-        else if (constraint.IsTracked)
-            _trackedLearnedConstraints++;
         else
-            _permantentLearnedConstraints++;
+        {
+            if (constraint.IsTracked)
+                _trackedLearnedConstraints++;
+            else
+                _permantentLearnedConstraints++;
+            _totalLearnedConstraints++;
+        }
 
         if (constraint.Literals.Length == 2)
             _binaryConstraints++;
-
-        _totalLearnedConstraints++;
     }
     [Conditional("DEBUG")]
     public static void AddBinaryConstraint() => _binaryConstraints++;
@@ -67,8 +69,8 @@ static class Statistics
         Debug.WriteLine($"Omitted learned constraints:   {_omittedLearnedConstraints}");
         Debug.WriteLine($"Permanent learned constraints: {_permantentLearnedConstraints}");
         Debug.WriteLine($"Binary constraints:            {_binaryConstraints}");
-        Debug.WriteLine($"Propagation rate:              {_propagationRateTracker?.CurrentRatio}");
-        Debug.WriteLine($"LBD rate:                      {_literalBlockDistanceTracker?.CurrentRatio}");
+        Debug.WriteLine($"Propagation rate:              {_propagationRateTracker?.CurrentRatio} ({_propagationRateTracker?.Average})");
+        Debug.WriteLine($"LBD rate:                      {_literalBlockDistanceTracker?.CurrentRatio} ({_literalBlockDistanceTracker?.Average})");
         if (_learnedLiteralsCount != 0)
             Debug.WriteLine($"Minimization rate:             {(100 - 100*(double)_minimizedLiteralsCount/_learnedLiteralsCount):0.00}%");
     }

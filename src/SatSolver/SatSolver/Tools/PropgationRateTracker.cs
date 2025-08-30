@@ -8,6 +8,7 @@ sealed class PropagationRateTracker(int fastHalflife, int slowHalflife, double _
     readonly Ema _fastEma = new(fastHalflife);
     readonly Ema _slowEma = new(slowHalflife);
 
+    public double Average => _slowEma.Value;
     public double CurrentRatio { get; private set; } = 1;
 
     int _propagationsSinceLastConflict;
