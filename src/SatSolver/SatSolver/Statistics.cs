@@ -1,5 +1,4 @@
 ﻿using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.Processors;
 using Revo.SatSolver.Tools;
 using System.Diagnostics;
 

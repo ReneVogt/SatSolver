@@ -30,27 +30,26 @@ sealed class RestartManager<
     long _restartCounter, _nextRestartThreshold;
 
     public RestartManager(
-        TVariableTrail trail,
-        TPropagationRateTracker propagationRateTracker,
-        TLiteralBlockDistanceTracker literalBlockDistanceTracker,
+        SatSolverOptions options,
+        IVariableTrail trail,
+        ITrackPropagationRate propagationRateTracker,
+        ITrackLiteralBlockDistance literalBlockDistanceTracker,
         UnitPropagationQueue unitPropagationQueue,
-        TLearnedConstraintReducer constraintReducer,
-        int? restartInterval, TLubySequence? lubySequence,
-        bool restartOnPropagationRate, bool restartOnLiteralBlockDistance,
-        bool reduceConstraints)
+        IReduceLearnedConstraints constraintReducer,
+        ILubySequence? lubySequence)
     {
-        _trail = trail;
-        _propagationRateTracker = propagationRateTracker;
-        _literalBlockDistanceTracker = literalBlockDistanceTracker;
+        _trail = (TVariableTrail)trail;
+        _propagationRateTracker = (TPropagationRateTracker)propagationRateTracker;
+        _literalBlockDistanceTracker = (TLiteralBlockDistanceTracker)literalBlockDistanceTracker;
         _unitPropagationQueue = unitPropagationQueue;
-        _constraintReducer = constraintReducer;
+        _constraintReducer = (TLearnedConstraintReducer)constraintReducer;
 
-        _lubySequence = lubySequence;
-        _nextRestartThreshold = _lubySequence?.Next() ?? restartInterval ?? long.MaxValue;
-        _reduceConstraints = reduceConstraints;
-        _restartOnPropagationRate = restartOnPropagationRate;
-        _restartOnLiteralBlockDistance = restartOnLiteralBlockDistance;
-        _useRestarts = restartInterval is not null  ||
+        _lubySequence = (TLubySequence?)lubySequence;
+        _nextRestartThreshold = _lubySequence?.Next() ?? options.Restart.Interval ?? long.MaxValue;
+        _reduceConstraints = options.ConstraintDeletion.ReduceOnRestart;
+        _restartOnPropagationRate = options.Restart.ByPropagationRate;
+        _restartOnLiteralBlockDistance = options.Restart.ByLiteralBlockDistance;
+        _useRestarts = options.Restart.Interval is not null  ||
             _lubySequence is not null ||
             _restartOnPropagationRate ||
             _restartOnLiteralBlockDistance;

@@ -8,10 +8,10 @@ namespace Revo.SatSolver.Processors;
 sealed class LearnedConstraintsReducer<TConstraintFactory>(
     SatSolverOptions _options, 
     List<Constraint> _learnedConstraints, 
-    int _originalConstraintCount,
-    TConstraintFactory _constraintFactory) : IReduceLearnedConstraints
+    IConstraintFactory constraintFactory) : IReduceLearnedConstraints
     where TConstraintFactory : IConstraintFactory
 {
+    readonly TConstraintFactory _constraintFactory = (TConstraintFactory)constraintFactory;
     readonly double _originalConstraintCountFactor = _options.ConstraintDeletion.OriginalConstraintCountFactor ?? double.MaxValue;
     readonly int _conflictInterval = _options.ConstraintDeletion.ConflictInterval ?? int.MaxValue;
     readonly double _ratioToDelete = _options.ConstraintDeletion.RatioToDelete;
@@ -21,14 +21,14 @@ sealed class LearnedConstraintsReducer<TConstraintFactory>(
     int _conflictCount;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void ReduceLearnedConstraintsIfNecessary()
+    public void ReduceLearnedConstraintsIfNecessary(int originalConstraintCount)
     {
         if (!_reduceClauses) return;
 
         _conflictCount++;
 
         // reduce clauses if we learned too many already
-        var reduce = _learnedConstraints.Count > _originalConstraintCount * _originalConstraintCountFactor;
+        var reduce = _learnedConstraints.Count > originalConstraintCount * _originalConstraintCountFactor;
         // or if the literal block distance is too high
         reduce |= _conflictCount >= _conflictInterval;
 
@@ -38,7 +38,7 @@ sealed class LearnedConstraintsReducer<TConstraintFactory>(
     public void ReduceLearnedConstraints()
     {
         var previousCount = _learnedConstraints.Count;
-        Debug.WriteLine($"Start reducing learned constraints (currently {previousCount}, factor {previousCount/(double)_originalConstraintCount}): conflicts {_conflictCount} / {_conflictInterval}.");
+        Debug.WriteLine($"Start reducing learned constraints (currently {previousCount}): conflicts {_conflictCount} / {_conflictInterval}.");
         _conflictCount = 0;
 
         var learnedConstraints = _learnedConstraints;

@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using Revo.SatSolver.Tools;
+using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.DataStructures;
 
@@ -14,11 +15,12 @@ namespace Revo.SatSolver.DataStructures;
 /// that it does not count. So please don't
 /// refactor to use only a Variable[] for nodes.
 /// </summary>
-sealed class CandidateHeap : ICandidateHeap
+sealed class CandidateHeap<TConstraintFactory> : ICandidateHeap where TConstraintFactory : IConstraintFactory
 {
     const int Arity = 2;
     const int Log2Arity = 1;
 
+    readonly TConstraintFactory _constraintFactory;
     readonly Variable[] _variables;
     readonly (int Variable, double Activity)[] _nodes;
     readonly int[] _indices;
@@ -33,13 +35,14 @@ sealed class CandidateHeap : ICandidateHeap
     }
 #endif
 
-    public CandidateHeap(Variable[] variables)
+    public CandidateHeap(Variable[] variables, IConstraintFactory constraintFactory)
     {
+        _constraintFactory = (TConstraintFactory)constraintFactory;
         _variables = variables;
         _nodes = [.. _variables.Select(v => (v.Index, v.Activity))];
         _indices = [.. Enumerable.Range(0, _nodes.Length)];
         _size = _nodes.Length;
-        Heapify();
+        HeapifyInternal();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -49,8 +52,12 @@ sealed class CandidateHeap : ICandidateHeap
         {
             var variable = variables[i];
             variable.Sense = null;
+            var reason = variable.Reason;
             variable.Reason = null;
             variable.DecisionLevel = 0;
+
+            if (reason?.IsOmitted == true)
+                _constraintFactory.ReleaseConstraint(reason);
 
             Enqueue(variable);
         }
@@ -110,13 +117,22 @@ sealed class CandidateHeap : ICandidateHeap
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void Heapify()
+    public void Heapify()
+    {
+        for(var i=0; i<_indices.Length; i++)
+            _nodes[_indices[i]].Activity = _variables[i].Activity;
+        HeapifyInternal();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    void HeapifyInternal()
     {
         var nodes = _nodes;
         var lastParentWithChildren = GetParentIndex(_size - 1);
         for (var index = lastParentWithChildren; index >= 0; --index)
             MoveDown(nodes[index], index);
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void MoveUp((int Variable, double Activity) node, int nodeIndex)
     {

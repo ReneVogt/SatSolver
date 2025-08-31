@@ -14,7 +14,18 @@ sealed class ConflictHandler<
     TLearnedConstraintCreator,
     TRestartManager,
     TConstraintMinimizer,
-    TConstraintFactory> : IHandleConflicts
+    TConstraintFactory>(
+    SatSolverOptions options,
+    ConstraintLiteral[] literals,
+    IManageActivities activityManager,
+    IVariableTrail trail,
+    ITrackPropagationRate propagationRateTracker,
+    ITrackLiteralBlockDistance literalBlockDistanceTracker,
+    ICreateLearnedConstraints learnedConstraintCreator,
+    UnitPropagationQueue unitPropagationQueue,
+    IManageRestart restartManager,
+    IMinimizeConstraints constraintMinimizer,
+    IConstraintFactory constraintFactory) : IHandleConflicts
     where TActivityManager : IManageActivities
     where TVariableTrail : IVariableTrail
     where TPropagationRateTracker : ITrackPropagationRate
@@ -24,55 +35,19 @@ sealed class ConflictHandler<
     where TConstraintMinimizer : IMinimizeConstraints        
     where TConstraintFactory : IConstraintFactory
 {
-    readonly TActivityManager _activityManager;
-    readonly TVariableTrail _trail;
-    readonly TPropagationRateTracker _propagationRateTracker;
-    readonly TLiteralBlockDistanceTracker _literalBlockDistanceTracker;
-    readonly TLearnedConstraintCreator _learnedConstraintCreator;
-    readonly UnitPropagationQueue _unitPropagationQueue;
-    readonly TRestartManager _restartManager;
-    readonly int _literalBlockDistanceDeletionLimit;
-    readonly int _literalBlockDistanceMaximum;
+    readonly TActivityManager _activityManager = (TActivityManager)activityManager;
+    readonly TVariableTrail _trail = (TVariableTrail)trail;
+    readonly TPropagationRateTracker _propagationRateTracker = (TPropagationRateTracker)propagationRateTracker;
+    readonly TLiteralBlockDistanceTracker _literalBlockDistanceTracker = (TLiteralBlockDistanceTracker)literalBlockDistanceTracker;
+    readonly TLearnedConstraintCreator _learnedConstraintCreator = (TLearnedConstraintCreator)learnedConstraintCreator;
+    readonly UnitPropagationQueue _unitPropagationQueue = unitPropagationQueue;
+    readonly TRestartManager _restartManager = (TRestartManager)restartManager;
+    readonly int _literalBlockDistanceDeletionLimit = options.ConstraintDeletion.LiteralBlockDistanceToKeep;
+    readonly int _literalBlockDistanceMaximum = options.MaximumLiteralBlockDistance;
     readonly StampArray _learnedLiterals = [];
-    readonly ConstraintLiteral[] _literals;
-    readonly TConstraintMinimizer _constraintMinimizer;
-    readonly TConstraintFactory _constraintFactory;
-
-    public ConflictHandler(
-        SatSolverOptions options,
-        Variable[] variables,
-        TActivityManager activityManager,
-        TVariableTrail trail,
-        TPropagationRateTracker propagationRateTracker,
-        TLiteralBlockDistanceTracker literalBlockDistanceTracker,
-        TLearnedConstraintCreator learnedConstraintCreator,
-        UnitPropagationQueue unitPropagationQueue,
-        TRestartManager restartManager,
-        TConstraintMinimizer constraintMinimizer,
-        TConstraintFactory constraintFactory)
-    {
-        _literalBlockDistanceDeletionLimit = options.ConstraintDeletion.LiteralBlockDistanceToKeep;
-        _literalBlockDistanceMaximum = options.MaximumLiteralBlockDistance;
-
-        _activityManager = activityManager;
-        _trail = trail;
-        _propagationRateTracker = propagationRateTracker;
-        _literalBlockDistanceTracker = literalBlockDistanceTracker;
-        _learnedConstraintCreator = learnedConstraintCreator;
-        _unitPropagationQueue = unitPropagationQueue;
-        _restartManager = restartManager;
-        _constraintMinimizer = constraintMinimizer;
-        _constraintFactory = constraintFactory;
-
-        _literals = new ConstraintLiteral[variables.Length << 1];
-        for (var variableIndex = 0; variableIndex < variables.Length; variableIndex++)
-        {
-            var literalIndex = variableIndex << 1;
-            _literals[literalIndex] = variables[variableIndex].PositiveLiteral;
-            _literals[literalIndex+1] = variables[variableIndex].NegativeLiteral;
-        }
-
-    }
+    readonly ConstraintLiteral[] _literals = literals;
+    readonly TConstraintMinimizer _constraintMinimizer = (TConstraintMinimizer)constraintMinimizer;
+    readonly TConstraintFactory _constraintFactory = (TConstraintFactory)constraintFactory;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void HandleConflict(Constraint conflictingConstraint)
@@ -111,11 +86,15 @@ sealed class ConflictHandler<
     }
 
     [Conditional("DEBUG")]
-    [ExcludeFromCodeCoverage]
     static void Assert(Constraint learnedConstraint)
     {
         var uip = learnedConstraint.Watched1;
-        Debug.Assert(learnedConstraint.Literals.All(l => l == uip && l.Sense is null || l != uip && l.Sense == false));
+        Debug.Assert(learnedConstraint.Literals.All(IsValid));
         Debug.Assert(learnedConstraint.Literals.Contains(uip));
+
+        [ExcludeFromCodeCoverage]
+        bool IsValid(ConstraintLiteral literal) =>
+            literal == uip && literal.Sense is null ||
+            literal!= uip && literal.Sense == false;
     }
 }

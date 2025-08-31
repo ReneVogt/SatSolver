@@ -1,7 +1,5 @@
-﻿using Moq;
-using Revo.SatSolver;
+﻿using Revo.SatSolver;
 using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.Processors;
 using Revo.SatSolver.Tools;
 
 namespace SatSolverTests.Tools;
@@ -62,126 +60,303 @@ public sealed class ConstraintFactoryTests
     }
 
     [Fact]
-    public void Solution_SingleWatcher_WatcherConnectedOnce()
+    public void Addidtional_SingleWatcher_WatcherConnectedOnce()
     {
         var sut = new ConstraintFactory([]);
         var variable = new Variable(17)
         {
             Sense = true
         };
-        var variables = new[] { variable };
-        var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
-        var seq = new MockSequence();
-        trail.InSequence(seq).Setup(t => t.Count).Returns(1);
-        trail.InSequence(seq).Setup(t => t[0]).Returns(variable);
-        trail.InSequence(seq).Setup(t => t.Count).Returns(1);
-        var constraint = sut.CreateFromSoluution<IVariableTrail>(variables, trail.Object, 12);
+        var constraint = sut.CreateAdditionalConstraint([variable.NegativeLiteral]);
 
         Assert.Equal(variable.NegativeLiteral, constraint.Watched1);
-        Assert.Equal(variable.NegativeLiteral , constraint.Watched2);
-        Assert.Contains(constraint, variable.NegativeLiteral .Watchers);
+        Assert.Equal(variable.NegativeLiteral, constraint.Watched2);
+        Assert.Contains(constraint, variable.NegativeLiteral.Watchers);
         Assert.Single(variable.NegativeLiteral.Watchers);
         Assert.Empty(variable.PositiveLiteral.Watchers);
 
         Assert.Equal([variable.NegativeLiteral], constraint.Literals);
 
         Assert.Equal(0, constraint.LiteralBlockDistance);
-        Assert.Equal(12, constraint.Activity);
+        Assert.Equal(0, constraint.Activity);
         Assert.False(constraint.IsTracked);
-        Assert.True(constraint.IsLearned);
+        Assert.False(constraint.IsLearned);
         Assert.False(constraint.IsOmitted);
+        Assert.True(constraint.IsAdditional);
     }
     [Fact]
-    public void Solution_MultipleLiteral_WatchersConnected()
+    public void Addidtional_AllAssigned_OneTrue()
     {
-        var v1 = new Variable(17);
-        var v2 = new Variable(42);
-        var v3 = new Variable(23);
-        var variables = new[] { v1, v2, v3 };
-        v1.Sense = true; v2.Sense = true; v3.Sense = false;
-
         var sut = new ConstraintFactory([]);
-        var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
-        var seq = new MockSequence();
-        trail.InSequence(seq).Setup(t => t.Count).Returns(3);
-        trail.InSequence(seq).Setup(t => t[2]).Returns(v3);
-        trail.InSequence(seq).Setup(t => t.Count).Returns(3);
-        trail.InSequence(seq).Setup(t => t.Count).Returns(3);
-        trail.InSequence(seq).Setup(t => t[1]).Returns(v2);
+        var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
+        var v1 = new Variable(1) { Sense = true, DecisionLevel = 7 };
+        var v2 = new Variable(2) { Sense = true, DecisionLevel = 1 };
+        var v3 = new Variable(3) { Sense = true, DecisionLevel = 6 };
 
-        var constraint = sut.CreateFromSoluution(variables, trail.Object, 12);
+        var clause = new[] { v0.NegativeLiteral, v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral };
+        var constraint = sut.CreateAdditionalConstraint(clause);
 
-        Assert.Empty(v1.PositiveLiteral.Watchers);
+        Assert.Equal(v1.PositiveLiteral, constraint.Watched1);
+        Assert.Equal(v3.NegativeLiteral, constraint.Watched2);
+        Assert.Equal(constraint, Assert.Single(constraint.Watched1.Watchers));
+        Assert.Equal(constraint, Assert.Single(constraint.Watched2.Watchers));
+
+        Assert.Empty(v0.PositiveLiteral.Watchers);
+        Assert.Empty(v0.NegativeLiteral.Watchers);
         Assert.Empty(v1.NegativeLiteral.Watchers);
-
-        Assert.Equal(v3.PositiveLiteral, constraint.Watched1);
-        Assert.Contains(constraint, v3.PositiveLiteral.Watchers);
-        Assert.Single(v3.PositiveLiteral.Watchers);
-        Assert.Empty(v3.NegativeLiteral.Watchers);
-
-        Assert.Equal(v2.NegativeLiteral, constraint.Watched2);
-        Assert.Contains(constraint, v2.NegativeLiteral.Watchers);
-        Assert.Single(v2.NegativeLiteral.Watchers);
         Assert.Empty(v2.PositiveLiteral.Watchers);
-
-        Assert.Equal(0, constraint.LiteralBlockDistance);
-        Assert.Equal(12, constraint.Activity);
-        Assert.False(constraint.IsTracked);
-        Assert.True(constraint.IsLearned);
-        Assert.False(constraint.IsOmitted);
-
-        Assert.Equal([v1.NegativeLiteral, v2.NegativeLiteral, v3.PositiveLiteral], constraint.Literals);
-    }
-    [Fact]
-    public void Solution_MultipleLiteralInverse_WatchersConnected()
-    {
-        var v1 = new Variable(17);
-        var v2 = new Variable(42);
-        var v3 = new Variable(23);
-        var variables = new[] { v1, v2, v3 };
-        v1.Sense = true; v2.Sense = false; v3.Sense = true;
-
-        var sut = new ConstraintFactory([]);
-        var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
-        var seq = new MockSequence();
-        trail.InSequence(seq).Setup(t => t.Count).Returns(3);
-        trail.InSequence(seq).Setup(t => t[2]).Returns(v3);
-        trail.InSequence(seq).Setup(t => t.Count).Returns(3);
-        trail.InSequence(seq).Setup(t => t.Count).Returns(3);
-        trail.InSequence(seq).Setup(t => t[1]).Returns(v2);
-
-        var constraint = sut.CreateFromSoluution(variables, trail.Object, 12);
-
-        Assert.Empty(v1.PositiveLiteral.Watchers);
-        Assert.Empty(v1.NegativeLiteral.Watchers);
-
-        Assert.Equal(v3.NegativeLiteral, constraint.Watched1);
-        Assert.Contains(constraint, v3.NegativeLiteral.Watchers);
-        Assert.Single(v3.NegativeLiteral.Watchers);
+        Assert.Empty(v2.NegativeLiteral.Watchers);
         Assert.Empty(v3.PositiveLiteral.Watchers);
 
-        Assert.Equal(v2.PositiveLiteral, constraint.Watched2);
-        Assert.Contains(constraint, v2.PositiveLiteral.Watchers);
-        Assert.Single(v2.PositiveLiteral.Watchers);
-        Assert.Empty(v2.NegativeLiteral.Watchers);
+        Assert.Equal(clause, constraint.Literals);
 
         Assert.Equal(0, constraint.LiteralBlockDistance);
-        Assert.Equal(12, constraint.Activity);
+        Assert.Equal(0, constraint.Activity);
         Assert.False(constraint.IsTracked);
-        Assert.True(constraint.IsLearned);
+        Assert.False(constraint.IsLearned);
         Assert.False(constraint.IsOmitted);
-
-        Assert.Equal([v1.NegativeLiteral, v2.PositiveLiteral, v3.NegativeLiteral], constraint.Literals);
+        Assert.True(constraint.IsAdditional);
     }
+    [Fact]
+    public void Addidtional_AllAssigned_TwoTrue()
+    {
+        var sut = new ConstraintFactory([]);
+        var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
+        var v1 = new Variable(1) { Sense = true, DecisionLevel = 9 };
+        var v2 = new Variable(2) { Sense = true, DecisionLevel = 6 };
+        var v3 = new Variable(3) { Sense = true, DecisionLevel = 7 };
 
+        var clause = new[] { v0.PositiveLiteral, v1.NegativeLiteral, v2.NegativeLiteral, v3.PositiveLiteral };
+        var constraint = sut.CreateAdditionalConstraint(clause);
+
+        Assert.Equal(v3.PositiveLiteral, constraint.Watched1);
+        Assert.Equal(v2.NegativeLiteral, constraint.Watched2);
+        Assert.Equal(constraint, Assert.Single(constraint.Watched1.Watchers));
+        Assert.Equal(constraint, Assert.Single(constraint.Watched2.Watchers));
+
+        Assert.Empty(v0.PositiveLiteral.Watchers);
+        Assert.Empty(v0.NegativeLiteral.Watchers);
+        Assert.Empty(v1.PositiveLiteral.Watchers);
+        Assert.Empty(v1.NegativeLiteral.Watchers);
+        Assert.Empty(v2.PositiveLiteral.Watchers);
+        Assert.Empty(v3.NegativeLiteral.Watchers);
+
+        Assert.Equal(clause, constraint.Literals);
+
+        Assert.Equal(0, constraint.LiteralBlockDistance);
+        Assert.Equal(0, constraint.Activity);
+        Assert.False(constraint.IsTracked);
+        Assert.False(constraint.IsLearned);
+        Assert.False(constraint.IsOmitted);
+        Assert.True(constraint.IsAdditional);
+    }
+    [Fact]
+    public void Addidtional_AllAssigned_NoTrue()
+    {
+        var sut = new ConstraintFactory([]);
+        var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
+        var v1 = new Variable(1) { Sense = true, DecisionLevel = 9 };
+        var v2 = new Variable(2) { Sense = true, DecisionLevel = 6 };
+        var v3 = new Variable(3) { Sense = true, DecisionLevel = 7 };
+
+        var clause = new[] { v0.NegativeLiteral, v1.NegativeLiteral, v2.NegativeLiteral, v3.NegativeLiteral};
+        var constraint = sut.CreateAdditionalConstraint(clause);
+
+        Assert.Equal(v1.NegativeLiteral, constraint.Watched1);
+        Assert.Equal(v0.NegativeLiteral, constraint.Watched2);
+        Assert.Equal(constraint, Assert.Single(constraint.Watched1.Watchers));
+        Assert.Equal(constraint, Assert.Single(constraint.Watched2.Watchers));
+
+        Assert.Empty(v0.PositiveLiteral.Watchers);
+        Assert.Empty(v1.PositiveLiteral.Watchers);
+        Assert.Empty(v2.PositiveLiteral.Watchers);
+        Assert.Empty(v2.NegativeLiteral.Watchers);
+        Assert.Empty(v3.PositiveLiteral .Watchers);
+        Assert.Empty(v3.NegativeLiteral.Watchers);
+
+        Assert.Equal(clause, constraint.Literals);
+
+        Assert.Equal(0, constraint.LiteralBlockDistance);
+        Assert.Equal(0, constraint.Activity);
+        Assert.False(constraint.IsTracked);
+        Assert.False(constraint.IsLearned);
+        Assert.False(constraint.IsOmitted);
+        Assert.True(constraint.IsAdditional);
+    }
+    [Fact]
+    public void Addidtional_AllUnassigned()
+    {
+        var sut = new ConstraintFactory([]);
+        var v0 = new Variable(0) { Sense = null, DecisionLevel = 0 };
+        var v1 = new Variable(1) { Sense = null, DecisionLevel = 0 };
+        var v2 = new Variable(2) { Sense = null, DecisionLevel = 0 };
+        var v3 = new Variable(3) { Sense = null, DecisionLevel = 0 };
+
+        var clause = new[] { v0.PositiveLiteral, v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral };
+        var constraint = sut.CreateAdditionalConstraint(clause);
+
+        Assert.Equal(v0.PositiveLiteral, constraint.Watched1);
+        Assert.Equal(v1.PositiveLiteral, constraint.Watched2);
+        Assert.Equal(constraint, Assert.Single(constraint.Watched1.Watchers));
+        Assert.Equal(constraint, Assert.Single(constraint.Watched2.Watchers));
+
+        Assert.Empty(v0.NegativeLiteral.Watchers);
+        Assert.Empty(v1.NegativeLiteral.Watchers);
+        Assert.Empty(v2.PositiveLiteral.Watchers);
+        Assert.Empty(v2.NegativeLiteral.Watchers);
+        Assert.Empty(v3.PositiveLiteral.Watchers);
+        Assert.Empty(v3.NegativeLiteral.Watchers);
+
+        Assert.Equal(clause, constraint.Literals);
+
+        Assert.Equal(0, constraint.LiteralBlockDistance);
+        Assert.Equal(0, constraint.Activity);
+        Assert.False(constraint.IsTracked);
+        Assert.False(constraint.IsLearned);
+        Assert.False(constraint.IsOmitted);
+        Assert.True(constraint.IsAdditional);
+    }
+    [Fact]
+    public void Addidtional_HalfAssigned_NoTrue()
+    {
+        var sut = new ConstraintFactory([]);
+        var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
+        var v1 = new Variable(1) { Sense = null, DecisionLevel = 0 };
+        var v2 = new Variable(2) { Sense = false, DecisionLevel = 6 };
+        var v3 = new Variable(3) { Sense = null, DecisionLevel = 0 };
+
+        var clause = new[] { v0.NegativeLiteral, v1.PositiveLiteral, v2.PositiveLiteral, v3.NegativeLiteral };
+        var constraint = sut.CreateAdditionalConstraint(clause);
+
+        Assert.Equal(v1.PositiveLiteral, constraint.Watched1);
+        Assert.Equal(v3.NegativeLiteral, constraint.Watched2);
+        Assert.Equal(constraint, Assert.Single(constraint.Watched1.Watchers));
+        Assert.Equal(constraint, Assert.Single(constraint.Watched2.Watchers));
+
+        Assert.Empty(v0.PositiveLiteral.Watchers);
+        Assert.Empty(v0.NegativeLiteral.Watchers);
+        Assert.Empty(v1.NegativeLiteral.Watchers);
+        Assert.Empty(v2.PositiveLiteral.Watchers);
+        Assert.Empty(v2.NegativeLiteral.Watchers);
+        Assert.Empty(v3.PositiveLiteral.Watchers);
+
+        Assert.Equal(clause, constraint.Literals);
+
+        Assert.Equal(0, constraint.LiteralBlockDistance);
+        Assert.Equal(0, constraint.Activity);
+        Assert.False(constraint.IsTracked);
+        Assert.False(constraint.IsLearned);
+        Assert.False(constraint.IsOmitted);
+        Assert.True(constraint.IsAdditional);
+    }
+    [Fact]
+    public void Addidtional_HalfAssigned_OneTrue()
+    {
+        var sut = new ConstraintFactory([]);
+        var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
+        var v1 = new Variable(1) { Sense = null, DecisionLevel = 0 };
+        var v2 = new Variable(2) { Sense = false, DecisionLevel = 10 };
+        var v3 = new Variable(3) { Sense = null, DecisionLevel = 0 };
+        var v4 = new Variable(4) { Sense = true, DecisionLevel = 7 };
+
+        var clause = new[] { v0.NegativeLiteral, v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral, v4.NegativeLiteral };
+        var constraint = sut.CreateAdditionalConstraint(clause);
+
+        Assert.Equal(v2.NegativeLiteral, constraint.Watched1);
+        Assert.Equal(v0.NegativeLiteral, constraint.Watched2);
+        Assert.Equal(constraint, Assert.Single(constraint.Watched1.Watchers));
+        Assert.Equal(constraint, Assert.Single(constraint.Watched2.Watchers));
+
+        Assert.Empty(v0.PositiveLiteral.Watchers);
+        Assert.Empty(v1.PositiveLiteral.Watchers);
+        Assert.Empty(v1.NegativeLiteral.Watchers);
+        Assert.Empty(v2.PositiveLiteral.Watchers);
+        Assert.Empty(v3.PositiveLiteral.Watchers);
+        Assert.Empty(v3.NegativeLiteral.Watchers);
+        Assert.Empty(v4.PositiveLiteral.Watchers);
+        Assert.Empty(v4.NegativeLiteral.Watchers);
+
+        Assert.Equal(clause, constraint.Literals);
+
+        Assert.Equal(0, constraint.LiteralBlockDistance);
+        Assert.Equal(0, constraint.Activity);
+        Assert.False(constraint.IsTracked);
+        Assert.False(constraint.IsLearned);
+        Assert.False(constraint.IsOmitted);
+        Assert.True(constraint.IsAdditional);
+    }
+    [Fact]
+    public void Addidtional_HalfAssigned_TwoTrue()
+    {
+        var sut = new ConstraintFactory([]);
+        var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
+        var v1 = new Variable(1) { Sense = null, DecisionLevel = 0 };
+        var v2 = new Variable(2) { Sense = false, DecisionLevel = 10 };
+        var v3 = new Variable(3) { Sense = null, DecisionLevel = 0 };
+        var v4 = new Variable(4) { Sense = true, DecisionLevel = 7 };
+
+        var clause = new[] { v0.PositiveLiteral, v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral, v4.NegativeLiteral };
+        var constraint = sut.CreateAdditionalConstraint(clause);
+
+        Assert.Equal(v0.PositiveLiteral, constraint.Watched1);
+        Assert.Equal(v4.NegativeLiteral, constraint.Watched2);
+        Assert.Equal(constraint, Assert.Single(constraint.Watched1.Watchers));
+        Assert.Equal(constraint, Assert.Single(constraint.Watched2.Watchers));
+
+        Assert.Empty(v0.NegativeLiteral.Watchers);
+        Assert.Empty(v1.PositiveLiteral.Watchers);
+        Assert.Empty(v1.NegativeLiteral.Watchers);
+        Assert.Empty(v2.PositiveLiteral.Watchers);
+        Assert.Empty(v2.NegativeLiteral.Watchers);
+        Assert.Empty(v3.PositiveLiteral.Watchers);
+        Assert.Empty(v3.NegativeLiteral.Watchers);
+        Assert.Empty(v4.PositiveLiteral.Watchers);
+
+        Assert.Equal(clause, constraint.Literals);
+
+        Assert.Equal(0, constraint.LiteralBlockDistance);
+        Assert.Equal(0, constraint.Activity);
+        Assert.False(constraint.IsTracked);
+        Assert.False(constraint.IsLearned);
+        Assert.False(constraint.IsOmitted);
+        Assert.True(constraint.IsAdditional);
+    }
+    [Fact]
+    public void Addidtional_ForCoverage_1()
+    {
+        var sut = new ConstraintFactory([]);
+        var v0 = new Variable(0) { Sense = false, DecisionLevel = 3 };
+        var v1 = new Variable(1) { Sense = false, DecisionLevel = 1 };
+        var v2 = new Variable(1) { Sense = false, DecisionLevel = 2 };
+
+        var clause = new[] { v0.PositiveLiteral, v1.PositiveLiteral, v2.PositiveLiteral };
+        var constraint = sut.CreateAdditionalConstraint(clause);
+
+        Assert.Equal(v0.PositiveLiteral, constraint.Watched1);
+        Assert.Equal(v2.PositiveLiteral, constraint.Watched2);
+    }
+    [Fact]
+    public void Addidtional_ForCoverage_2()
+    {
+        var sut = new ConstraintFactory([]);
+        var v0 = new Variable(0) { Sense = null, DecisionLevel = 0 };
+        var v1 = new Variable(1) { Sense = false, DecisionLevel = 1 };
+        var v2 = new Variable(1) { Sense = false, DecisionLevel = 2 };
+
+        var clause = new[] { v0.PositiveLiteral, v1.PositiveLiteral, v2.PositiveLiteral };
+        var constraint = sut.CreateAdditionalConstraint(clause);
+
+        Assert.Equal(v0.PositiveLiteral, constraint.Watched1);
+        Assert.Equal(v2.PositiveLiteral, constraint.Watched2);
+    }
 
     [Theory]
     [
-    InlineData(2, 4),
-    InlineData(3, 4),
-    InlineData(0, 2)
-]
-    public void CreateLearned(int minimum, int maximum)
+        InlineData(2, 4),
+        InlineData(3, 4),
+        InlineData(0, 2)
+    ]
+    public void Learned(int minimum, int maximum)
     {
         var variables = Enumerable.Range(0, 5).Select(i => new Variable(i)).ToArray();
         variables[0].DecisionLevel = 1;
@@ -215,9 +390,8 @@ public sealed class ConstraintFactoryTests
         Assert.Equal(17, learnedConstraint.Activity);
         Assert.Equal(3, jumpBackLevel);
     }
-
     [Fact]
-    public void CreateLearned_SingleLiteral()
+    public void Learned_SingleLiteral()
     {
         var variables = Enumerable.Range(0, 5).Select(i => new Variable(i)).ToArray();
         variables[2].DecisionLevel = 3;
@@ -235,124 +409,8 @@ public sealed class ConstraintFactoryTests
         Assert.Equal(0, jumpBackLevel);
     }
 
-
-    //[Fact]
-    //public void Learned_SingleWatcher_NotOmitted_WatcherConnectedOnce()
-    //{
-    //    const double activity = 3.1416d;
-    //    const int lbd = 3;
-
-    //    var sut = new ConstraintFactory([]);
-    //    var variable = new Variable(17);
-    //    var constraint = sut.CreateLearnedConstraint([variable.PositiveLiteral], variable.PositiveLiteral, variable.PositiveLiteral, activity, lbd, true, false);
-
-    //    Assert.Equal(variable.PositiveLiteral, constraint.Watched1);
-    //    Assert.Equal(variable.PositiveLiteral, constraint.Watched2);
-    //    Assert.Contains(constraint, variable.PositiveLiteral.Watchers);
-    //    Assert.Single(variable.PositiveLiteral.Watchers);
-    //    Assert.Empty(variable.NegativeLiteral.Watchers);
-
-    //    Assert.Equal([variable.PositiveLiteral], constraint.Literals);
-
-    //    Assert.Equal(lbd, constraint.LiteralBlockDistance);
-    //    Assert.Equal(activity, constraint.Activity);
-    //    Assert.True(constraint.IsTracked);
-    //    Assert.True(constraint.IsLearned);
-    //    Assert.False(constraint.IsOmitted);
-    //}
-    //[Fact]
-    //public void Learned_SingleWatcher_Omitted_WatchersNotConnected()
-    //{
-    //    const double activity = 3.1416d;
-    //    const int lbd = 3;
-
-    //    var sut = new ConstraintFactory([]);
-    //    var variable = new Variable(17);
-    //    var constraint = sut.CreateLearnedConstraint([variable.PositiveLiteral], variable.PositiveLiteral, variable.PositiveLiteral, activity, lbd, false, true);
-
-    //    Assert.Equal(variable.PositiveLiteral, constraint.Watched1);
-    //    Assert.Equal(variable.PositiveLiteral, constraint.Watched2);
-    //    Assert.Empty(variable.PositiveLiteral.Watchers);
-    //    Assert.Empty(variable.NegativeLiteral.Watchers);
-
-    //    Assert.Equal([variable.PositiveLiteral], constraint.Literals);
-
-    //    Assert.Equal(lbd, constraint.LiteralBlockDistance);
-    //    Assert.Equal(activity, constraint.Activity);
-    //    Assert.False(constraint.IsTracked);
-    //    Assert.True(constraint.IsLearned);
-    //    Assert.True(constraint.IsOmitted);
-    //}
-    //[Fact]
-    //public void Learned_MultipleLiteral_NotOmitted_WatchersConnected()
-    //{
-    //    const double activity = 3.1416d;
-    //    const int lbd = 3;
-
-    //    var sut = new ConstraintFactory([]);
-    //    var v1 = new Variable(17);
-    //    var v2 = new Variable(42);
-    //    var v3 = new Variable(23);
-    //    var constraint = sut.CreateLearnedConstraint([v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral],
-    //        v2.NegativeLiteral, v3.NegativeLiteral,
-    //        activity, lbd, false, false);
-
-    //    Assert.Empty(v1.PositiveLiteral.Watchers);
-    //    Assert.Empty(v1.NegativeLiteral.Watchers);
-
-    //    Assert.Equal(v2.NegativeLiteral, constraint.Watched1);
-    //    Assert.Contains(constraint, v2.NegativeLiteral.Watchers);
-    //    Assert.Single(v2.NegativeLiteral.Watchers);
-    //    Assert.Empty(v2.PositiveLiteral.Watchers);
-
-    //    Assert.Equal(v3.NegativeLiteral, constraint.Watched2);
-    //    Assert.Contains(constraint, v3.NegativeLiteral.Watchers);
-    //    Assert.Single(v3.NegativeLiteral.Watchers);
-    //    Assert.Empty(v3.PositiveLiteral.Watchers);
-
-    //    Assert.Equal(lbd, constraint.LiteralBlockDistance);
-    //    Assert.Equal(activity, constraint.Activity);
-    //    Assert.False(constraint.IsTracked);
-    //    Assert.True(constraint.IsLearned);
-    //    Assert.False(constraint.IsOmitted);
-
-    //    Assert.Equal([v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral], constraint.Literals);
-    //}
-    //[Fact]
-    //public void Learned_MultipleLiteral_Omitted_WatchersNotConnected()
-    //{
-    //    const double activity = 3.1416d;
-    //    const int lbd = 3;
-
-    //    var sut = new ConstraintFactory([]);
-    //    var v1 = new Variable(17);
-    //    var v2 = new Variable(42);
-    //    var v3 = new Variable(23);
-    //    var constraint = sut.CreateLearnedConstraint([v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral],
-    //        v2.NegativeLiteral, v3.NegativeLiteral,
-    //        activity, lbd, false, true);
-
-    //    Assert.Empty(v1.PositiveLiteral.Watchers);
-    //    Assert.Empty(v1.NegativeLiteral.Watchers);
-
-    //    Assert.Equal(v2.NegativeLiteral, constraint.Watched1);
-    //    Assert.Empty(v2.NegativeLiteral.Watchers);
-    //    Assert.Empty(v2.PositiveLiteral.Watchers);
-
-    //    Assert.Equal(v3.NegativeLiteral, constraint.Watched2);
-    //    Assert.Empty(v3.NegativeLiteral.Watchers);
-    //    Assert.Empty(v3.PositiveLiteral.Watchers);
-
-    //    Assert.Equal(lbd, constraint.LiteralBlockDistance);
-    //    Assert.Equal(activity, constraint.Activity);
-    //    Assert.False(constraint.IsTracked);
-    //    Assert.True(constraint.IsLearned);
-    //    Assert.True(constraint.IsOmitted);
-
-    //    Assert.Equal([v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral], constraint.Literals);
-    //}
     [Fact]
-    public void Release_DeleteCorrectConstraints()
+    public void ReleaseLearnedConstraints_DeleteCorrectConstraints()
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var learnedConstraints = new List<Constraint>();
@@ -420,5 +478,38 @@ public sealed class ConstraintFactoryTests
             Assert.False(deletedConstraint.IsTracked);
             Assert.DoesNotContain(deletedConstraint, allWatched);
         });
+    }
+
+    [Fact]
+    public void ReleaseConstraint_WatchersDisconnected()
+    {
+        var variables = Enumerable.Range(0, 2).Select(i => new Variable(i)).ToArray();
+        var constraint = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral],
+                variables[0].PositiveLiteral, variables[1].PositiveLiteral);
+        constraint.Watched1.Watchers.Add(constraint);
+        constraint.Watched2.Watchers.Add(constraint);
+
+        var sut = new ConstraintFactory([]);
+        sut.ReleaseConstraint(constraint);
+
+        Assert.Empty(variables[0].PositiveLiteral.Watchers);
+        Assert.Empty(variables[1].PositiveLiteral.Watchers);
+    }
+    [Fact]
+    public void ReleaseConstraint_IgnoreOmitted()
+    {
+        var variables = Enumerable.Range(0, 2).Select(i => new Variable(i)).ToArray();
+        var constraint = new Constraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral],
+                variables[0].PositiveLiteral, variables[1].PositiveLiteral);
+        constraint.Watched1.Watchers.Add(constraint);
+        constraint.Watched2.Watchers.Add(constraint);
+
+        constraint.IsOmitted = true;
+
+        var sut = new ConstraintFactory([]);
+        sut.ReleaseConstraint(constraint);
+
+        Assert.Equal(constraint, Assert.Single(variables[0].PositiveLiteral.Watchers));
+        Assert.Equal(constraint, Assert.Single(variables[1].PositiveLiteral.Watchers));
     }
 }

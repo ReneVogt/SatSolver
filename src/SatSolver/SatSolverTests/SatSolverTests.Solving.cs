@@ -1,31 +1,90 @@
 ﻿using Revo.SatSolver;
 using Revo.SatSolver.Parsing;
-using static Revo.SatSolver.SatSolver;
+using static Revo.SatSolver.SatSolverFactory;
 using static SatSolverTests.Problems;
 
 namespace SatSolverTests;
 
 public sealed partial class SatSolverTests
 {
+    [Fact]
+    [Trait("Category", "Simple Cases")]
+    public void EnumerateSolutions_NoLiterals_EmptySolution()
+    {
+        var solution = new Problem(0, []).EnumerateSolutions().Single();
+        Assert.NotNull(solution);
+        Assert.Empty(solution);
+    }
+    [Fact]
+    [Trait("Category", "Simple Cases")]
+    public void EnumerateSolutions_EmptyClause_ArgumentException()
+    {
+        var problem = new Problem(2, [new([1, 2]), new([1]), new([]), new([2])]);
+        Assert.Throws<ArgumentException>(() => problem.EnumerateSolutions());        
+    }
+
+    [Fact]
+    [Trait("Category", "Simple Cases")]
+    [Trait("Options", "CDCL")]
+    public void EnumerateSolutions_NoClauses_AllSolutions_CDCL()
+    {
+        var solutions = new Problem(3, []).EnumerateSolutions(SatSolverOptions.CDCL).ToArray();
+        var clauses = solutions.Select(s => new Clause(s)).OrderBy(c => c).ToArray();
+        Assert.Equal([
+            [-1, -2, -3],
+                [-1, -2, 3],
+                [-1, 2, -3],
+                [-1, 2, 3],
+                [1, -2, -3],
+                [1, -2, 3],
+                [1, 2, -3],
+                [1, 2, 3]], clauses.Select(c => c.Literals));
+    }
+    [Fact]
+    [Trait("Category", "Simple Cases")]
+    [Trait("Options", "DPLL")]
+    public void EnumerateSolutions_NoClauses_AllSolutions_DPLL()
+    {
+        var solutions = new Problem(3, []).EnumerateSolutions(SatSolverOptions.DPLL).ToArray();
+        var clauses = solutions.Select(s => new Clause(s)).OrderBy(c => c).ToArray();
+        Assert.Equal([
+            [-1, -2, -3],
+                [-1, -2, 3],
+                [-1, 2, -3],
+                [-1, 2, 3],
+                [1, -2, -3],
+                [1, -2, 3],
+                [1, 2, -3],
+                [1, 2, 3]], clauses.Select(c => c.Literals));
+    }
+
     [Theory]
     [
-        InlineData(SimpleOr, 3, false),
-        InlineData(SimpleOr, 3, true),
-        InlineData(TwoStateSudoku, 2, false),
-        InlineData(TwoStateSudoku, 2, true),
-        InlineData(ThreeStateSudoku, 6, false),
-        InlineData(ThreeStateSudoku, 6, true),
-        InlineData(FourStateSudoku, 24, false),
-        InlineData(FourStateSudoku, 24, true)        
+        InlineData(SimpleOr, 3),
+        InlineData(TwoStateSudoku, 2),
+        InlineData(ThreeStateSudoku, 6),
+        InlineData(FourStateSudoku, 24),
     ]
     [Trait("Category", "Simple Cases")]
-    public void EnumerateMutlipleSolutions(string dimacs, int expectedSolutions, bool cdcl)
+    [Trait("Options", "CDCL")]
+    public void EnumerateMutlipleSolutions_CDCL(string dimacs, int expectedSolutions) => EnumerateMutlipleSolutions(dimacs, expectedSolutions, true);
+    [Theory]
+    [
+        InlineData(SimpleOr, 3),
+        InlineData(TwoStateSudoku, 2),
+        InlineData(ThreeStateSudoku, 6),
+        InlineData(FourStateSudoku, 24),
+    ]
+    [Trait("Category", "Simple Cases")]
+    [Trait("Options", "DPLL")]
+    public void EnumerateMutlipleSolutions_DPLL(string dimacs, int expectedSolutions) => EnumerateMutlipleSolutions(dimacs, expectedSolutions, false);
+    void EnumerateMutlipleSolutions(string dimacs, int expectedSolutions, bool cdcl)
     {
         using var logger = DebugLogger.Log(_output);
         var problem = DimacsParser.Parse(dimacs).Single();
-        var solutions = EnumerateSolutions(problem, cdcl ? SatSolverOptions.CDCL : SatSolverOptions.DPLL).ToArray();
-        Assert.Equal(expectedSolutions, solutions.Length);
+        var solutions = problem.EnumerateSolutions(cdcl ? SatSolverOptions.CDCL : SatSolverOptions.DPLL).ToArray();
         SolutionValidator.Validate(problem, solutions);
+        Assert.Equal(expectedSolutions, solutions.Length);
     }
 
     [Theory]
@@ -80,7 +139,7 @@ public sealed partial class SatSolverTests
         
         using var logging = DebugLogger.Log(_output);
         
-        var solutions = EnumerateSolutions(problem, options);
+        var solutions = problem.EnumerateSolutions(options);
         if (sat)
             SolutionValidator.Validate(problem, solutions.First());
         else

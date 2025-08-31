@@ -98,7 +98,7 @@ namespace SatSolverDemo
                 if (problem.NumberOfLiterals == 0) return;
 
                 var watch = Stopwatch.StartNew();
-                foreach (var solution in SatSolver.EnumerateSolutions(problem, cancellationToken: cancellationToken))
+                foreach (var solution in SatSolverFactory.EnumerateSolutions(problem, cancellationToken: cancellationToken))
                 {
                     var elapsed = watch.Elapsed;
                     if (solution is not null)

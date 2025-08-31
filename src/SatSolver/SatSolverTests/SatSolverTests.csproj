@@ -38,4 +38,10 @@
 		</None>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="Sudoku\sudoku.cnf">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>

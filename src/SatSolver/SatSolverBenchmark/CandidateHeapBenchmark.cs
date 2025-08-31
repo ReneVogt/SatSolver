@@ -1,6 +1,7 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using Revo.SatSolver.DataStructures;
+using Revo.SatSolver.Tools;
 
 
 namespace SatSolverBenchmark;
@@ -25,7 +26,7 @@ public class CandidateHeapBenchmark
 
     public void Test()
     {
-        var sut = new CandidateHeap(_variables);
+        var sut = new CandidateHeap<ConstraintFactory>(_variables, new ConstraintFactory([]));
         var activity = 0;
         foreach(var variable in _variables)
         {            

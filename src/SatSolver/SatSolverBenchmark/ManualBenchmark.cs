@@ -39,6 +39,20 @@ static class ManualBenchmark
 
         void Solve((string file, Problem problem)[] problems, bool sat)
         {
+            //var options = SatSolverOptions.DPLL;
+            var options = SatSolverOptions.CDCL with
+            {
+                Restart = new()
+                {
+                    ByLiteralBlockDistance = false,
+                    ByPropagationRate = false
+                },
+                LiteralBlockDistanceTracking = new()
+                {
+                    Threshold = 1.5
+                },
+                MaximumLiteralBlockDistance = 5
+            };
             (_, var top) = GetCursorPosition();
             for (var i = 0; i<problems.Length; i++)
             {
@@ -49,7 +63,7 @@ static class ManualBenchmark
                 var estimated = i > 0 ? (double)problems.Length / i * elapsed : TimeSpan.Zero;
                 Write($"{i}/{problems.Length} [{dots}{spaces}] {elapsed:mm\\:ss\\.ff} {estimated:mm\\:ss\\:ff}");
                 var watch = Stopwatch.StartNew();
-                var solution = SatSolver.EnumerateSolutions(problems[i].problem, SatSolverOptions.CDCL).FirstOrDefault();
+                var solution = SatSolverFactory.EnumerateSolutions(problems[i].problem, options).FirstOrDefault();
                 watch.Stop();
                 elapsed += watch.Elapsed;
                 if (sat)

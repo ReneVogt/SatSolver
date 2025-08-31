@@ -48,7 +48,7 @@ sealed class ConjunctiveNormalFormChecker : BooleanExpressionRewriter
     /// </summary>
     /// <param name="expression">The <see cref="BooleanExpression"/> to examine.</param>
     /// <returns><c>true</c> if the <paramref name="expression"/> is in a conjunctive normal form, <c>false</c> if not.
-    /// that can be processed by the <see cref="SatSolver"/>.</returns>
+    /// that can be processed by the <see cref="SatSolverFactory"/>.</returns>
     /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
     public static bool Check(BooleanExpression expression)
     {

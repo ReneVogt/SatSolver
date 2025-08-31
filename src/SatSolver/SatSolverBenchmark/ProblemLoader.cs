@@ -13,5 +13,5 @@ static class ProblemLoader
 
         return (satProblems, unsatProblems);
     }
-    public static Problem LoadSudoku() => DimacsParser.Parse(File.ReadAllText("SimpleCases\\sudoku.cnf")).Single();
+    public static Problem LoadSudoku() => DimacsParser.Parse(File.ReadAllText("Sudoku\\sudoku.cnf")).Single();
 }

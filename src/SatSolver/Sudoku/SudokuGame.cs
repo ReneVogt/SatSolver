@@ -141,7 +141,7 @@ sealed class SudokuGame
                 Restart = new() { ByLiteralBlockDistance = false, ByPropagationRate = false },
                 MaximumLiteralBlockDistance = 3
             };
-            var solution = SatSolver.EnumerateSolutions(problem, options, cancellationToken).First();
+            var solution = SatSolverFactory.EnumerateSolutions(problem, options, cancellationToken).First();
 
             var numbers = solution.Where(l => l.Sense).GroupBy(l => (l.Id-1)/9).ToDictionary(g => g.Key, g => g.Single());
             var board = numbers.OrderBy(k => k.Key).Select(k => ((k.Value.Id - 1) % 9) + 1).ToArray();

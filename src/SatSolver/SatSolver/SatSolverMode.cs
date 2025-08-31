@@ -1,7 +1,7 @@
 ﻿namespace Revo.SatSolver;
 
 /// <summary>
-/// The operation modes for the <see cref="SatSolver"/>.
+/// The operation modes for the <see cref="SatSolverFactory"/>.
 /// </summary>
 public enum SatSolverMode
 {

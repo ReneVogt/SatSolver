@@ -29,9 +29,17 @@ static class SudokuBenchmark
 
         void Solve(Problem problem)
         {
-            const int durations = 10;
+            const int durations = 100;
+            //var options = SatSolverOptions.DPLL;
+            var options = SatSolverOptions.CDCL with
+            {
+                Restart = new() {
+                    ByLiteralBlockDistance = false,
+                    ByPropagationRate = false },
+                MaximumLiteralBlockDistance = 10
+            };
             (_, var top) = GetCursorPosition();
-            using var enumerator = SatSolver.EnumerateSolutions(problem, SatSolverOptions.CDCL).GetEnumerator();
+            using var enumerator = SatSolverFactory.EnumerateSolutions(problem, options).GetEnumerator();
             for (var i = 0; i<durations; i++)
             {
                 SetCursorPosition(7, top);

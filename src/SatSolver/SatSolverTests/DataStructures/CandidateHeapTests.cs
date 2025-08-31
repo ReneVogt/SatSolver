@@ -1,4 +1,5 @@
-﻿using Revo.SatSolver.DataStructures;
+﻿using Moq;
+using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Tools;
 
 namespace SatSolverTests.DataStructures;
@@ -17,7 +18,30 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap(variables);
+        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
+
+        Assert.Equal(5, sut.Count);
+        Assert.Equal(4, sut.Dequeue()!.Index);
+        Assert.Equal(1, sut.Dequeue()!.Index);
+        Assert.Equal(3, sut.Dequeue()!.Index);
+        Assert.Equal(0, sut.Dequeue()!.Index);
+        Assert.Equal(2, sut.Dequeue()!.Index);
+        Assert.Null(sut.Dequeue());
+    }
+    [Fact]
+    public void Heapify_CorrectSequence()
+    {
+        var variables = Enumerable.Range(0, 5).Select(i => new Variable(i)).ToArray();
+
+        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
+
+        variables[0].Activity = 5;
+        variables[1].Activity = 8;
+        variables[2].Activity = 2;
+        variables[3].Activity = 7;
+        variables[4].Activity = 9;
+
+        sut.Heapify();
 
         Assert.Equal(5, sut.Count);
         Assert.Equal(4, sut.Dequeue()!.Index);
@@ -40,7 +64,7 @@ public sealed class CandidateHeapTests
         variables[2].Sense = true;
         variables[4].Sense = false;
 
-        var sut = new CandidateHeap(variables);
+        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
 
         Assert.Equal(5, sut.Count);
         Assert.Equal(1, sut.Dequeue()!.Index);
@@ -59,7 +83,7 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap(variables);
+        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
 
         Assert.Equal(5, sut.Count);
         Assert.Equal(4, sut.Dequeue()!.Index);
@@ -97,7 +121,7 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap(variables);
+        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
 
         Assert.Equal(4, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);
@@ -126,7 +150,7 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap(variables);
+        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
 
         variables[4].Activity = 3;
         variables[4].Reason = _constraintFactory.CreateInitialConstraint([variables[4].PositiveLiteral]);
@@ -154,7 +178,8 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap(variables);
+        var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
+        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
 
         variables[4].Activity = 12;
         variables[4].Reason = _constraintFactory.CreateInitialConstraint([variables[4].PositiveLiteral]);
@@ -182,10 +207,13 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 4;
         variables[4].Activity = 2;
 
-        var sut = new CandidateHeap(variables);
+        var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
+        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
 
         variables[4].Activity = 1;
         variables[4].Reason = _constraintFactory.CreateInitialConstraint([variables[4].PositiveLiteral]);
+        variables[4].Reason!.IsOmitted = true;
+        constraintFactory.Setup(cf => cf.ReleaseConstraint(variables[4].Reason!));
         variables[4].DecisionLevel = 12;
         variables[4].Sense = true;
         sut.Enqueue([variables[4]]);
@@ -210,10 +238,13 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 4;
         variables[4].Activity = 2;
 
-        var sut = new CandidateHeap(variables);
+        var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
+        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
 
         variables[4].Activity = 5;
         variables[4].Reason = _constraintFactory.CreateInitialConstraint([variables[4].PositiveLiteral]);
+        constraintFactory.Setup(cf => cf.ReleaseConstraint(variables[4].Reason!));
+        variables[4].Reason!.IsOmitted = true;
         variables[4].DecisionLevel = 12;
         variables[4].Sense = true;
         sut.Enqueue([variables[4]]);
@@ -238,7 +269,8 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 4;
         variables[4].Activity = 2;
 
-        var sut = new CandidateHeap(variables);
+        var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
+        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
 
         variables[2].Activity = 3;
         variables[2].Reason = _constraintFactory.CreateInitialConstraint([variables[2].PositiveLiteral]);
@@ -266,7 +298,8 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 4;
         variables[4].Activity = 2;
 
-        var sut = new CandidateHeap(variables);
+        var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
+        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
 
         variables[2].Activity = 9;
         variables[2].Reason = _constraintFactory.CreateInitialConstraint([variables[2].PositiveLiteral]);
@@ -295,7 +328,8 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap(variables);
+        var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
+        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
 
         Assert.Equal(4, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);

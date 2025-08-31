@@ -10,11 +10,11 @@ public static class ExpressionExtensions
     /// Converts a <see cref="BooleanExpression"/> into a
     /// conjunctive normal form, tries to reduce redundancies
     /// and returns the expression as a <see cref="Problem"/>
-    /// to be processed the <see cref="SatSolver"/>.
+    /// to be processed the <see cref="SatSolverFactory"/>.
     /// </summary>
     /// <param name="expression">The <see cref="BooleanExpression"/> to transform.</param>
     /// <returns>A <see cref="Problem"/> representation of the <paramref name="expression"/>
-    /// that can be processed by the <see cref="SatSolver"/>.</returns>
+    /// that can be processed by the <see cref="SatSolverFactory"/>.</returns>
     /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
     public static Problem ToProblem(this BooleanExpression expression) => ExpressionToProblemConverter.ToProblem(expression);
 
@@ -22,12 +22,12 @@ public static class ExpressionExtensions
     /// Converts a <see cref="BooleanExpression"/> into a
     /// conjunctive normal form, tries to reduce redundancies
     /// and returns the expression as a <see cref="Problem"/>
-    /// to be processed the <see cref="SatSolver"/>.
+    /// to be processed the <see cref="SatSolverFactory"/>.
     /// </summary>
     /// <param name="expression">The <see cref="BooleanExpression"/> to transform.</param>
     /// <param name="literalMapping">Receives the mapping from variable names to literal IDs.</param>
     /// <returns>A <see cref="Problem"/> representation of the <paramref name="expression"/>
-    /// that can be processed by the <see cref="SatSolver"/>.</returns>
+    /// that can be processed by the <see cref="SatSolverFactory"/>.</returns>
     /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
     public static Problem ToProblem(this BooleanExpression expression, out IReadOnlyDictionary<string, int> literalMapping) => ExpressionToProblemConverter.ToProblem(expression, out literalMapping);
 
@@ -35,12 +35,12 @@ public static class ExpressionExtensions
     /// Converts a <see cref="BooleanExpression"/> into a
     /// conjunctive normal form, tries to reduce redundancies
     /// and returns the expression as a <see cref="Problem"/>
-    /// to be processed the <see cref="SatSolver"/>.
+    /// to be processed the <see cref="SatSolverFactory"/>.
     /// </summary>
     /// <param name="expression">The <see cref="BooleanExpression"/> to transform.</param>
     /// <param name="transformedExpression">Receives the expression after transforming it into a conjunctive normal form.</param>
     /// <returns>A <see cref="Problem"/> representation of the <paramref name="expression"/>
-    /// that can be processed by the <see cref="SatSolver"/>.</returns>
+    /// that can be processed by the <see cref="SatSolverFactory"/>.</returns>
     /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
     public static Problem ToProblem(this BooleanExpression expression, out BooleanExpression transformedExpression) => ExpressionToProblemConverter.ToProblem(expression, out transformedExpression);
 
@@ -48,13 +48,13 @@ public static class ExpressionExtensions
     /// Converts a <see cref="BooleanExpression"/> into a
     /// conjunctive normal form, tries to reduce redundancies
     /// and returns the expression as a <see cref="Problem"/>
-    /// to be processed the <see cref="SatSolver"/>.
+    /// to be processed the <see cref="SatSolverFactory"/>.
     /// </summary>
     /// <param name="expression">The <see cref="BooleanExpression"/> to transform.</param>
     /// <param name="transformedExpression">Receives the expression after transforming it into a conjunctive normal form.</param>
     /// <param name="literalMapping">Receives the mapping from variable names to literal IDs.</param>
     /// <returns>A <see cref="Problem"/> representation of the <paramref name="expression"/>
-    /// that can be processed by the <see cref="SatSolver"/>.</returns>
+    /// that can be processed by the <see cref="SatSolverFactory"/>.</returns>
     /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
     public static Problem ToProblem(this BooleanExpression expression, out BooleanExpression transformedExpression, out IReadOnlyDictionary<string, int> literalMapping) => ExpressionToProblemConverter.ToProblem(expression, out transformedExpression, out literalMapping);
 
@@ -64,7 +64,7 @@ public static class ExpressionExtensions
     /// </summary>
     /// <param name="expression">The <see cref="BooleanExpression"/> to examine.</param>
     /// <returns><c>true</c> if the <paramref name="expression"/> is in a conjunctive normal form, <c>false</c> if not.
-    /// that can be processed by the <see cref="SatSolver"/>.</returns>
+    /// that can be processed by the <see cref="SatSolverFactory"/>.</returns>
     /// <exception cref="ArgumentNullException">The <paramref name="expression"/> is <c>null</c>.</exception>
     public static bool IsConjunctiveNormalForm(this BooleanExpression expression) => ConjunctiveNormalFormChecker.Check(expression);
 }

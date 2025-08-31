@@ -8,11 +8,15 @@ namespace Revo.SatSolver.Processors;
 sealed class VariablePropagator<
     TVariableTrail, 
     TActivityManager, 
-    TPropagationRateTracker>(TVariableTrail _trail, UnitPropagationQueue _unitPropagationQueue, TActivityManager _activityManager, TPropagationRateTracker _propagationRateTracker) : IPropagateVariables
+    TPropagationRateTracker>(IVariableTrail trail, UnitPropagationQueue _unitPropagationQueue, IManageActivities activityManager, ITrackPropagationRate propagationRateTracker) : IPropagateVariables
     where TVariableTrail : IVariableTrail
     where TActivityManager : IManageActivities
     where TPropagationRateTracker : ITrackPropagationRate
 {
+    readonly TVariableTrail _trail = (TVariableTrail)trail;
+    readonly TActivityManager _activityManager = (TActivityManager)activityManager;
+    readonly TPropagationRateTracker _propagationRateTracker = (TPropagationRateTracker)propagationRateTracker;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Constraint? PropagateVariable(Variable variable, bool sense, Constraint? reason)
     {
@@ -42,8 +46,9 @@ sealed class VariablePropagator<
             }
 
             ConstraintLiteral? nextLiteral = null;
-            foreach (var next in constraint.Literals)
-            {
+            for (var i=0; i<constraint.Literals.Length; i++)
+            { 
+                var next = constraint.Literals[i];
                 if (next == watchedLiteral || next == constraint.Watched1) continue;
                 var nextSense = next.Sense;
                 if (nextSense != false) nextLiteral = next;

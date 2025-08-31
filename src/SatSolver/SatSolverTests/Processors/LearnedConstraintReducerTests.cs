@@ -1,5 +1,4 @@
-﻿using Moq;
-using Revo.SatSolver;
+﻿using Revo.SatSolver;
 using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Processors;
 using Revo.SatSolver.Tools;
@@ -74,7 +73,7 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options, 
             learnedConstraints, 
-            12, constraintFactory);
+            constraintFactory);
 
         sut.ReduceLearnedConstraints();
 
@@ -109,9 +108,9 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            10, null!);
+            null!);
 
-        sut.ReduceLearnedConstraintsIfNecessary();
+        sut.ReduceLearnedConstraintsIfNecessary(12);
         Assert.Equal(100, learnedConstraints.Count);
     }
     [Fact]
@@ -136,9 +135,9 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            12, null!);
+            null!);
 
-        sut.ReduceLearnedConstraintsIfNecessary();
+        sut.ReduceLearnedConstraintsIfNecessary(12);
         Assert.Equal(100, learnedConstraints.Count);
     }
     [Fact]
@@ -164,9 +163,9 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            11, constraintFactory);
+            constraintFactory);
 
-        sut.ReduceLearnedConstraintsIfNecessary();
+        sut.ReduceLearnedConstraintsIfNecessary(11);
         Assert.Equal(50, learnedConstraints.Count);
     }
     [Fact]
@@ -191,9 +190,9 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            11, null!);
+            null!);
 
-        sut.ReduceLearnedConstraintsIfNecessary();
+        sut.ReduceLearnedConstraintsIfNecessary(11);
         Assert.Equal(100, learnedConstraints.Count);
     }
     [Fact]
@@ -217,13 +216,13 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            11, constraintFactory);
+            constraintFactory);
 
-        sut.ReduceLearnedConstraintsIfNecessary();
+        sut.ReduceLearnedConstraintsIfNecessary(11);
         Assert.Equal(100, learnedConstraints.Count);
-        sut.ReduceLearnedConstraintsIfNecessary();
+        sut.ReduceLearnedConstraintsIfNecessary(11);
         Assert.Equal(50, learnedConstraints.Count);
-        sut.ReduceLearnedConstraintsIfNecessary();
+        sut.ReduceLearnedConstraintsIfNecessary(11);
         Assert.Equal(50, learnedConstraints.Count);
     }
     [Fact]
@@ -248,9 +247,9 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            11, null!);
+            null!);
 
-        sut.ReduceLearnedConstraintsIfNecessary();
+        sut.ReduceLearnedConstraintsIfNecessary(11);
         Assert.Equal(100, learnedConstraints.Count);
     }
 }

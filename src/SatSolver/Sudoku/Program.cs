@@ -1,7 +1,4 @@
-﻿using System.Data.Common;
-using System.Text;
-
-namespace Sudoku;
+﻿namespace Sudoku;
 
 static class Program
 {

@@ -11,7 +11,6 @@ interface IVariableTrail
 
     void Add(Variable variable);
     (Variable? candidate, bool sense) Backtrack();
-    void Clear();
     void JumpBack(int level);
     void Push(bool firstTryOfCandidate = true);
     void Reset();

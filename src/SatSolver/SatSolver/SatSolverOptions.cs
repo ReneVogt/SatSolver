@@ -1,17 +1,18 @@
 ﻿using Revo.SatSolver.Tools;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Revo.SatSolver;
 
 /// <summary>
-/// Configures the details of how the <see cref="SatSolver"/>
+/// Configures the details of how the <see cref="SatSolverFactory"/>
 /// performs its search.
 /// </summary>
 [ExcludeFromCodeCoverage]
 public sealed record SatSolverOptions
 {
     /// <summary>
-    /// Configures how the <see cref="SatSolver"/> decides to
+    /// Configures how the <see cref="SatSolverFactory"/> decides to
     /// restart its search.
     /// </summary>
     [ExcludeFromCodeCoverage]
@@ -212,7 +213,7 @@ public sealed record SatSolverOptions
     public ConstraintDeletionOptions ConstraintDeletion { get; init; } = new();
 
     /// <summary>
-    /// Configures how the <see cref="SatSolver"/> decides to restart
+    /// Configures how the <see cref="SatSolverFactory"/> decides to restart
     /// its search.
     /// </summary>
     public RestartOptions Restart { get; init; } = new ();
@@ -240,4 +241,23 @@ public sealed record SatSolverOptions
         LocalHalflife = 40,
         Threshold = 1.3
     };
+
+    internal void Validate()
+    {
+        var builder = new StringBuilder();
+        if (VariableActivityDecayFactor == 0 ||
+            ConstraintActivityDecayFactor == 0)
+            builder.AppendLine("Decay factors must not be zero.");
+
+        if (PropagationRateTracking.LocalHalflife == 0 ||
+            PropagationRateTracking.GlobalHalflife == 0 ||
+            LiteralBlockDistanceTracking.LocalHalflife == 0 ||
+            LiteralBlockDistanceTracking.GlobalHalflife == 0)
+            builder.AppendLine("Halflife values must not be zero.");
+
+        if (builder.Length > 0)
+            throw new ArgumentException(
+                paramName: nameof(SatSolverOptions),
+                message: builder.ToString());
+    }
 }

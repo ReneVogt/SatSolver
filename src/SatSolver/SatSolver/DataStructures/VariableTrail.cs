@@ -3,8 +3,9 @@ using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.DataStructures;
 
-sealed class VariableTrail<TCandidateHeap>(TCandidateHeap _candidateHeap, int _capacity) : IVariableTrail where TCandidateHeap : ICandidateHeap
+sealed class VariableTrail<TCandidateHeap>(ICandidateHeap candidateHeap, int _capacity) : IVariableTrail where TCandidateHeap : ICandidateHeap
 {
+    readonly TCandidateHeap _candidateHeap = (TCandidateHeap)candidateHeap;
     readonly Variable[] _trail = new Variable[_capacity];
     readonly Stack<(int TrailIndex, bool FirstTryOfCandidate)> _decisionLevels = new(_capacity);
 
@@ -33,7 +34,7 @@ sealed class VariableTrail<TCandidateHeap>(TCandidateHeap _candidateHeap, int _c
     public void JumpBack(int level)
     {
         Debug.WriteLine($"[{DecisionLevel}] Jumping back to level {level}.");
-        var index = 0;
+        var index = Count;
         while (_decisionLevels.Count > level)
             (index, _) = _decisionLevels.Pop();
 
@@ -63,12 +64,6 @@ sealed class VariableTrail<TCandidateHeap>(TCandidateHeap _candidateHeap, int _c
     {
         _decisionLevels.Clear();
         ResetVariableTrail(0);
-    }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Clear()
-    {
-        _decisionLevels.Clear();
-        _trailSize = 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

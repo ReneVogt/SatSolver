@@ -26,24 +26,109 @@ sealed class ConstraintFactory(List<Constraint> _learnedConstraints) : IConstrai
 
     /// <inheritdoc/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Constraint CreateFromSoluution<TVariableTrail>(Variable[] variables, TVariableTrail trail, double activity) where TVariableTrail : IVariableTrail
+    public Constraint CreateAdditionalConstraint(IEnumerable<ConstraintLiteral> literals)
     {
-        var literals = variables.Select(variable => variable.Sense!.Value ? variable.NegativeLiteral : variable.PositiveLiteral).ToArray();
-        var trailedVariable = trail[^1];
-        var firstWatched = trailedVariable.Sense!.Value ? trailedVariable.NegativeLiteral : trailedVariable.PositiveLiteral;
-        var secondWatched = firstWatched;
-        if (trail.Count > 1)
+        var l = literals.ToArray();
+
+        // The first watcher should either be:
+        // - a "true" literal with the lowest decision level
+        //   (because the constraint will be fulfilled as long
+        //   as we don't jump back so far; and if we do jump
+        //   this watcher tracks the then unassigned literal)
+        // - an unassigned literal if there are no "true" literals
+        // - the "false" literal with the highest decision level
+        //   (so that it gets unassigned immediatly when jumping
+        //   back)
+        var firstWatched = l[0];       
+        for (var i=1; i<l.Length; i++)
         {
-            trailedVariable = trail[^2];
-            secondWatched = trailedVariable.Sense!.Value ? trailedVariable.NegativeLiteral : trailedVariable.PositiveLiteral;
+            var literal = l[i];
+            var level = literal.Variable.DecisionLevel;
+
+            if (firstWatched.Sense == true)
+            {
+                if (literal.Sense == true && level < firstWatched.Variable.DecisionLevel)
+                    firstWatched = literal;
+                continue;
+            }
+
+            if (literal.Sense == true)
+            {
+                firstWatched = literal;
+                continue;
+            }
+
+            if (firstWatched.Sense is null) continue;
+            if (literal.Sense is null || level > firstWatched.Variable.DecisionLevel)
+                firstWatched = literal;
         }
 
-        var constraint = new Constraint(literals, firstWatched, secondWatched) { Activity = activity, IsLearned = true };
+        // The second watcher now depends on the state
+        // of the first:
+        // - first watcher "true"
+        //   we look for the literal with
+        //   the highest decision level below(!)
+        //   the first watchers decision level.
+        //   (so after the fulfilling literal is
+        //   reset by a back jump, this is the first
+        //   to also get unassigned; and before that
+        //   we don't need to update watchers during
+        //   propagation).
+        // - first watcher "false"
+        //   we look for the "false" literal with the
+        //  (second) highest decision level
+        // - first watcher unassigned
+        //   we look for either
+        //   + an unassigned literal
+        //   + the "false" literal with the hightest decision level
+        ConstraintLiteral? secondWatched = null;
+        for (var i = 0; i<l.Length; i++)
+        {
+            var literal = l[i];
+            if (literal == firstWatched) continue;
+
+            secondWatched ??= literal;
+            var level = literal.Variable.DecisionLevel;
+
+            if (firstWatched.Sense == true)
+            {
+                if ((level > secondWatched.Variable.DecisionLevel ||
+                    secondWatched.Variable.DecisionLevel > firstWatched.Variable.DecisionLevel) &&
+                    level <= firstWatched.Variable.DecisionLevel)
+                    secondWatched = literal;
+                continue;
+            }
+
+            if (firstWatched.Sense == false)
+            {
+                // so we know that all literals are false and
+                // simply take the one with the hightst decision level
+                if (level > secondWatched.Variable.DecisionLevel)
+                    secondWatched = literal;
+                continue;
+            }
+
+            // first watcher is unassigned, so
+            // we look for either an unassigned literal
+            // or (if the first watcher has the only one)
+            // the latest set literal
+            if (secondWatched.Sense is null) continue; // that's fine enough
+            if (literal.Sense is null)
+            {
+                secondWatched = literal;
+                continue;
+            }
+
+            if (level > secondWatched.Variable.DecisionLevel)
+                secondWatched = literal;
+        }
+
+        var constraint = new Constraint(l, firstWatched, secondWatched ?? firstWatched) { IsAdditional = true };
         constraint.Watched1.Watchers.Add(constraint);
         if (constraint.Watched1 != constraint.Watched2)
             constraint.Watched2.Watchers.Add(constraint);
         LogBinary(constraint);
-        return constraint; 
+        return constraint;
     }
 
     /// <inheritdoc/>
@@ -99,13 +184,16 @@ sealed class ConstraintFactory(List<Constraint> _learnedConstraints) : IConstrai
         var learnedConstraints = _learnedConstraints;
         var start = (int)(learnedConstraints.Count * (1-ratio));
         for (var i = start; i<learnedConstraints.Count; i++)
-        {
-            var constraint = learnedConstraints[i];
-            constraint.IsTracked = false;
-            constraint.Watched1.Watchers.Remove(constraint);
-            constraint.Watched2.Watchers.Remove(constraint);
-        }
+            ReleaseConstraint(learnedConstraints[i]);
         learnedConstraints.RemoveRange(start, learnedConstraints.Count-start);
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ReleaseConstraint(Constraint constraint)
+    {
+        if (constraint.IsOmitted) return;
+        constraint.IsTracked = false;
+        constraint.Watched1.Watchers.Remove(constraint);
+        constraint.Watched2.Watchers.Remove(constraint);
     }
 
     [Conditional("DEBUG")]

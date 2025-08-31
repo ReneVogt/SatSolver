@@ -13,10 +13,13 @@ interface IConstraintFactory
     Constraint CreateInitialConstraint(IEnumerable<ConstraintLiteral> literals);
 
     /// <summary>
-    /// Used for creating a constraint from a found solution,
-    /// to force finding further solutions.
+    /// Used for creating a constraint from a found solution 
+    /// to force finding further solutions.or for additional 
+    /// constraints added via <see cref="ISatSolver.AddClause(Clause)"/>,
+    /// The watchers will be set to the unassigned literals or the
+    /// literals with the highest decision levels.
     /// </summary>
-    Constraint CreateFromSoluution<TVariableTrail>(Variable[] _variables, TVariableTrail trail, double activity) where TVariableTrail : IVariableTrail;
+    Constraint CreateAdditionalConstraint(IEnumerable<ConstraintLiteral> literals);
 
     /// <summary>
     /// Used for creating a learned constraint.
@@ -30,6 +33,8 @@ interface IConstraintFactory
     /// <param name="literalBlockDistanceDeletionLimit">The literal block distance limit for permanently learned constraints.</param>
     /// <param name="jumpBackLevel">The decision level we can jump back to with the created constraint.</param>
     Constraint CreateLearnedConstraint(ConstraintLiteral[] learnedLiterals, int decisionLevel, double activity, int maximumLiteralBlockDistance, int literalBlockDistanceDeletionLimit, out int jumpBackLevel);
+
+    void ReleaseConstraint(Constraint constraint);
 
     void ReleaseLearnedConstraints(double ratio);
 }

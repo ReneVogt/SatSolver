@@ -23,6 +23,7 @@ public sealed class ConflictHandlerTests
 
         var options = new SatSolverOptions() { MaximumLiteralBlockDistance = maxLBD, ConstraintDeletion = new() { LiteralBlockDistanceToKeep = minLBD } };
         var variables = Enumerable.Range(0, 5).Select(i => new Variable(i) { Sense = true }).ToArray();
+        var literals = variables.SelectMany(v => new[] { v.PositiveLiteral, v.NegativeLiteral }).ToArray();
         var activityManager = new Mock<IManageActivities>(MockBehavior.Strict);
         var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
         var propagationRateTracker = new Mock<ITrackPropagationRate>(MockBehavior.Strict);
@@ -41,7 +42,7 @@ public sealed class ConflictHandlerTests
         var restartManager = new Mock<IManageRestart>(MockBehavior.Strict);
         var constraintMinimizer = new Mock<IMinimizeConstraints>(MockBehavior.Strict);
 
-        var sut = new ConflictHandler<IManageActivities, IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, ICreateLearnedConstraints, IManageRestart, IMinimizeConstraints, IConstraintFactory>(options, variables, activityManager.Object, trail.Object, propagationRateTracker.Object,
+        var sut = new ConflictHandler<IManageActivities, IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, ICreateLearnedConstraints, IManageRestart, IMinimizeConstraints, IConstraintFactory>(options, literals, activityManager.Object, trail.Object, propagationRateTracker.Object,
             literalBlockDistanceTracker.Object, learnedConstraintCreator.Object, unitPropagationQueue, restartManager.Object, constraintMinimizer.Object, constraintFactory.Object);
 
         var sequence = new MockSequence();

@@ -2,6 +2,6 @@
 
 interface IReduceLearnedConstraints 
 {
-    void ReduceLearnedConstraintsIfNecessary();
+    void ReduceLearnedConstraintsIfNecessary(int originalConstraintCount);
     void ReduceLearnedConstraints();
 }

@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-
-namespace Revo.SatSolver.DataStructures;
+﻿namespace Revo.SatSolver.DataStructures;
 
 sealed class Constraint(ConstraintLiteral[] literals, ConstraintLiteral watched1, ConstraintLiteral watched2)
 {
@@ -12,8 +10,10 @@ sealed class Constraint(ConstraintLiteral[] literals, ConstraintLiteral watched1
     public double Activity { get; set; }
     public bool IsTracked { get; set; }
 
-    public bool IsLearned { get;  set; }
-    public bool IsOmitted { get; set;  }
+    public bool IsLearned { get; set; }
+    public bool IsOmitted { get; set; }
+
+    public bool IsAdditional{ get; set; }
 
     public override string ToString() => string.Join(" ", Literals.Select(l => $"{(l.Orientation ? "" : "-")}{l.Variable.Index+1}"));
 }
