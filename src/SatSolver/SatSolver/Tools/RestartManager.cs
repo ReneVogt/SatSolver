@@ -73,7 +73,7 @@ sealed class RestartManager<
         if (_lubySequence is not null)
             _nextRestartThreshold = _lubySequence.Next();
 
-        _trail.Reset();
+        _trail.JumpBack(0);
         _unitPropagationQueue.Clear();
         _propagationRateTracker.ResetAfterRestart();
         _literalBlockDistanceTracker.ResetAfterRestart();
