@@ -166,11 +166,29 @@ public sealed record SatSolverOptions
     /// <summary>
     /// The recommended default options set
     /// using CDCL with a restart strategy
-    /// based on a Luby sequence with base 100
-    /// and depending on literal block distance
+    /// depending on literal block distance
     /// average and propagation rate.
     /// </summary>
     public static SatSolverOptions CDCL { get; } = new();
+
+    /// <summary>
+    /// The recommended options set for 
+    /// solving the sudoku cnf using CDCL 
+    /// without restarts and a maximum 
+    /// literal block distance of 10.
+    /// </summary>
+    public static SatSolverOptions Sudoku { get; } = CDCL with
+    {
+        Restart = new()
+        {
+            Interval = null,
+            Luby = false,
+            ByLiteralBlockDistance = false,
+            ByPropagationRate = false
+        },
+        MaximumLiteralBlockDistance = 10
+    };
+
 
     /// <summary>
     /// Defines the <see cref="SatSolverMode"/> (<see cref="SatSolverMode.CDCL"/>

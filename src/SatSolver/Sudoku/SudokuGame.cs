@@ -30,15 +30,22 @@ sealed class SudokuGame
 ╚═╧═╧═╩═╧═╧═╩═╧═╧═╝";
 
     readonly Lock _sync = new();
+    readonly ISatSolver _solver;
     readonly int[] _board = new int[81];
+    readonly bool[] _colored = new bool[81];
     int currentX, currentY;
 
     CancellationTokenSource? _cancelSolve;
 
     SudokuGame()
     {
+        using var reader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("Sudoku.sudoku.cnf")!);
+        var cnf = reader.ReadToEnd();
+        var problem = DimacsParser.Parse(cnf).Single();
+        var options = SatSolverOptions.Sudoku;
+        _solver = SatSolverFactory.Create(problem, options);
     }
-    
+
     void RunInternal()
     {
         OutputEncoding = Encoding.UTF8;
@@ -120,6 +127,9 @@ sealed class SudokuGame
     void Solve()
     {
         _cancelSolve = new CancellationTokenSource();
+        _colored.AsSpan().Clear();
+        Clear();
+        RenderGame();
         Task.Run(() => Solve(_cancelSolve.Token));
     }
     void Solve(CancellationToken cancellationToken)
@@ -129,32 +139,67 @@ sealed class SudokuGame
             lock(_sync)
             {
                 Console.SetCursorPosition(0, 19);
-                Console.Write("Solving...");
+                Console.Write(@"Solving...                 ");
                 SetCellPosition();
+
+                _solver.Reset(true);
+                for (var column = 0; column<9; column++)
+                    for (var row = 0; row<9; row++)
+                    {
+                        var number = _board[(column, row).ToBoardIndex()];
+                        if (number == 0) continue;
+                        _solver.AddClause(new Clause([(column, row, number).ToVariableIndex()]));
+                    }
             }
 
-            using var reader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("Sudoku.sudoku.cnf")!);
-            var cnf = reader.ReadToEnd();
-            var problem = DimacsParser.Parse(cnf).Single();
-            var options = new SatSolverOptions()
-            {
-                Restart = new() { ByLiteralBlockDistance = false, ByPropagationRate = false },
-                MaximumLiteralBlockDistance = 3
-            };
-            var solution = SatSolverFactory.EnumerateSolutions(problem, options, cancellationToken).First();
+            var solution = _solver.FindSolution();
+            if (solution is null) 
+                lock (_sync)
+                {
+                    Console.SetCursorPosition(0, 19);
+                    ForegroundColor = ConsoleColor.Red;
+                    Console.Write("No solution found.");
+                    ResetColor();
+                    SetCellPosition();
+                    return;
+                }
+
 
             var numbers = solution.Where(l => l.Sense).GroupBy(l => (l.Id-1)/9).ToDictionary(g => g.Key, g => g.Single());
             var board = numbers.OrderBy(k => k.Key).Select(k => ((k.Value.Id - 1) % 9) + 1).ToArray();
 
             lock(_sync)
             {
+                for (var i = 0; i<_board.Length; i++)
+                    _colored[i] = _board[i] == 0;
                 Array.Copy(board, _board, 81);
                 RenderGame();
+                Console.SetCursorPosition(0, 19);
+                Console.Write("          ");
                 SetCellPosition();
             }
         }
         catch (OperationCanceledException)
         {
+            lock (_sync)
+            {
+                Console.SetCursorPosition(0, 19);
+                Console.Write("Canceled.");
+                SetCellPosition();
+                return;
+            }
+        }
+        catch(Exception exception)
+        {
+            lock (_sync)
+            {
+                Console.SetCursorPosition(0, 19);
+                ForegroundColor = ConsoleColor.Red;
+                Console.Write(exception);
+                ResetColor();
+                SetCellPosition();
+                return;
+            }
         }
         finally 
         {
@@ -162,9 +207,6 @@ sealed class SudokuGame
             {
                 _cancelSolve?.Dispose();
                 _cancelSolve = null;
-                Console.SetCursorPosition(0, 19);
-                Console.Write("          ");
-                SetCellPosition();
             }
         }
     }
@@ -180,7 +222,10 @@ sealed class SudokuGame
                 var number = GetCell(col, row);
                 if (number == 0) continue;
                 SetCursorPosition(1 + 2 * col, 1 + 2 * row);
+                if (_colored[(col, row).ToBoardIndex()])
+                    ForegroundColor = ConsoleColor.Blue;
                 Write(number);
+                ResetColor();
             }
     }
 
