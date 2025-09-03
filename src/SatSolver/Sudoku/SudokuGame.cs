@@ -152,7 +152,7 @@ sealed class SudokuGame
                     }
             }
 
-            var solution = _solver.FindSolution();
+            var solution = _solver.FindSolution(cancellationToken);
             if (solution is null) 
                 lock (_sync)
                 {
@@ -184,7 +184,7 @@ sealed class SudokuGame
             lock (_sync)
             {
                 Console.SetCursorPosition(0, 19);
-                Console.Write("Canceled.");
+                Console.Write("Canceled.     ");
                 SetCellPosition();
                 return;
             }

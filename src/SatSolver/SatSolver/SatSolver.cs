@@ -32,7 +32,6 @@ sealed partial class SatSolver<
     where TRestartManager : IManageRestart
 {
     readonly TRestartManager _restartManager;
-    readonly CancellationToken _cancellationToken;
     readonly TConstraintFactory _constraintFactory;
     readonly TCandidateHeap _candidateHeap;
     readonly TVariableTrail _trail;
@@ -60,7 +59,6 @@ sealed partial class SatSolver<
         _unitPropagationQueue = store.UnitPropagationQueue;
         _propagationRateTracker = (TPropagationRateTracker)store.PropagationRateTracker;
         _restartManager = (TRestartManager)store.RestartManager;
-        _cancellationToken = store.CancellationToken;
         _dpllOnly = store.Options.Mode == SatSolverMode.DPLL;
         _variables = store.Variables;
         _learnedConstraintsReducer = (TLearnedConstraintsReducer)store.LearnedConstraintsReducer;
@@ -69,16 +67,16 @@ sealed partial class SatSolver<
         _candidateHeap.Heapify();
     }
 
-    public Literal[]? FindSolution() => _dpllOnly ? SolveDPLL() : SolveCDCL();    
+    public Literal[]? FindSolution(CancellationToken cancellationToken = default) => _dpllOnly ? SolveDPLL(cancellationToken) : SolveCDCL(cancellationToken);
 
-    Literal[]? SolveDPLL()
+    Literal[]? SolveDPLL(CancellationToken cancellationToken)
     {
         Variable? candidateVariable = null;
         var candidateSense = true;
 
         for(; ; )
         {
-            _cancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             var firstTry = false;
             Constraint? conflictingConstraint = null;
@@ -108,7 +106,7 @@ sealed partial class SatSolver<
 
             while (conflictingConstraint is null && _unitPropagationQueue.Count > 0)
             {
-                _cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
                 (var literal, _) = _unitPropagationQueue.Dequeue();
                 if (literal.Sense is not null)
                 {
@@ -135,11 +133,11 @@ sealed partial class SatSolver<
             if (candidateVariable is null) return null;
         }
     }
-    Literal[]? SolveCDCL()
+    Literal[]? SolveCDCL(CancellationToken cancellationToken)
     {
         for (;;)
         {
-            _cancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (_unitPropagationQueue.Count == 0)
             {
@@ -157,7 +155,7 @@ sealed partial class SatSolver<
 
             while (_unitPropagationQueue.Count > 0)
             {
-                _cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
                 var (unitLiteral, reason) = _unitPropagationQueue.Dequeue();
                 if (unitLiteral.Sense is not null) continue;
 
@@ -192,8 +190,6 @@ sealed partial class SatSolver<
     
     public void AddClause(Clause clause)
     {
-        _cancellationToken.ThrowIfCancellationRequested();
-
         _ = clause ?? throw new ArgumentNullException(nameof(clause));
         if (clause.Literals.Length == 0)
             throw new ArgumentException(paramName: nameof(clause), message: "Empty clauses are not supported.");
@@ -234,8 +230,6 @@ sealed partial class SatSolver<
 
     public void Reset(bool removeAdditionalClauses = false)
     {
-        _cancellationToken.ThrowIfCancellationRequested();
-
         _trail.Reset();
         _unitPropagationQueue.Clear();
 

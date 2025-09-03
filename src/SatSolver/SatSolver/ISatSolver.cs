@@ -8,8 +8,9 @@ public interface ISatSolver
     /// <summary>
     /// Finds a solution for the current state of the solver.
     /// </summary>
-    /// <exception cref="OperationCanceledException">The solver was already cancelled.</exception>
-    Literal[]? FindSolution();
+    /// <param name="cancellationToken">A token to cancel the process.</param>
+    /// <exception cref="OperationCanceledException">The solver was cancelled.</exception>
+    Literal[]? FindSolution(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Adds a new clause to the current solver state.

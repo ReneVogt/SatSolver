@@ -22,7 +22,7 @@ sealed class ComponentStore : ComponentStoreBase
     public override ITrackPropagationRate PropagationRateTracker { get; }
     public override IManageRestart RestartManager { get; }
 
-    public ComponentStore(SatSolverOptions options, Problem problem, CancellationToken cancellationToken) : base(options, problem.NumberOfLiterals, cancellationToken)
+    public ComponentStore(SatSolverOptions options, Problem problem) : base(options, problem.NumberOfLiterals)
     {
         var propagationTrackingOptions = options.PropagationRateTracking;
         PropagationRateTracker = new PropagationRateTracker(propagationTrackingOptions.LocalHalflife, propagationTrackingOptions.GlobalHalflife, propagationTrackingOptions.Threshold, propagationTrackingOptions.HoldForConflicts, propagationTrackingOptions.CoolDownConflicts);

@@ -14,7 +14,6 @@ abstract class ComponentStoreBase
     public UnitPropagationQueue UnitPropagationQueue { get; } = [];
     public List<Constraint> LearnedConstraints { get; } = [];
     public Dictionary<long, Constraint> AdditionalConstraints { get; } = [];
-    public CancellationToken CancellationToken { get; }
 
     public abstract IPreProcessor PreProcessor { get; }
     public abstract IConstraintFactory ConstraintFactory { get; }
@@ -30,7 +29,7 @@ abstract class ComponentStoreBase
     public abstract ITrackPropagationRate PropagationRateTracker { get; }
     public abstract IManageRestart RestartManager { get; }
 
-    private protected ComponentStoreBase(SatSolverOptions options, int variableCount, CancellationToken cancellationToken)
+    private protected ComponentStoreBase(SatSolverOptions options, int variableCount)
     {
         Options = options;
         Variables = [.. Enumerable.Range(0, variableCount).Select(i => new Variable(i))];
@@ -40,6 +39,5 @@ abstract class ComponentStoreBase
             Literals[i<<1] = Variables[i].PositiveLiteral;
             Literals[(i<<1)+1] = Variables[i].NegativeLiteral;
         }
-        CancellationToken = cancellationToken;
     }
 }

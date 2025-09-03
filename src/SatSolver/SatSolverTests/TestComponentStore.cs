@@ -4,7 +4,7 @@ using Revo.SatSolver.Processors;
 using Revo.SatSolver.Tools;
 
 namespace SatSolverTests;
-sealed class TestComponentStore(SatSolverOptions options, int variableCount, Func<string, object> getter, CancellationToken cancellationToken = default) : ComponentStoreBase(options, variableCount, cancellationToken)
+sealed class TestComponentStore(SatSolverOptions options, int variableCount, Func<string, object> getter) : ComponentStoreBase(options, variableCount)
 {
     public override IPreProcessor PreProcessor => (IPreProcessor)getter(nameof(PreProcessor));
     public override IConstraintFactory ConstraintFactory => (IConstraintFactory)getter(nameof(ConstraintFactory));

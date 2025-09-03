@@ -38,16 +38,16 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
     {
         var preProcessor = new Mock<IPreProcessor>();
         var heap = new Mock<ICandidateHeap>();
-        using var cts = new CancellationTokenSource();
         var store = new TestComponentStore(new(), 0, name => name switch
         {
             nameof(ComponentStoreBase.CandidateHeap) => heap.Object,
             nameof(ComponentStoreBase.PreProcessor) => preProcessor.Object,
             _ => null!
-        }, cts.Token);
+        });
         var sut = Create(store);
+        using var cts = new CancellationTokenSource();
         cts.Cancel();
-        Assert.Throws<OperationCanceledException>(() => sut.FindSolution());
+        Assert.Throws<OperationCanceledException>(() => sut.FindSolution(cts.Token));
     }
     [Fact]
     public void FindSolution_InitialUnitPropagations_WithConflict()
@@ -420,24 +420,6 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
     }
 
     [Fact]
-    public void Reset_Canceled_OperationCanceledException()
-    {
-        var preProcessor = new Mock<IPreProcessor>();
-        var heap = new Mock<ICandidateHeap>();
-        using var cts = new CancellationTokenSource();
-        var store = new TestComponentStore(new(), 0, name => name switch
-        {
-            nameof(ComponentStoreBase.CandidateHeap) => heap.Object,
-            nameof(ComponentStoreBase.PreProcessor) => preProcessor.Object,
-            _ => null!
-        }, cts.Token);
-
-        var sut = Create(store);
-        cts.Cancel();
-        Assert.Throws<OperationCanceledException>(() => sut.Reset(false));
-        Assert.Throws<OperationCanceledException>(() => sut.Reset(true));
-    }
-    [Fact]
     public void Reset_NoRemove_TrailResetUnitsInitialized()
     {
         var preProcessor = new Mock<IPreProcessor>();
@@ -519,23 +501,6 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         constraintFactory.VerifyAll();
     }
 
-    [Fact]
-    public void AddClause_Canceled_OperationCanceledException()
-    {
-        var preProcessor = new Mock<IPreProcessor>();
-        var heap = new Mock<ICandidateHeap>();
-        using var cts = new CancellationTokenSource();
-        var store = new TestComponentStore(new(), 0, name => name switch
-        {
-            nameof(ComponentStoreBase.CandidateHeap) => heap.Object,
-            nameof(ComponentStoreBase.PreProcessor) => preProcessor.Object,
-            _ => null!
-        }, cts.Token);
-
-        var sut = Create(store);
-        cts.Cancel();
-        Assert.Throws<OperationCanceledException>(() => sut.AddClause(new Clause([])));
-    }
     [Fact]
     public void AddClause_Null_ArgumentNullException()
     {
