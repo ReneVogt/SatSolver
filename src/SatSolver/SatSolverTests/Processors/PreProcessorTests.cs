@@ -31,9 +31,10 @@ public sealed class PreProcessorTests
                 new ([9])
             ]);
 
-        var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
+        var store = new TestComponentStore(options, 10, _ => null!);
+        var variables = store.Variables;
         var unitsToPropagate = new UnitPropagationQueue();
-        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, new ConstraintFactory([]));
+        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([]));
         var originalConstraintCount = sut.BuildConstraints();
 
         // two tautologies
@@ -84,9 +85,10 @@ public sealed class PreProcessorTests
             Restart = new() { Luby = false, Interval = 10 } // for coverage...
         };
 
-        var variables = Enumerable.Range(0, 1).Select(i => new Variable(i)).ToArray();
+        var store = new TestComponentStore(options, 1, _ => null!);
+        var variables = store.Variables;
         var unitsToPropagate = new UnitPropagationQueue();
-        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, new ConstraintFactory([]));
+        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([]));
         var originalConstraintCount = sut.BuildConstraints();        
 
         Assert.Equal(1, originalConstraintCount);
@@ -104,9 +106,10 @@ public sealed class PreProcessorTests
             Restart = new() { Luby = true, Interval = null } // for coverage...
         };
 
-        var variables = Array.Empty<Variable>();
+        var store = new TestComponentStore(options, 0, _ => null!);
+        var variables = store.Variables;
         var unitsToPropagate = new UnitPropagationQueue();
-        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, new ConstraintFactory([]));
+        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([]));
         var originalConstraintCount = sut.BuildConstraints();
         Assert.Equal(0, originalConstraintCount);
     }
@@ -119,9 +122,10 @@ public sealed class PreProcessorTests
         {
             Restart = new() { Luby = true, Interval = 10 } // for coverage...
         };
-        var variables = Enumerable.Range(0, problem.NumberOfLiterals).Select(i => new Variable(i)).ToArray();
+        var store = new TestComponentStore(options, problem.NumberOfLiterals, _ => null!);
+        var variables = store.Variables;
         var unitsToPropagate = new UnitPropagationQueue();
-        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, new ConstraintFactory([]));
+        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([]));
         var originalConstraintCount = sut.BuildConstraints();
 
         Assert.Equal("-1 -2 | -1 -3",

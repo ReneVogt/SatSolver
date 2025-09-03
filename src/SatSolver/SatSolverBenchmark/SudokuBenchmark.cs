@@ -33,9 +33,13 @@ static class SudokuBenchmark
             //var options = SatSolverOptions.DPLL;
             var options = SatSolverOptions.CDCL with
             {
-                Restart = new() {
+                Restart = new()
+                {
+                    Interval = null,
+                    Luby = false,
                     ByLiteralBlockDistance = false,
-                    ByPropagationRate = false },
+                    ByPropagationRate = false
+                },
                 MaximumLiteralBlockDistance = 10
             };
             (_, var top) = GetCursorPosition();

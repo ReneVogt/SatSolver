@@ -3,14 +3,14 @@ using Revo.SatSolver.Tools;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class PreProcessor<TConstraintFactory>(SatSolverOptions _options, Problem _problem, UnitPropagationQueue _unitPropagationQueue, Variable[] _variables, IConstraintFactory constraintFactory) : IPreProcessor where TConstraintFactory : IConstraintFactory
+sealed class PreProcessor<TConstraintFactory>(SatSolverOptions _options, Problem _problem, UnitPropagationQueue _unitPropagationQueue, Variable[] _variables, ConstraintLiteral[] _literals, IConstraintFactory constraintFactory) : IPreProcessor where TConstraintFactory : IConstraintFactory
 {
     readonly TConstraintFactory _constraintFactory = (TConstraintFactory)constraintFactory;
     public int BuildConstraints()
     {
         var clauseCount = 0;
-        var scores = new double[_variables.Length << 1];
-        var literals = new HashSet<ConstraintLiteral>();
+        var scores = new double[_literals.Length];
+        var literals = new StampArray();
         var tautologyTest = new StampArray();
 
         foreach (var clause in _problem.Clauses)
@@ -22,14 +22,14 @@ sealed class PreProcessor<TConstraintFactory>(SatSolverOptions _options, Problem
             // in the Constraint to generate.
             //
             foreach (var literal in clause.Literals)
-                literals.Add(literal.Sense ? _variables[literal.Id-1].PositiveLiteral : _variables[literal.Id-1].NegativeLiteral);
+                literals.Add(literal.Sense ? (literal.Id-1) << 1 : ((literal.Id-1) << 1)+1);
 
             //
             // Check if the clause is a tautology (e.g. "a | !a")
             // to skip those immediatly fulfilled clauses.
             //
             tautologyTest.Clear();
-            if (literals.Any(l => !tautologyTest.Add(l.Variable.Index))) continue;
+            if (literals.Any(l => !tautologyTest.Add(l >> 1))) continue;
 
             clauseCount++;
 
@@ -37,7 +37,7 @@ sealed class PreProcessor<TConstraintFactory>(SatSolverOptions _options, Problem
             // Constraints with a single literal are
             // immediate unit propagations.
             //
-            var constraint = _constraintFactory.CreateInitialConstraint(literals);
+            var constraint = _constraintFactory.CreateInitialConstraint(literals.Select(i => _literals[i]));
             if (constraint.Literals.Length == 1)
                 _unitPropagationQueue.Enqueue((constraint.Watched1, constraint));
 
@@ -45,7 +45,7 @@ sealed class PreProcessor<TConstraintFactory>(SatSolverOptions _options, Problem
             // Calculat Jeroslow-Wang heuristic for 
             // all litrals in the constraint.
             //
-            foreach (var literal in literals)
+            foreach (var literal in literals.Select(i => _literals[i]))
             {
                 var index = literal.Variable.Index << 1;
                 if (!literal.Orientation) index+=1;

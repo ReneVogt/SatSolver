@@ -110,7 +110,9 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
         var heap = new Mock<ICandidateHeap>(MockBehavior.Strict);
         var propagator = new Mock<IPropagateVariables>(MockBehavior.Strict);
-        trail.Setup(t => t.DecisionLevel).Returns(0);
+#if DEBUG
+    trail.Setup(t => t.DecisionLevel).Returns(0);
+#endif
         var store = new TestComponentStore(SatSolverOptions.CDCL, 1, name => name switch
         {
             nameof(ComponentStoreBase.VariablePropagator) => propagator.Object,
