@@ -51,7 +51,7 @@ static class ManualBenchmark
                 {
                     Threshold = 1.5
                 },
-                MaximumLiteralBlockDistance = 5
+                MaximumLiteralBlockDistance = 4
             };
             (_, var top) = GetCursorPosition();
             for (var i = 0; i<problems.Length; i++)

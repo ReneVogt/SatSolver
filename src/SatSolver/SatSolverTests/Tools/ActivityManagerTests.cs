@@ -7,7 +7,7 @@ namespace SatSolverTests.Tools;
 
 public sealed class ActivityManagerTests
 {
-    static readonly ConstraintFactory _constraintFactory = new ([]);
+    static readonly ConstraintFactory _constraintFactory = new ([], []);
 
     [Fact]
     public void IncreaseVariableActivity_IncreasesVariableActivity()

@@ -26,7 +26,7 @@ public class CandidateHeapBenchmark
 
     public void Test()
     {
-        var sut = new CandidateHeap<ConstraintFactory>(_variables, new ConstraintFactory([]));
+        var sut = new CandidateHeap<ConstraintFactory>(_variables, new ConstraintFactory([], []));
         var activity = 0;
         foreach(var variable in _variables)
         {            

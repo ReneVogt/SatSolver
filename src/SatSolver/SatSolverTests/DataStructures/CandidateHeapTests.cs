@@ -6,7 +6,7 @@ namespace SatSolverTests.DataStructures;
 
 public sealed class CandidateHeapTests
 {
-    static readonly ConstraintFactory _constraintFactory = new([]);
+    static readonly ConstraintFactory _constraintFactory = new([], []);
 
     [Fact]
     public void Initialized_CorrectSequence()

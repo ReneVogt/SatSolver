@@ -7,7 +7,7 @@ namespace SatSolverTests.Processors;
 
 public sealed class VariablePropagatorTests
 {
-    static readonly ConstraintFactory _constraintFactory = new([]);
+    static readonly ConstraintFactory _constraintFactory = new([], []);
 
     [Fact]
     public void PropagateVariable_NoConflict_NoPropagations()

@@ -10,7 +10,7 @@ namespace SatSolverTests;
 
 public sealed partial class SatSolverTests(ITestOutputHelper _output)
 {
-    static readonly ConstraintFactory _constraintFactory = new([]);
+    static readonly ConstraintFactory _constraintFactory = new([], []);
 
     [Fact]
     public void Constructor_CorrectInitialization()
@@ -492,7 +492,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 
         var seq = new MockSequence();
         trail.InSequence(seq).Setup(t => t.Reset());
-        constraintFactory.InSequence(seq).Setup(cf => cf.ReleaseConstraint(constraint));
+        constraintFactory.InSequence(seq).Setup(cf => cf.ReleaseAdditionalConstraints());
 
         sut.Reset(true);
 
@@ -567,19 +567,21 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var expectedLiterals = new[] { literals[0], literals[3], literals[4] };
         var constraint = new Constraint(expectedLiterals, expectedLiterals[0], expectedLiterals[1]);
 
+        var initialUnit = new Constraint([literals[1]], literals[1], literals[1]);
+        literals[1].Watchers.Add(initialUnit);
+        
         var seq = new MockSequence();
         constraintFactory.InSequence(seq).Setup(cf =>
             cf.CreateAdditionalConstraint(It.Is<IEnumerable<ConstraintLiteral>>(literals => literals.SequenceEqual(expectedLiterals))))
             .Returns(constraint);
-        trail.InSequence(seq).Setup(t => t.Count).Returns(0);
 
         var units = store.UnitPropagationQueue;
         var sut = Create(store);
         sut.AddClause(clause);
 
-        Assert.Empty(units);
         trail.VerifyAll();
         constraintFactory.VerifyAll();
+        Assert.Empty(units); // there was no need to reset
     }
     [Fact]
     public void AddClause_Fulfilled()
@@ -643,12 +645,13 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         expectedLiterals[2].Sense = false;
         expectedLiterals[2].Variable.DecisionLevel = 0;
         var constraint = new Constraint(expectedLiterals, literals[0], expectedLiterals[1]);
+        var initialUnit = new Constraint([literals[1]], literals[1], literals[1]);
+        literals[1].Watchers.Add(initialUnit);
 
         var seq = new MockSequence();
         constraintFactory.InSequence(seq).Setup(cf =>
             cf.CreateAdditionalConstraint(It.Is<IEnumerable<ConstraintLiteral>>(literals => literals.SequenceEqual(expectedLiterals))))
             .Returns(constraint);
-        trail.InSequence(seq).Setup(t => t.Count).Returns(1);
         trail.InSequence(seq).Setup(t => t.Reset());
 
         var units = store.UnitPropagationQueue;
@@ -656,7 +659,7 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var sut = Create(store);
         sut.AddClause(clause);
 
-        Assert.Empty(units);
+        Assert.Equal((literals[1], initialUnit), Assert.Single(units));
         trail.VerifyAll();
         constraintFactory.VerifyAll();
     }
@@ -694,7 +697,6 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         constraintFactory.InSequence(seq).Setup(cf =>
             cf.CreateAdditionalConstraint(It.Is<IEnumerable<ConstraintLiteral>>(literals => literals.SequenceEqual(expectedLiterals))))
             .Returns(constraint);
-        trail.InSequence(seq).Setup(t => t.Count).Returns(12);
         trail.InSequence(seq).Setup(t => t.JumpBack(decisionLevel));
         conflictHandler.InSequence(seq).Setup(c => c.HandleConflict(constraint));
 

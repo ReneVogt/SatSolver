@@ -12,7 +12,7 @@ public sealed class LearnedConstraintReducerTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var learnedConstraints = new List<Constraint>();
-        var constraintFactory = new ConstraintFactory(learnedConstraints);
+        var constraintFactory = new ConstraintFactory([], learnedConstraints);
 
         var c01 = constraintFactory.CreateInitialConstraint([.. variables.Select(v => v.PositiveLiteral)]);
         c01.IsTracked = true;
@@ -91,7 +91,7 @@ public sealed class LearnedConstraintReducerTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
 
-        var constraintFactory = new ConstraintFactory([]);
+        var constraintFactory = new ConstraintFactory([], []);
         var c = constraintFactory.CreateInitialConstraint([.. variables.Select(v => v.PositiveLiteral)]);
         var learnedConstraints = Enumerable.Repeat(c, 100).ToList();
 
@@ -118,7 +118,7 @@ public sealed class LearnedConstraintReducerTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
 
-        var constraintFactory = new ConstraintFactory([]);
+        var constraintFactory = new ConstraintFactory([], []);
         var c = constraintFactory.CreateInitialConstraint([..variables.Select(v => v.PositiveLiteral)]);
         var learnedConstraints = Enumerable.Repeat(c, 100).ToList();
 
@@ -146,7 +146,7 @@ public sealed class LearnedConstraintReducerTests
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
 
         var learnedConstraints = new List<Constraint>();
-        var constraintFactory = new ConstraintFactory(learnedConstraints);
+        var constraintFactory = new ConstraintFactory([], learnedConstraints);
         var c = constraintFactory.CreateInitialConstraint([.. variables.Select(v => v.PositiveLiteral)]);
         learnedConstraints.AddRange(Enumerable.Repeat(c, 100));
 
@@ -173,7 +173,7 @@ public sealed class LearnedConstraintReducerTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
 
-        var constraintFactory = new ConstraintFactory([]);
+        var constraintFactory = new ConstraintFactory([], []);
         var c = constraintFactory.CreateInitialConstraint([..variables.Select(v => v.PositiveLiteral)]);
         var learnedConstraints = Enumerable.Repeat(c, 100).ToList();
 
@@ -201,7 +201,7 @@ public sealed class LearnedConstraintReducerTests
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var c = new Constraint([.. variables.Select(v => v.PositiveLiteral)], variables[0].PositiveLiteral, variables[1].PositiveLiteral);
         var learnedConstraints = Enumerable.Repeat(c, 100).ToList();
-        var constraintFactory = new ConstraintFactory(learnedConstraints);
+        var constraintFactory = new ConstraintFactory([], learnedConstraints);
 
         var options = new SatSolverOptions
         {
@@ -230,7 +230,7 @@ public sealed class LearnedConstraintReducerTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
 
-        var constraintFactory = new ConstraintFactory([]);
+        var constraintFactory = new ConstraintFactory([], []);
         var c = constraintFactory.CreateInitialConstraint([..variables.Select(v => v.PositiveLiteral)]);
         var learnedConstraints = Enumerable.Repeat(c, 100).ToList();
 

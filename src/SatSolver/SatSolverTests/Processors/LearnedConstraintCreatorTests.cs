@@ -7,7 +7,7 @@ namespace SatSolverTests.Processors;
 
 public sealed class LearnedConstraintCreatorTests
 {
-    static readonly ConstraintFactory _constraintFactory = new([]);
+    static readonly ConstraintFactory _constraintFactory = new([], []);
     [Fact]
     public void FourStateSudoku_SettingAll1True()
     {

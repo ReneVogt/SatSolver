@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Tools;
 
-sealed class ConstraintFactory(List<Constraint> _learnedConstraints) : IConstraintFactory    
+sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _learnedConstraints) : IConstraintFactory    
 {
     readonly StampArray _literalBlockDistanceCounter = [];
 
@@ -194,6 +194,16 @@ sealed class ConstraintFactory(List<Constraint> _learnedConstraints) : IConstrai
         constraint.IsTracked = false;
         constraint.Watched1.Watchers.Remove(constraint);
         constraint.Watched2.Watchers.Remove(constraint);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ReleaseAdditionalConstraints()
+    {
+        var toRemove = _literals.SelectMany(l => l.Watchers)
+            .Where(watcher => watcher.IsLearned || watcher.IsAdditional)
+            .ToHashSet();
+        foreach (var constraint in toRemove)
+            ReleaseConstraint(constraint);
     }
 
     [Conditional("DEBUG")]

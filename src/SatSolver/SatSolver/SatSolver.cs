@@ -201,14 +201,14 @@ sealed partial class SatSolver<
         var constraint = _constraintFactory.CreateAdditionalConstraint(
             clause.Literals.Select(l => l.Sense ? _variables[l.Id-1].PositiveLiteral : _variables[l.Id-1].NegativeLiteral));
 
-        if (_trail.Count == 0 || constraint.Watched1.Sense == true) return;
+        if (constraint.Watched1.Sense == true) return;
         if (constraint.Watched1.Sense is not null)
         {
             var level = constraint.Watched1.Variable.DecisionLevel;
             if (level == 0)
             {
-                _unitPropagationQueue.Clear();
                 _trail.Reset();
+                SetInitialUnits();
                 return;
             }
             
@@ -227,22 +227,18 @@ sealed partial class SatSolver<
         if (constraint.Literals.Length == 1 || constraint.Watched2.Sense is not null)
             _unitPropagationQueue.Enqueue((constraint.Watched1, constraint));
     }
-
     public void Reset(bool removeAdditionalClauses = false)
     {
         _trail.Reset();
-        _unitPropagationQueue.Clear();
 
         if (removeAdditionalClauses)
-        {
-            var toRemove = _variables.SelectMany(v =>
-                v.PositiveLiteral.Watchers.Concat(v.NegativeLiteral.Watchers))
-                .Where(watcher => watcher.IsLearned || watcher.IsAdditional)
-                .ToHashSet();
-            foreach (var constraint in toRemove)
-                _constraintFactory.ReleaseConstraint(constraint);
-        }
+            _constraintFactory.ReleaseAdditionalConstraints();
 
+        SetInitialUnits();
+    }
+    void SetInitialUnits()
+    {
+        _unitPropagationQueue.Clear();
         var units = _variables.SelectMany(v =>
                 v.PositiveLiteral.Watchers
                     .Where(watcher => watcher.Literals.Length == 1)
@@ -250,6 +246,6 @@ sealed partial class SatSolver<
                 .Concat(v.NegativeLiteral.Watchers
                     .Where(watcher => watcher.Literals.Length == 1)
                     .Select(w => (v.NegativeLiteral, w))));
-        foreach(var unit in units) _unitPropagationQueue.Enqueue(unit);
+        foreach (var unit in units) _unitPropagationQueue.Enqueue(unit);
     }
 }

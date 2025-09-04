@@ -1,5 +1,7 @@
-﻿using Revo.SatSolver;
+﻿using Moq;
+using Revo.SatSolver;
 using Revo.SatSolver.DataStructures;
+using Revo.SatSolver.Processors;
 using Revo.SatSolver.Tools;
 
 namespace SatSolverTests.Tools;
@@ -9,7 +11,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Initial_SingleLiteral_WatcherConnectedOnce()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var variable = new Variable(17);
         var constraint = sut.CreateInitialConstraint([variable.PositiveLiteral]);
 
@@ -30,7 +32,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Initial_MultipleLiteral_WatchersConnected()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var v1 = new Variable(17);
         var v2 = new Variable(42);
         var v3 = new Variable(23);
@@ -62,7 +64,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Addidtional_SingleWatcher_WatcherConnectedOnce()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var variable = new Variable(17)
         {
             Sense = true
@@ -87,7 +89,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Addidtional_AllAssigned_OneTrue()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
         var v1 = new Variable(1) { Sense = true, DecisionLevel = 7 };
         var v2 = new Variable(2) { Sense = true, DecisionLevel = 1 };
@@ -120,7 +122,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Addidtional_AllAssigned_TwoTrue()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
         var v1 = new Variable(1) { Sense = true, DecisionLevel = 9 };
         var v2 = new Variable(2) { Sense = true, DecisionLevel = 6 };
@@ -153,7 +155,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Addidtional_AllAssigned_NoTrue()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
         var v1 = new Variable(1) { Sense = true, DecisionLevel = 9 };
         var v2 = new Variable(2) { Sense = true, DecisionLevel = 6 };
@@ -186,7 +188,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Addidtional_AllUnassigned()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = null, DecisionLevel = 0 };
         var v1 = new Variable(1) { Sense = null, DecisionLevel = 0 };
         var v2 = new Variable(2) { Sense = null, DecisionLevel = 0 };
@@ -219,7 +221,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Addidtional_HalfAssigned_NoTrue()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
         var v1 = new Variable(1) { Sense = null, DecisionLevel = 0 };
         var v2 = new Variable(2) { Sense = false, DecisionLevel = 6 };
@@ -252,7 +254,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Addidtional_HalfAssigned_OneTrue()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
         var v1 = new Variable(1) { Sense = null, DecisionLevel = 0 };
         var v2 = new Variable(2) { Sense = false, DecisionLevel = 10 };
@@ -288,7 +290,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Addidtional_HalfAssigned_TwoTrue()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
         var v1 = new Variable(1) { Sense = null, DecisionLevel = 0 };
         var v2 = new Variable(2) { Sense = false, DecisionLevel = 10 };
@@ -324,7 +326,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Addidtional_ForCoverage_1()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = false, DecisionLevel = 3 };
         var v1 = new Variable(1) { Sense = false, DecisionLevel = 1 };
         var v2 = new Variable(1) { Sense = false, DecisionLevel = 2 };
@@ -338,7 +340,7 @@ public sealed class ConstraintFactoryTests
     [Fact]
     public void Addidtional_ForCoverage_2()
     {
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = null, DecisionLevel = 0 };
         var v1 = new Variable(1) { Sense = false, DecisionLevel = 1 };
         var v2 = new Variable(1) { Sense = false, DecisionLevel = 2 };
@@ -378,7 +380,7 @@ public sealed class ConstraintFactoryTests
         };
 
         var learnedConstraints = new List<Constraint>();
-        var sut = new ConstraintFactory(learnedConstraints);
+        var sut = new ConstraintFactory([], learnedConstraints);
 
         var learnedConstraint = sut.CreateLearnedConstraint(learnedLiterals, 10, 17, maximum, minimum, out var jumpBackLevel);
 
@@ -398,7 +400,7 @@ public sealed class ConstraintFactoryTests
         variables[2].Sense = false;
 
         var learnedConstraints = new List<Constraint>();
-        var sut = new ConstraintFactory(learnedConstraints);
+        var sut = new ConstraintFactory([], learnedConstraints);
 
         var learnedLiterals = new[] { variables[2].PositiveLiteral };
         var learnedConstraint = sut.CreateLearnedConstraint(learnedLiterals, 3, 17, 2, 4, out var jumpBackLevel);
@@ -414,7 +416,7 @@ public sealed class ConstraintFactoryTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var learnedConstraints = new List<Constraint>();
-        var sut = new ConstraintFactory(learnedConstraints);
+        var sut = new ConstraintFactory([], learnedConstraints);
 
         var c01 = sut.CreateInitialConstraint([.. variables.Select(v => v.PositiveLiteral)]);
         c01.IsTracked = true;
@@ -489,7 +491,7 @@ public sealed class ConstraintFactoryTests
         constraint.Watched1.Watchers.Add(constraint);
         constraint.Watched2.Watchers.Add(constraint);
 
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         sut.ReleaseConstraint(constraint);
 
         Assert.Empty(variables[0].PositiveLiteral.Watchers);
@@ -506,10 +508,44 @@ public sealed class ConstraintFactoryTests
 
         constraint.IsOmitted = true;
 
-        var sut = new ConstraintFactory([]);
+        var sut = new ConstraintFactory([], []);
         sut.ReleaseConstraint(constraint);
 
         Assert.Equal(constraint, Assert.Single(variables[0].PositiveLiteral.Watchers));
         Assert.Equal(constraint, Assert.Single(variables[1].PositiveLiteral.Watchers));
     }
+
+    [Fact]
+    public void ReleaseAdditionalConstraints_Released()
+    {
+        var store = new TestComponentStore(new(), 2, null!);
+        var learnedConstraint = new Constraint([store.Variables[0].PositiveLiteral, store.Variables[1].NegativeLiteral],
+            store.Variables[0].PositiveLiteral,
+            store.Variables[1].NegativeLiteral);
+        learnedConstraint.Watched1.Watchers.Add(learnedConstraint);
+        learnedConstraint.Watched2.Watchers.Add(learnedConstraint);
+        learnedConstraint.IsLearned = true;
+
+        var additionalConstraint = new Constraint([store.Variables[0].PositiveLiteral, store.Variables[1].NegativeLiteral],
+            store.Variables[0].PositiveLiteral,
+            store.Variables[1].NegativeLiteral);
+        additionalConstraint.Watched1.Watchers.Add(additionalConstraint);
+        additionalConstraint.Watched2.Watchers.Add(additionalConstraint);
+        additionalConstraint.IsAdditional = true;
+
+        var stableConstraint = new Constraint([store.Variables[0].PositiveLiteral, store.Variables[1].NegativeLiteral],
+            store.Variables[0].PositiveLiteral,
+            store.Variables[1].NegativeLiteral);
+        stableConstraint.Watched1.Watchers.Add(stableConstraint);
+        stableConstraint.Watched2.Watchers.Add(stableConstraint);
+
+        var sut = new ConstraintFactory(store.Literals, []);
+        sut.ReleaseAdditionalConstraints();
+
+        Assert.Equal(stableConstraint, Assert.Single(store.Variables[0].PositiveLiteral.Watchers));
+        Assert.Empty(store.Variables[0].NegativeLiteral.Watchers);
+        Assert.Empty(store.Variables[1].PositiveLiteral.Watchers);
+        Assert.Equal(stableConstraint, Assert.Single(store.Variables[1].NegativeLiteral.Watchers));
+    }
+
 }

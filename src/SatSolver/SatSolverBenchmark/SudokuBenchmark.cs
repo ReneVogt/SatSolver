@@ -29,7 +29,7 @@ static class SudokuBenchmark
 
         void Solve(Problem problem)
         {
-            const int durations = 100;
+            const int durations = 500;
             //var options = SatSolverOptions.DPLL;
             var options = SatSolverOptions.Sudoku;
 

@@ -29,7 +29,7 @@ sealed class ComponentStore : ComponentStoreBase
         var lbdTrackingOptions = options.LiteralBlockDistanceTracking;
         LiteralBlockDistanceTracker = new LiteralBlockDistanceTracker(lbdTrackingOptions.LocalHalflife, lbdTrackingOptions.GlobalHalflife, lbdTrackingOptions.Threshold, lbdTrackingOptions.HoldForConflicts, lbdTrackingOptions.CoolDownConflicts);
 
-        ConstraintFactory = new ConstraintFactory(LearnedConstraints);
+        ConstraintFactory = new ConstraintFactory(Literals, LearnedConstraints);
         PreProcessor = new PreProcessor<ConstraintFactory>(options, problem, UnitPropagationQueue, Variables, Literals, ConstraintFactory);
         CandidateHeap = new CandidateHeap<ConstraintFactory>(Variables, ConstraintFactory);
         VariableTrail = new VariableTrail<CandidateHeap<ConstraintFactory>>(CandidateHeap, Variables.Length);

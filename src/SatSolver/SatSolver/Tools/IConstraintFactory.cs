@@ -37,4 +37,6 @@ interface IConstraintFactory
     void ReleaseConstraint(Constraint constraint);
 
     void ReleaseLearnedConstraints(double ratio);
+
+    void ReleaseAdditionalConstraints();
 }

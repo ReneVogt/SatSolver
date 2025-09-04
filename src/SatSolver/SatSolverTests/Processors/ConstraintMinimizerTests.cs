@@ -6,7 +6,7 @@ namespace SatSolverTests.Processors;
 
 public sealed class ConstraintMinimizerTests
 {
-    readonly ConstraintFactory _constraintFactory = new([]);
+    readonly ConstraintFactory _constraintFactory = new([], []);
     [Fact]
     public void FourStateSudoku_FirstConflict_NoMinimization()
     {
