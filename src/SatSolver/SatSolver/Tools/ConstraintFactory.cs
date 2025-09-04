@@ -14,13 +14,15 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
     public Constraint CreateInitialConstraint(IEnumerable<ConstraintLiteral> literals)
     {
         var l = literals.ToArray();
+        var constraint = CreateBinary(l);
+        if (constraint is not null) return constraint;
+        
         var watched1 = l[0];
         var watched2 = l.Length > 1 ? l[1] : watched1;
-        var constraint = new Constraint(l, watched1, watched2);
+        constraint = new Constraint(l, watched1, watched2);
+
         watched1.Watchers.Add(constraint);
         if (watched2 != watched1) watched2.Watchers.Add(constraint);
-        if (constraint.Literals.Length == 2)
-            Statistics.AddBinaryConstraint();
         return constraint;
     }
 
@@ -29,6 +31,12 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
     public Constraint CreateAdditionalConstraint(IEnumerable<ConstraintLiteral> literals)
     {
         var l = literals.ToArray();
+        var constraint = CreateBinary(l);
+        if (constraint is not null)
+        {
+            constraint.IsAdditional = true;
+            return constraint;
+        }
 
         // The first watcher should either be:
         // - a "true" literal with the lowest decision level
@@ -123,11 +131,10 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
                 secondWatched = literal;
         }
 
-        var constraint = new Constraint(l, firstWatched, secondWatched ?? firstWatched) { IsAdditional = true };
+        constraint = new Constraint(l, firstWatched, secondWatched ?? firstWatched) { IsAdditional = true };
         constraint.Watched1.Watchers.Add(constraint);
         if (constraint.Watched1 != constraint.Watched2)
             constraint.Watched2.Watchers.Add(constraint);
-        LogBinary(constraint);
         return constraint;
     }
 
@@ -139,6 +146,15 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
         ConstraintLiteral? uip = null;
         ConstraintLiteral? secondWatcher = null;
         jumpBackLevel = 0;
+
+        var constraint = CreateBinary(learnedLiterals);
+        if (constraint is not null)
+        {
+            constraint.LiteralBlockDistance = 2;
+            constraint.IsLearned = true;
+            jumpBackLevel = constraint.Watched2.Variable.DecisionLevel;
+            return constraint;
+        }
 
         for (var i=0; i<learnedLiterals.Length; i++) 
         {
@@ -192,6 +208,14 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
     {
         if (constraint.IsOmitted) return;
         constraint.IsTracked = false;
+
+        if (constraint.Literals.Length == 2)
+        {
+            var literals = constraint.Literals;
+            literals[0].Binaries.Remove((literals[1], constraint));
+            literals[1].Binaries.Remove((literals[0], constraint));
+        }
+
         constraint.Watched1.Watchers.Remove(constraint);
         constraint.Watched2.Watchers.Remove(constraint);
     }
@@ -200,17 +224,30 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
     public void ReleaseAdditionalConstraints()
     {
         var toRemove = _literals.SelectMany(l => l.Watchers)
+            .Concat(_literals.SelectMany(l => l.Binaries.Select(b => b.Reason)))
             .Where(watcher => watcher.IsLearned || watcher.IsAdditional)
             .ToHashSet();
         foreach (var constraint in toRemove)
             ReleaseConstraint(constraint);
     }
 
-    [Conditional("DEBUG")]
-    [ExcludeFromCodeCoverage]
-    static void LogBinary(Constraint constraint)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static Constraint? CreateBinary(ConstraintLiteral[] literals)
     {
-        if (constraint.Literals.Length == 2)
-            Statistics.AddBinaryConstraint();
+        if (literals.Length != 2) return null;
+
+        Statistics.AddBinaryConstraint();        
+        var watcher1 = literals[0];
+        var watcher2 = literals[1];
+
+        var constraint = (watcher2.Sense == true && watcher1.Sense != true ||
+            watcher2.Sense is null && watcher1.Sense == false ||
+            watcher1.Sense == false && watcher2.Sense == false && watcher2.Variable.DecisionLevel > watcher1.Variable.DecisionLevel)
+            ? new Constraint(literals, watcher2, watcher1)
+            : new Constraint(literals, watcher1, watcher2);
+
+        literals[0].Binaries.Add((literals[1], constraint));
+        literals[1].Binaries.Add((literals[0], constraint));
+        return constraint;
     }
 }

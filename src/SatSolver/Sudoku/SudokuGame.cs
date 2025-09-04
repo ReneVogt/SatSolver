@@ -1,5 +1,6 @@
 ﻿using Revo.SatSolver;
 using Revo.SatSolver.Parsing;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using static System.Console;
@@ -136,6 +137,8 @@ sealed class SudokuGame
     {
         try
         {
+            var watch = new Stopwatch();
+            watch.Start();
             lock(_sync)
             {
                 Console.SetCursorPosition(0, 19);
@@ -153,12 +156,13 @@ sealed class SudokuGame
             }
 
             var solution = _solver.FindSolution(cancellationToken);
+            watch.Stop();
             if (solution is null) 
                 lock (_sync)
                 {
                     Console.SetCursorPosition(0, 19);
                     ForegroundColor = ConsoleColor.Red;
-                    Console.Write("No solution found.");
+                    Console.Write($"No solution found after {watch.Elapsed}.");
                     ResetColor();
                     SetCellPosition();
                     return;
@@ -175,7 +179,7 @@ sealed class SudokuGame
                 Array.Copy(board, _board, 81);
                 RenderGame();
                 Console.SetCursorPosition(0, 19);
-                Console.Write("          ");
+                Console.Write($"Solved after {watch.Elapsed}.");
                 SetCellPosition();
             }
         }
@@ -184,7 +188,7 @@ sealed class SudokuGame
             lock (_sync)
             {
                 Console.SetCursorPosition(0, 19);
-                Console.Write("Canceled.     ");
+                Console.Write("Canceled.              ");
                 SetCellPosition();
                 return;
             }

@@ -25,6 +25,20 @@ sealed class VariablePropagator<
         _trail.Add(variable);
 
         var watchedLiteral = sense ? variable.NegativeLiteral : variable.PositiveLiteral;
+
+        // binary fast path
+        var binaries = watchedLiteral.Binaries;
+        for(var i=0; i<binaries.Count; i++)
+        {
+            var binary = binaries[i];
+            var value = binary.Literal.Sense;
+            if (value == false) return binary.Reason;
+            if (value == true) continue;
+
+            _unitPropagationQueue.Enqueue(binary);
+            _propagationRateTracker.AddPropagation();
+        }
+
         var watchers = watchedLiteral.Watchers;
         for (var watcherIndex = 0; watcherIndex<watchers.Count; watcherIndex++)
         {

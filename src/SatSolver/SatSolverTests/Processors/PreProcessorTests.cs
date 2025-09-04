@@ -33,6 +33,7 @@ public sealed class PreProcessorTests
 
         var store = new TestComponentStore(options, 10, _ => null!);
         var variables = store.Variables;
+        var literals = store.Literals;
         var unitsToPropagate = new UnitPropagationQueue();
         var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([], []));
         var originalConstraintCount = sut.BuildConstraints();
@@ -44,7 +45,7 @@ public sealed class PreProcessorTests
         Assert.Equal([variables[7].NegativeLiteral, variables[8].PositiveLiteral], unitsToPropagate.Select(u => u.UnitLiteral).OrderBy(l => l.Variable.Index));
 
         // generated constraints
-        var constraints = variables.SelectMany(v => v.PositiveLiteral.Watchers.Concat(v.NegativeLiteral.Watchers))
+        var constraints = literals.SelectMany(l => l.Watchers.Concat(l.Binaries.Select(b => b.Reason)))
             .Distinct().ToArray();
         Assert.Equal(originalConstraintCount, constraints.Length);
         var constraintsList = string.Join(Environment.NewLine,
@@ -128,8 +129,11 @@ public sealed class PreProcessorTests
         var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([], []));
         var originalConstraintCount = sut.BuildConstraints();
 
+        Assert.Equal("1 2 3 | 1 4 7",
+            string.Join(" | ",
+                variables[0].PositiveLiteral.Watchers.Select(constraint => string.Join(" ", constraint.Literals.Select(literal => literal.Orientation ? literal.Variable.Index + 1 : -(literal.Variable.Index + 1))))));
         Assert.Equal("-1 -2 | -1 -3",
             string.Join(" | ",
-                variables[0].NegativeLiteral.Watchers.Select(constraint => string.Join(" ", constraint.Literals.Select(literal => literal.Orientation ? literal.Variable.Index + 1 : -(literal.Variable.Index + 1))))));
+                variables[0].NegativeLiteral.Binaries.Select(b => string.Join(" ", b.Reason.Literals.Select(literal => literal.Orientation ? literal.Variable.Index + 1 : -(literal.Variable.Index + 1))))));
     }
 }

@@ -43,6 +43,7 @@ sealed partial class SatSolver<
     readonly TPropagationRateTracker _propagationRateTracker;
     readonly TLearnedConstraintsReducer _learnedConstraintsReducer;
     readonly Variable[] _variables;
+    readonly ConstraintLiteral[] _literals;
 
     int _originalConstraintCount;
 
@@ -61,6 +62,7 @@ sealed partial class SatSolver<
         _restartManager = (TRestartManager)store.RestartManager;
         _dpllOnly = store.Options.Mode == SatSolverMode.DPLL;
         _variables = store.Variables;
+        _literals = store.Literals;
         _learnedConstraintsReducer = (TLearnedConstraintsReducer)store.LearnedConstraintsReducer;
 
         _originalConstraintCount = store.PreProcessor.BuildConstraints();
@@ -216,6 +218,8 @@ sealed partial class SatSolver<
             {
                 _unitPropagationQueue.Clear();
                 _trail.JumpBack(level - 1);
+                if (constraint.Literals.Length == 1 || constraint.Watched2.Sense is not null)
+                    _unitPropagationQueue.Enqueue((constraint.Watched1, constraint));
                 return;
             }
 
@@ -239,13 +243,8 @@ sealed partial class SatSolver<
     void SetInitialUnits()
     {
         _unitPropagationQueue.Clear();
-        var units = _variables.SelectMany(v =>
-                v.PositiveLiteral.Watchers
-                    .Where(watcher => watcher.Literals.Length == 1)
-                    .Select(w => (v.PositiveLiteral, w))
-                .Concat(v.NegativeLiteral.Watchers
-                    .Where(watcher => watcher.Literals.Length == 1)
-                    .Select(w => (v.NegativeLiteral, w))));
-        foreach (var unit in units) _unitPropagationQueue.Enqueue(unit);
+        var units = _literals.SelectMany(literal => literal.Watchers)
+            .Where(watcher => watcher.Literals.Length == 1);
+        foreach (var unit in units) _unitPropagationQueue.Enqueue((unit.Literals[0], unit));
     }
 }

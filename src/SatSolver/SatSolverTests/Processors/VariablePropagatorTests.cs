@@ -110,15 +110,9 @@ public sealed class VariablePropagatorTests
         Assert.Equal(variables[1].PositiveLiteral, constraint4.Watched1);
         Assert.Equal(variables[2].NegativeLiteral, constraint4.Watched2);
 
-        Assert.Equal(variables[1].PositiveLiteral, constraint5.Watched1);
-        Assert.Equal(variables[0].PositiveLiteral, constraint5.Watched2);
-
-        Assert.Equal(variables[2].PositiveLiteral, constraint6.Watched1);
-        Assert.Equal(variables[0].PositiveLiteral, constraint6.Watched2);
-
         activityManager.VerifyAll();
         activityManager.VerifyNoOtherCalls();
-        Assert.Equal([(variables[2].PositiveLiteral, constraint6), (variables[1].PositiveLiteral, constraint5)], units);
+        Assert.Equal([(variables[1].PositiveLiteral, constraint5), (variables[2].PositiveLiteral, constraint6)], units);
         propagationRateTracker.Verify(p => p.AddPropagation(), Times.Exactly(2));       
     }
     [Fact]
