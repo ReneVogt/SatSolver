@@ -223,6 +223,8 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ReleaseAdditionalConstraints()
     {
+        _learnedConstraints.ForEach(ReleaseConstraint);
+        _learnedConstraints.Clear();
         var toRemove = _literals.SelectMany(l => l.Watchers)
             .Concat(_literals.SelectMany(l => l.Binaries.Select(b => b.Reason)))
             .Where(watcher => watcher.IsLearned || watcher.IsAdditional)

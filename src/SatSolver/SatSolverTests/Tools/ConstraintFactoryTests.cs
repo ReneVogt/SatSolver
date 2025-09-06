@@ -676,6 +676,19 @@ public sealed class ConstraintFactoryTests
         literals[2].Binaries.Add((literals[0], learnedBinary));
         learnedBinary.IsLearned = true;
 
+        var untracked = new Constraint([literals[0], literals[2], literals[4]],
+            literals[0],
+            literals[2]);
+        untracked.Watched1.Watchers.Add(untracked);
+        untracked.Watched2.Watchers.Add(untracked);
+        untracked.IsLearned = true;
+        var untrackedBinary = new Constraint([literals[0], literals[2]],
+            literals[0],
+            literals[2]);
+        literals[0].Binaries.Add((literals[2], untrackedBinary));
+        literals[2].Binaries.Add((literals[0], untrackedBinary));
+        untrackedBinary.IsLearned = true;
+
         var additional = new Constraint([literals[1], literals[3], literals[5]],
             literals[1],
             literals[3]);
@@ -700,7 +713,8 @@ public sealed class ConstraintFactoryTests
         literals[0].Binaries.Add((literals[3], stableBinary));
         literals[3].Binaries.Add((literals[0], stableBinary));
 
-        var sut = new ConstraintFactory(store.Literals, []);
+        var learnedConstraints = new List<Constraint> { learned, learnedBinary }; // not the untracked!
+        var sut = new ConstraintFactory(store.Literals, learnedConstraints);
         sut.ReleaseAdditionalConstraints();
 
         Assert.Equal(stable, Assert.Single(literals[0].Watchers));
@@ -715,6 +729,7 @@ public sealed class ConstraintFactoryTests
         Assert.Empty(literals[4].Binaries);
         Assert.Empty(literals[5].Watchers);
         Assert.Empty(literals[5].Binaries);
+        Assert.Empty(learnedConstraints);
     }
 
 }
