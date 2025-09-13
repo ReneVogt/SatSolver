@@ -8,7 +8,7 @@ using static Revo.SatSolver.SatSolverFactory;
 
 namespace SatSolverTests;
 
-public sealed partial class SatSolverTests(ITestOutputHelper _output)
+public sealed partial class SatSolverTests
 {
     static readonly ConstraintFactory _constraintFactory = new([], []);
 
@@ -110,9 +110,6 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
         var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
         var heap = new Mock<ICandidateHeap>(MockBehavior.Strict);
         var propagator = new Mock<IPropagateVariables>(MockBehavior.Strict);
-#if DEBUG
-    trail.Setup(t => t.DecisionLevel).Returns(0);
-#endif
         var store = new TestComponentStore(SatSolverOptions.CDCL, 1, name => name switch
         {
             nameof(ComponentStoreBase.VariablePropagator) => propagator.Object,
@@ -227,10 +224,6 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 
         variables[2].Sense = true; // used to test that already assigned variables are ignored in the units queue
 
-#if DEBUG
-        // setups for debug outputs
-        trail.Setup(t => t.DecisionLevel).Returns(0);
-#endif
         heap.InSequence(sequence).Setup(h => h.Heapify());
         heap.InSequence(sequence).Setup(h => h.Dequeue()).Returns(variables[0]);
         trail.InSequence(sequence).Setup(t => t.Push(true));
@@ -300,9 +293,6 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 
         // setups for debug outputs
         var decisionLevel = 0;
-#if DEBUG
-        trail.Setup(t => t.DecisionLevel).Returns(() => decisionLevel);
-#endif
 
         preProcessor.Setup(p => p.BuildConstraints()).Returns(17);
         heap.InSequence(sequence).Setup(h => h.Heapify());
@@ -379,9 +369,6 @@ public sealed partial class SatSolverTests(ITestOutputHelper _output)
 
         // setups for debug outputs
         var decisionLevel = 0;
-#if DEBUG
-        trail.Setup(t => t.DecisionLevel).Returns(() => decisionLevel);
-#endif
         preProcessor.InSequence(sequence).Setup(p => p.BuildConstraints()).Returns(2);
 
         heap.InSequence(sequence).Setup(h => h.Heapify());

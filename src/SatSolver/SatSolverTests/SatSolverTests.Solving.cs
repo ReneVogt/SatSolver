@@ -60,27 +60,28 @@ public sealed partial class SatSolverTests
 
     [Theory]
     [
-        InlineData(SimpleOr, 3),
-        InlineData(TwoStateSudoku, 2),
-        InlineData(ThreeStateSudoku, 6),
-        InlineData(FourStateSudoku, 24),
+        InlineData(nameof(SimpleOr), SimpleOr, 3),
+        InlineData(nameof(TwoStateSudoku), TwoStateSudoku, 2),
+        InlineData(nameof(ThreeStateSudoku), ThreeStateSudoku, 6),
+        InlineData(nameof(FourStateSudoku), FourStateSudoku, 24)
     ]
     [Trait("Category", "Simple Cases")]
     [Trait("Options", "CDCL")]
-    public void EnumerateMutlipleSolutions_CDCL(string dimacs, int expectedSolutions) => EnumerateMutlipleSolutions(dimacs, expectedSolutions, true);
+    public void EnumerateMutlipleSolutions_CDCL(string name, string dimacs, int expectedSolutions) => EnumerateMutlipleSolutions(name, dimacs, expectedSolutions, true);
     [Theory]
     [
-        InlineData(SimpleOr, 3),
-        InlineData(TwoStateSudoku, 2),
-        InlineData(ThreeStateSudoku, 6),
-        InlineData(FourStateSudoku, 24),
+        InlineData(nameof(SimpleOr), SimpleOr, 3),
+        InlineData(nameof(TwoStateSudoku), TwoStateSudoku, 2),
+        InlineData(nameof(ThreeStateSudoku), ThreeStateSudoku, 6),
+        InlineData(nameof(FourStateSudoku), FourStateSudoku, 24)
     ]
     [Trait("Category", "Simple Cases")]
     [Trait("Options", "DPLL")]
-    public void EnumerateMutlipleSolutions_DPLL(string dimacs, int expectedSolutions) => EnumerateMutlipleSolutions(dimacs, expectedSolutions, false);
-    void EnumerateMutlipleSolutions(string dimacs, int expectedSolutions, bool cdcl)
+    public void EnumerateMutlipleSolutions_DPLL(string name, string dimacs, int expectedSolutions) => EnumerateMutlipleSolutions(name, dimacs, expectedSolutions, false);
+    static void EnumerateMutlipleSolutions(string name, string dimacs, int expectedSolutions, bool cdcl)
     {
-        using var logger = DebugLogger.Log(_output);
+        var file = $"{name}-{(cdcl ? "cdcl" : "dpll")}.log";
+        using var logger = DebugLogger.Log(file);
         var problem = DimacsParser.Parse(dimacs).Single();
         var solutions = problem.EnumerateSolutions(cdcl ? SatSolverOptions.CDCL : SatSolverOptions.DPLL).ToArray();
         SolutionValidator.Validate(problem, solutions);
@@ -119,25 +120,21 @@ public sealed partial class SatSolverTests
     [MemberData(nameof(ProvideUnsatTestCases))]
     public void EnumerateSolutions_UNSAT_CDCL(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.CDCL);
 
-    void SolveFile(string file, SatSolverOptions options)
+    static void SolveFile(string file, SatSolverOptions options)
     {
-        _output?.WriteLine(file);
-        _output?.WriteLine(options.ToString());
         string cnf = File.ReadAllText(file);
-        SolveCnf(cnf, !cnf.Trim().EndsWith("c UNSAT"), options);
+        SolveCnf(Path.GetFileNameWithoutExtension(file), cnf, !cnf.Trim().EndsWith("c UNSAT"), options);
     }
-    void SolveFile(string file, bool sat, SatSolverOptions options)
+    static void SolveFile(string file, bool sat, SatSolverOptions options)
     {
-        _output?.WriteLine(file);
-        _output?.WriteLine(options.ToString());
         string cnf = File.ReadAllText(file);
-        SolveCnf(cnf, sat, options);
+        SolveCnf(Path.GetFileNameWithoutExtension(file), cnf, sat, options);
     }
-    void SolveCnf(string cnf, bool sat, SatSolverOptions options)
+    static void SolveCnf(string name, string cnf, bool sat, SatSolverOptions options)
     {
         var problem = DimacsParser.Parse(cnf).Single();
         
-        using var logging = DebugLogger.Log(_output);
+        using var logging = DebugLogger.Log($"{name}.log");
         
         var solutions = problem.EnumerateSolutions(options);
         if (sat)

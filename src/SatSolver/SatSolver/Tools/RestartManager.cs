@@ -66,7 +66,7 @@ sealed class RestartManager<
             _restartOnPropagationRate && _propagationRateTracker.ShouldRestart() || 
             _restartOnLiteralBlockDistance && _literalBlockDistanceTracker.ShouldRestart())) return false;
 
-        Debug.WriteLine($"Restarting (counter: {_restartCounter} / {_nextRestartThreshold}, propagation rate: {_propagationRateTracker.CurrentRatio}, lbd: {_literalBlockDistanceTracker.CurrentRatio}).");
+        Statistics.LogRestart(_restartCounter, _nextRestartThreshold, _propagationRateTracker.CurrentRatio, _literalBlockDistanceTracker.CurrentRatio);
 
         _restartCounter = 0;
         if (_lubySequence is not null)
@@ -78,10 +78,7 @@ sealed class RestartManager<
         _literalBlockDistanceTracker.ResetAfterRestart();
 
         if (_reduceConstraints)
-        {
-            Debug.WriteLine($"Reducing constraints on restart.");
             _constraintReducer.ReduceLearnedConstraints();
-        }
 
         return true;
     }

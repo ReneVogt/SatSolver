@@ -18,8 +18,6 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void MinimizeConstraint(StampArray constraint, int decisionLevel, ConstraintLiteral[] knownLiterals)
     {
-        Statistics.StartConstraintMinimization(constraint.Count);
-
         int maxStackSize = 64 * constraint.Count;
         int visitLimit = Math.Max(3000, 20 * constraint.Count);
         _redundant.Clear();
@@ -35,8 +33,6 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
             if (IsRedundant(index))
                 constraint.Remove(index);
         }
-
-        Statistics.FinishConstraintMinimization(constraint.Count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool IsRedundant(int literalIndex)

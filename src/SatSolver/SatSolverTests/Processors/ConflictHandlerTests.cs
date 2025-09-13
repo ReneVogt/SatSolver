@@ -43,7 +43,7 @@ public sealed class ConflictHandlerTests
         var constraintMinimizer = new Mock<IMinimizeConstraints>(MockBehavior.Strict);
 
         var sut = new ConflictHandler<IManageActivities, IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, ICreateLearnedConstraints, IManageRestart, IMinimizeConstraints, IConstraintFactory>(options, literals, activityManager.Object, trail.Object, propagationRateTracker.Object,
-            literalBlockDistanceTracker.Object, learnedConstraintCreator.Object, unitPropagationQueue, restartManager.Object, constraintMinimizer.Object, constraintFactory.Object);
+            literalBlockDistanceTracker.Object, learnedConstraintCreator.Object, unitPropagationQueue, restartManager.Object, constraintMinimizer.Object, constraintFactory.Object, new Statistics(null, null));
 
         var sequence = new MockSequence();
         propagationRateTracker.InSequence(sequence).Setup(p => p.AddConflict());

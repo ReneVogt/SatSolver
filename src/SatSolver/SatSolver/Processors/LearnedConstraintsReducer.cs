@@ -8,7 +8,8 @@ namespace Revo.SatSolver.Processors;
 sealed class LearnedConstraintsReducer<TConstraintFactory>(
     SatSolverOptions _options, 
     List<Constraint> _learnedConstraints, 
-    IConstraintFactory constraintFactory) : IReduceLearnedConstraints
+    IConstraintFactory constraintFactory,
+    Statistics _statistics) : IReduceLearnedConstraints
     where TConstraintFactory : IConstraintFactory
 {
     readonly TConstraintFactory _constraintFactory = (TConstraintFactory)constraintFactory;
@@ -38,16 +39,14 @@ sealed class LearnedConstraintsReducer<TConstraintFactory>(
     public void ReduceLearnedConstraints()
     {
         var previousCount = _learnedConstraints.Count;
-        Debug.WriteLine($"Start reducing learned constraints (currently {previousCount}): conflicts {_conflictCount} / {_conflictInterval}.");
-        _conflictCount = 0;
-
         var learnedConstraints = _learnedConstraints;
         learnedConstraints.Sort((left, right) =>
             (left.LiteralBlockDistance, -left.Activity, left.Literals.Length)
             .CompareTo((right.LiteralBlockDistance, -right.Activity, right.Literals.Length)));
         _constraintFactory.ReleaseLearnedConstraints(_ratioToDelete);
         var countReduced = _learnedConstraints.Count;
-        Debug.WriteLine($"Reduced learned constraints to {countReduced}.");
-        Statistics.AddReducedLearnedConstraint(previousCount - countReduced);
+
+        _statistics.LogConstraintDeletion(previousCount, previousCount - countReduced, _conflictCount, _conflictInterval);
+        _conflictCount = 0;
     }
 }

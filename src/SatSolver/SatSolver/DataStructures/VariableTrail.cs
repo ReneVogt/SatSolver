@@ -33,7 +33,7 @@ sealed class VariableTrail<TCandidateHeap>(ICandidateHeap candidateHeap, int _ca
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void JumpBack(int level)
     {
-        Debug.WriteLine($"[{DecisionLevel}] Jumping back to level {level}.");
+        Statistics.LogBackJump(_decisionLevels.Count, level);
         var index = Count;
         while (_decisionLevels.Count > level)
             (index, _) = _decisionLevels.Pop();

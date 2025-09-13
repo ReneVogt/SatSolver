@@ -181,7 +181,6 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
             LiteralBlockDistance = lbd,
             Activity = activity
         };
-        Statistics.AddLearnedConstraint(learnedConstraint);
 
         if (!learnedConstraint.IsOmitted)
         {
@@ -238,7 +237,6 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
     {
         if (literals.Length != 2) return null;
 
-        Statistics.AddBinaryConstraint();        
         var watcher1 = literals[0];
         var watcher2 = literals[1];
 

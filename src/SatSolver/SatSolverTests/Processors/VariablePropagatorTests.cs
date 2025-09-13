@@ -1,4 +1,5 @@
 ﻿using Moq;
+using Revo.SatSolver;
 using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Processors;
 using Revo.SatSolver.Tools;
@@ -36,9 +37,9 @@ public sealed class VariablePropagatorTests
         var trail = new Mock<IVariableTrail>();
         var activityManager = new Mock<IManageActivities>();
         var units = new UnitPropagationQueue();
-        var propagationRateTracker = new Mock<ITrackPropagationRate>();
+        var propagationRateTracker = new Mock<ITrackPropagationRate>(MockBehavior.Strict);
 
-        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object);
+        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
 
         var conflict = sut.PropagateVariable(variables[0], true, null);
         Assert.Null(conflict);
@@ -89,9 +90,9 @@ public sealed class VariablePropagatorTests
         activityManager.InSequence(sequence).Setup(a => a.IncreaseConstraintActivity(constraint5, 0.5d));
 
         var units = new UnitPropagationQueue();
-        var propagationRateTracker = new Mock<ITrackPropagationRate>();
+        var propagationRateTracker = new Mock<ITrackPropagationRate>(MockBehavior.Strict);
 
-        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object);
+        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
 
         var conflict = sut.PropagateVariable(variables[0], false, null);
         Assert.Null(conflict);
@@ -113,7 +114,6 @@ public sealed class VariablePropagatorTests
         activityManager.VerifyAll();
         activityManager.VerifyNoOtherCalls();
         Assert.Equal([(variables[1].PositiveLiteral, constraint5), (variables[2].PositiveLiteral, constraint6)], units);
-        propagationRateTracker.Verify(p => p.AddPropagation(), Times.Exactly(2));       
     }
     [Fact]
     public void PropagateVariable_WithConflict()
@@ -133,7 +133,7 @@ public sealed class VariablePropagatorTests
         var units = new UnitPropagationQueue();
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object);
+        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
 
         var conflict = sut.PropagateVariable(variables[0], true, null);
         Assert.Equal(constraint1, conflict);
@@ -170,7 +170,7 @@ public sealed class VariablePropagatorTests
         var units = new UnitPropagationQueue();
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object);
+        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
 
         var conflict = sut.PropagateVariable(variables[0], false, null);
         Assert.Null(conflict);
@@ -206,9 +206,43 @@ public sealed class VariablePropagatorTests
         var units = new UnitPropagationQueue();
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object);
+        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
 
         var conflict = sut.PropagateVariable(variables[0], true, null);
         Assert.Equal(constraint1, conflict);
+    }
+    [Fact]
+    public void PropagateVariable_WithReason_PropagationCounted()
+    {
+        var variables = Enumerable.Range(0, 3).Select(i => new Variable(i)).ToArray();
+        variables[1].Sense = true;
+        variables[2].Sense = true;
+        var constraint0 = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral, variables[1].PositiveLiteral, variables[2].PositiveLiteral]);
+        var constraint1 = _constraintFactory.CreateInitialConstraint([variables[0].NegativeLiteral, variables[1].NegativeLiteral, variables[2].NegativeLiteral]);
+
+        var trail = new Mock<IVariableTrail>();
+        var activityManager = new Mock<IManageActivities>();
+        var units = new UnitPropagationQueue();
+        var propagationRateTracker = new Mock<ITrackPropagationRate>();
+
+        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
+
+        var conflict = sut.PropagateVariable(variables[0], true, constraint1);
+        Assert.Equal(constraint1, conflict);
+
+        trail.Verify(t => t.Add(variables[0]), Times.Once);
+        trail.VerifyNoOtherCalls();
+        Assert.True(variables[0].Sense);
+        Assert.False(variables[0].Polarity);
+
+        Assert.Equal(variables[0].PositiveLiteral, constraint0.Watched1);
+        Assert.Equal(variables[1].PositiveLiteral, constraint0.Watched2);
+
+        Assert.Equal(variables[1].NegativeLiteral, constraint1.Watched1);
+        Assert.Equal(variables[0].NegativeLiteral, constraint1.Watched2);
+
+        activityManager.VerifyNoOtherCalls();
+        Assert.Empty(units);
+        propagationRateTracker.Verify(p => p.AddPropagation(), Times.Once);
     }
 }

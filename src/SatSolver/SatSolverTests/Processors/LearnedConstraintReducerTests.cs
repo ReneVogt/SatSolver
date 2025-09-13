@@ -73,7 +73,7 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options, 
             learnedConstraints, 
-            constraintFactory);
+            constraintFactory, new Statistics(null, null));
 
         sut.ReduceLearnedConstraints();
 
@@ -108,7 +108,7 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            null!);
+            null!, new Statistics(null, null));
 
         sut.ReduceLearnedConstraintsIfNecessary(12);
         Assert.Equal(100, learnedConstraints.Count);
@@ -135,7 +135,7 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            null!);
+            null!, new Statistics(null, null));
 
         sut.ReduceLearnedConstraintsIfNecessary(12);
         Assert.Equal(100, learnedConstraints.Count);
@@ -163,7 +163,7 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            constraintFactory);
+            constraintFactory, new Statistics(null, null));
 
         sut.ReduceLearnedConstraintsIfNecessary(11);
         Assert.Equal(50, learnedConstraints.Count);
@@ -190,7 +190,7 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            null!);
+            null!, new Statistics(null, null));
 
         sut.ReduceLearnedConstraintsIfNecessary(11);
         Assert.Equal(100, learnedConstraints.Count);
@@ -216,7 +216,7 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            constraintFactory);
+            constraintFactory, new Statistics(null, null));
 
         sut.ReduceLearnedConstraintsIfNecessary(11);
         Assert.Equal(100, learnedConstraints.Count);
@@ -247,7 +247,7 @@ public sealed class LearnedConstraintReducerTests
         var sut = new LearnedConstraintsReducer<IConstraintFactory>(
             options,
             learnedConstraints,
-            null!);
+            null!, new Statistics(null, null));
 
         sut.ReduceLearnedConstraintsIfNecessary(11);
         Assert.Equal(100, learnedConstraints.Count);

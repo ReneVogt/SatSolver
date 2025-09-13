@@ -8,7 +8,7 @@ namespace Revo.SatSolver.Processors;
 sealed class VariablePropagator<
     TVariableTrail, 
     TActivityManager, 
-    TPropagationRateTracker>(IVariableTrail trail, UnitPropagationQueue _unitPropagationQueue, IManageActivities activityManager, ITrackPropagationRate propagationRateTracker) : IPropagateVariables
+    TPropagationRateTracker>(IVariableTrail trail, UnitPropagationQueue _unitPropagationQueue, IManageActivities activityManager, ITrackPropagationRate propagationRateTracker, Statistics _statistics) : IPropagateVariables
     where TVariableTrail : IVariableTrail
     where TActivityManager : IManageActivities
     where TPropagationRateTracker : ITrackPropagationRate
@@ -24,6 +24,10 @@ sealed class VariablePropagator<
         variable.Reason = reason;
         _trail.Add(variable);
 
+        _statistics.LogPropagation(variable);
+        if (reason is not null)
+            propagationRateTracker.AddPropagation();
+
         var watchedLiteral = sense ? variable.NegativeLiteral : variable.PositiveLiteral;
 
         // binary fast path
@@ -36,7 +40,6 @@ sealed class VariablePropagator<
             if (value == true) continue;
 
             _unitPropagationQueue.Enqueue(binary);
-            _propagationRateTracker.AddPropagation();
         }
 
         var watchers = watchedLiteral.Watchers;
@@ -73,7 +76,6 @@ sealed class VariablePropagator<
             {
                 _unitPropagationQueue.Enqueue((constraint.Watched1, constraint));
                 _activityManager.IncreaseConstraintActivity(constraint, 0.5);
-                _propagationRateTracker.AddPropagation();
                 continue;
             }
 

@@ -25,7 +25,8 @@ sealed class ConflictHandler<
     UnitPropagationQueue unitPropagationQueue,
     IManageRestart restartManager,
     IMinimizeConstraints constraintMinimizer,
-    IConstraintFactory constraintFactory) : IHandleConflicts
+    IConstraintFactory constraintFactory,
+    Statistics _statistics) : IHandleConflicts
     where TActivityManager : IManageActivities
     where TVariableTrail : IVariableTrail
     where TPropagationRateTracker : ITrackPropagationRate
@@ -60,6 +61,7 @@ sealed class ConflictHandler<
         var decisionLevel = _trail.DecisionLevel;
 
         _learnedConstraintCreator.CreateLearnedConstraint(conflictingConstraint, _learnedLiterals);
+        var initialLength = _learnedLiterals.Count;
         _constraintMinimizer.MinimizeConstraint(_learnedLiterals, decisionLevel, _literals);
 
         var literals = _literals;
@@ -78,6 +80,8 @@ sealed class ConflictHandler<
         _activityManager.DecayConstraintActivity();
 
         _literalBlockDistanceTracker.AddLiteralBlockDistance(learnedConstraint.LiteralBlockDistance);
+
+        _statistics.AddConflict(conflictingConstraint, learnedConstraint, initialLength);
 
         _unitPropagationQueue.Enqueue((learnedConstraint.Watched1, learnedConstraint));
         _trail.JumpBack(jumpBackLevel);

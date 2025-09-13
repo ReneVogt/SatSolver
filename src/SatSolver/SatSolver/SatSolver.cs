@@ -49,7 +49,6 @@ sealed partial class SatSolver<
 
     public SatSolver(ComponentStoreBase store)
     {
-        Statistics.Initialize(store.PropagationRateTracker, store.LiteralBlockDistanceTracker);
         _constraintFactory = (TConstraintFactory)store.ConstraintFactory;
         _variablePropagator = (TVariablePropagator)store.VariablePropagator;
         _conflictHandler = (TConflictHandler)store.ConflictHandler;
@@ -91,7 +90,7 @@ sealed partial class SatSolver<
                     if (candidateVariable is null)
                     {
                         var solution = BuildSolution();
-                        Debug.WriteLine($"Delivering solution [{string.Join(" ", solution.AsEnumerable())}] and creating inverse conflict.");
+                        Statistics.DeliveringSolution(solution);
                         return solution;
                     }
                     else
@@ -102,7 +101,6 @@ sealed partial class SatSolver<
                 }
 
                 _trail.Push(firstTry);
-                Debug.WriteLine($"[{_trail.DecisionLevel}] Decided {candidateVariable!.Index+1} to {candidateSense}.");
                 conflictingConstraint = _variablePropagator.PropagateVariable(candidateVariable, candidateSense, null);
             }
 
@@ -115,21 +113,19 @@ sealed partial class SatSolver<
                     Debug.Assert(literal.Sense.Value);
                     continue;
                 }
-                Debug.WriteLine($"[{_trail.DecisionLevel}] Propagating {literal.Variable.Index+1} to {literal.Orientation}.");
                 conflictingConstraint = _variablePropagator.PropagateVariable(literal.Variable, literal.Orientation, null);
             }
 
             candidateVariable = null;
             if (conflictingConstraint is null) continue;
 
-            Debug.WriteLine($"Conflict in {conflictingConstraint}");
+            Statistics.AddConflict(conflictingConstraint);
             _propagationRateTracker.AddConflict();
             _restartManager.AddConflict();
             _activityManager.IncreaseVariableActivity(conflictingConstraint);
 
             if (_restartManager.RestartIfNecessary()) continue;
             
-            Debug.WriteLine("Backtracking.");
             _unitPropagationQueue.Clear();
             (candidateVariable, candidateSense) = _trail.Backtrack();
             if (candidateVariable is null) return null;
@@ -149,8 +145,7 @@ sealed partial class SatSolver<
                 else
                 {
                     var solution = BuildSolution();
-                    Debug.WriteLine($"Delivering solution [{string.Join(" ", solution.AsEnumerable())}] and creating inverse conflict.");
-                    Statistics.Dump();
+                    Statistics.DeliveringSolution(solution);
                     return solution;
                 }
             }
@@ -162,27 +157,18 @@ sealed partial class SatSolver<
                 if (unitLiteral.Sense is not null) continue;
 
                 if (reason is null)
-                {
                     _trail.Push();
-                    Debug.WriteLine($"[{_trail.DecisionLevel}] Decided {unitLiteral.Variable.Index+1} to {unitLiteral.Orientation}.");
-                }
-                else
-                    Debug.WriteLine($"[{_trail.DecisionLevel}] Propagating {unitLiteral.Variable.Index+1} to {unitLiteral.Orientation}.");
-
 
                 var conflictingConstraint = _variablePropagator.PropagateVariable(unitLiteral.Variable, unitLiteral.Orientation, reason);
                 if (conflictingConstraint is null) continue;
 
-                Debug.WriteLine($"Conflict in {conflictingConstraint} (learned: {conflictingConstraint.IsLearned}).");
                 if (_trail.DecisionLevel == 0)
                 {
-                    Debug.WriteLine("NO MORE SOLUTIONS.");
-                    Statistics.Dump();
+                    Statistics.NoMoreSolutions();
                     return null;
                 }
                 _conflictHandler.HandleConflict(conflictingConstraint);
 
-                Statistics.Dump();
                 _learnedConstraintsReducer.ReduceLearnedConstraintsIfNecessary(_originalConstraintCount);
                 if (_restartManager.RestartIfNecessary()) break;
             }
