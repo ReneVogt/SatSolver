@@ -16,6 +16,26 @@ sealed class ConjunctiveNormalFormChecker : BooleanExpressionRewriter
     {
     }
 
+    public override BooleanExpression Rewrite(BooleanExpression expression)
+    {
+        switch (expression.Kind)
+        {
+            case ExpressionKind.Literal:
+                break;
+            case ExpressionKind.Unary:
+                RewriteUnaryExpression((UnaryExpression)expression);
+                break;
+            case ExpressionKind.Binary:
+                RewriteBinaryExpression((BinaryExpression)expression);
+                break;
+            default:
+                _isCnf = false;
+                break;
+        }
+
+        return expression;
+    }
+
     public override BooleanExpression RewriteUnaryExpression(UnaryExpression expression)
     {
         _isCnf = expression.Operator == UnaryOperator.Not && expression.Expression.Kind == ExpressionKind.Literal;
@@ -34,11 +54,6 @@ sealed class ConjunctiveNormalFormChecker : BooleanExpressionRewriter
         Rewrite(expression.Left);
         if (_isCnf) Rewrite(expression.Right);
         _parentIsOr = old;
-        return expression;
-    }
-    public override BooleanExpression RewriteConstantExpression(ConstantExpression expression)
-    {
-        _isCnf = false;
         return expression;
     }
 
