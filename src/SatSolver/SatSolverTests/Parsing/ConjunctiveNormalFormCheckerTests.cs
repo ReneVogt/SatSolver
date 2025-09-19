@@ -38,7 +38,6 @@ public sealed class ConjunctiveNormalFormCheckerTests
         InlineData("a % b", false),
         InlineData("a | (b > c)", false),
         InlineData("b < c", false),
-        InlineData("a % b", false),
         InlineData("a | (b = c)", false),
         InlineData("a & (b = c)", false)
     ]

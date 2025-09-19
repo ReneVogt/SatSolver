@@ -20,10 +20,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\BooleanAlgebra\BooleanAlgebra.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Compile Update="Properties\Resources.Designer.cs">
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
@@ -40,5 +36,9 @@
 		<InternalsVisibleTo Include="SatSolverBenchmark" />
 		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 </ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="BooleanAlgebra" Version="1.0.0" />
+	</ItemGroup>
 
 </Project>
