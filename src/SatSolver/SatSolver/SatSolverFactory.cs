@@ -1,7 +1,4 @@
-﻿using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.Processors;
-using Revo.SatSolver.Tools;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Revo.SatSolver;
 
@@ -52,25 +49,7 @@ public static class SatSolverFactory
         options.Validate();
 
         var store = new ComponentStore(options, problem);
-        return new SatSolver<
-            ConstraintFactory,
-            CandidateHeap<ConstraintFactory>,
-            VariableTrail<CandidateHeap<ConstraintFactory>>,
-            VariablePropagator<VariableTrail<CandidateHeap<ConstraintFactory>>, ActivityManager<CandidateHeap<ConstraintFactory>>, PropagationRateTracker>,
-            ConflictHandler<
-                ActivityManager<CandidateHeap<ConstraintFactory>>,
-                VariableTrail<CandidateHeap<ConstraintFactory>>,
-                PropagationRateTracker,
-                LiteralBlockDistanceTracker,
-                LearnedConstraintCreator<VariableTrail<CandidateHeap<ConstraintFactory>>, ActivityManager<CandidateHeap<ConstraintFactory>>>,
-                RestartManager<VariableTrail<CandidateHeap<ConstraintFactory>>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer<ConstraintFactory>, LubySequence>,
-                ConstraintMinimizer,
-                ConstraintFactory>,
-            ActivityManager<CandidateHeap<ConstraintFactory>>,
-            PropagationRateTracker,
-            LearnedConstraintsReducer<ConstraintFactory>,
-            RestartManager<VariableTrail<CandidateHeap<ConstraintFactory>>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer<ConstraintFactory>, LubySequence>>
-            (store);
+        return new SatSolver(store);
     }
     /// <summary>
     /// Finds a variable configuration that satisfies the SATisfiability <paramref name="problem"/>.
@@ -88,15 +67,6 @@ public static class SatSolverFactory
 
     // These are the entry points for unit tests. We can provide an alternative store
     // with mocks for all the required algorithm parts.
-    internal static ISatSolver Create(ComponentStoreBase store) => new SatSolver<
-        IConstraintFactory,
-        ICandidateHeap,
-        IVariableTrail,
-        IPropagateVariables,
-        IHandleConflicts,
-        IManageActivities,
-        ITrackPropagationRate,
-        IReduceLearnedConstraints,
-        IManageRestart>(store);
+    internal static ISatSolver Create(ComponentStoreBase store) => new SatSolver(store);
     internal static IEnumerable<Literal[]> EnumerateSolutions(ComponentStoreBase store) => Create(store).EnumerateSolutions();
 }

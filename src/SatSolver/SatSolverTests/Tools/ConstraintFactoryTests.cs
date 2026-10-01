@@ -1,7 +1,4 @@
-﻿using Moq;
-using Revo.SatSolver;
-using Revo.SatSolver.DataStructures;
-using Revo.SatSolver.Processors;
+﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Tools;
 
 namespace SatSolverTests.Tools;

@@ -31,19 +31,14 @@ sealed class ComponentStore : ComponentStoreBase
         var statistics = new Statistics(PropagationRateTracker, LiteralBlockDistanceTracker);
 
         ConstraintFactory = new ConstraintFactory(Literals, LearnedConstraints);
-        PreProcessor = new PreProcessor<ConstraintFactory>(options, problem, UnitPropagationQueue, Variables, Literals, ConstraintFactory);
-        CandidateHeap = new CandidateHeap<ConstraintFactory>(Variables, ConstraintFactory);
-        VariableTrail = new VariableTrail<CandidateHeap<ConstraintFactory>>(CandidateHeap, Variables.Length);
-        ActivityManager = new ActivityManager<CandidateHeap<ConstraintFactory>>(Variables, LearnedConstraints, CandidateHeap, options);
-        VariablePropagator = new VariablePropagator<VariableTrail<CandidateHeap<ConstraintFactory>>, ActivityManager<CandidateHeap<ConstraintFactory>>, PropagationRateTracker>(VariableTrail, UnitPropagationQueue, ActivityManager, PropagationRateTracker, statistics);
-        LearnedConstraintCreator = new LearnedConstraintCreator<VariableTrail<CandidateHeap<ConstraintFactory>>, ActivityManager<CandidateHeap<ConstraintFactory>>>(VariableTrail, ActivityManager);
-        LearnedConstraintsReducer = new LearnedConstraintsReducer<ConstraintFactory>(options, LearnedConstraints, ConstraintFactory, statistics);
-        RestartManager = new RestartManager<
-            VariableTrail<CandidateHeap<ConstraintFactory>>,
-            PropagationRateTracker,
-            LiteralBlockDistanceTracker,
-            LearnedConstraintsReducer<ConstraintFactory>,
-            LubySequence>(
+        PreProcessor = new PreProcessor(options, problem, UnitPropagationQueue, Variables, Literals, ConstraintFactory);
+        CandidateHeap = new CandidateHeap(Variables, ConstraintFactory);
+        VariableTrail = new VariableTrail(CandidateHeap, Variables.Length);
+        ActivityManager = new ActivityManager(Variables, LearnedConstraints, CandidateHeap, options);
+        VariablePropagator = new VariablePropagator(VariableTrail, UnitPropagationQueue, ActivityManager, PropagationRateTracker, statistics);
+        LearnedConstraintCreator = new LearnedConstraintCreator(VariableTrail, ActivityManager);
+        LearnedConstraintsReducer = new LearnedConstraintsReducer(options, LearnedConstraints, ConstraintFactory, statistics);
+        RestartManager = new RestartManager(
             options,
             VariableTrail,
             PropagationRateTracker,
@@ -54,15 +49,7 @@ sealed class ComponentStore : ComponentStoreBase
 
         ConstraintMinimizer = new ConstraintMinimizer();
 
-        ConflictHandler = new ConflictHandler<
-            ActivityManager<CandidateHeap<ConstraintFactory>>,
-            VariableTrail<CandidateHeap<ConstraintFactory>>,
-            PropagationRateTracker,
-            LiteralBlockDistanceTracker,
-            LearnedConstraintCreator<VariableTrail<CandidateHeap<ConstraintFactory>>, ActivityManager<CandidateHeap<ConstraintFactory>>>,
-            RestartManager<VariableTrail<CandidateHeap<ConstraintFactory>>, PropagationRateTracker, LiteralBlockDistanceTracker, LearnedConstraintsReducer<ConstraintFactory>, LubySequence>,
-            ConstraintMinimizer,
-            ConstraintFactory>
+        ConflictHandler = new ConflictHandler
             (
             options,
             Literals,

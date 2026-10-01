@@ -5,12 +5,8 @@ using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class LearnedConstraintCreator<TVariableTrail, TActivityManager>(IVariableTrail trail, IManageActivities activityManager) : ICreateLearnedConstraints
-    where TVariableTrail : IVariableTrail
-    where TActivityManager : IManageActivities
+sealed class LearnedConstraintCreator(IVariableTrail _trail, IManageActivities _activityManager) : ICreateLearnedConstraints
 {
-    readonly TVariableTrail _trail = (TVariableTrail)trail;
-    readonly TActivityManager _activityManager = (TActivityManager)activityManager;
     readonly StampArray _seenVariables = [];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

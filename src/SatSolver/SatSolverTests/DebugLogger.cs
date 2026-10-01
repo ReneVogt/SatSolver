@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
-using Xunit.Abstractions;
 
 namespace SatSolverTests;
 

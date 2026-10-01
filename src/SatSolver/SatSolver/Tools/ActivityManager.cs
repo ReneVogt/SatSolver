@@ -2,12 +2,10 @@
 using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Tools;
-sealed class ActivityManager<TCandidateHeap>(Variable[] _variables, List<Constraint> _learnedConstraints, ICandidateHeap candidateHeap, SatSolverOptions _options) : IManageActivities
-    where TCandidateHeap : ICandidateHeap
+sealed class ActivityManager(Variable[] _variables, List<Constraint> _learnedConstraints, ICandidateHeap _candidateHeap, SatSolverOptions _options) : IManageActivities
 {
     const double _rescaleLimit = 1e100;
 
-    readonly TCandidateHeap _candidateHeap = (TCandidateHeap)candidateHeap;
     readonly double _variableActivityDecay = _options.VariableActivityDecayFactor;
     readonly double _constraintActivityDecay = _options.ConstraintActivityDecayFactor;
 

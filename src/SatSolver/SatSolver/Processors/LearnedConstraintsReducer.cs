@@ -1,18 +1,15 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Tools;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class LearnedConstraintsReducer<TConstraintFactory>(
+sealed class LearnedConstraintsReducer(
     SatSolverOptions _options, 
     List<Constraint> _learnedConstraints, 
-    IConstraintFactory constraintFactory,
+    IConstraintFactory _constraintFactory,
     Statistics _statistics) : IReduceLearnedConstraints
-    where TConstraintFactory : IConstraintFactory
 {
-    readonly TConstraintFactory _constraintFactory = (TConstraintFactory)constraintFactory;
     readonly double _originalConstraintCountFactor = _options.ConstraintDeletion.OriginalConstraintCountFactor ?? double.MaxValue;
     readonly int _conflictInterval = _options.ConstraintDeletion.ConflictInterval ?? int.MaxValue;
     readonly double _ratioToDelete = _options.ConstraintDeletion.RatioToDelete;

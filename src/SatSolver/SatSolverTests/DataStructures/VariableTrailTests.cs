@@ -25,7 +25,7 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var heap = new TestHeap();
-        var sut = new VariableTrail<TestHeap>(heap, variables.Length);
+        var sut = new VariableTrail(heap, variables.Length);
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -77,7 +77,7 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i =>  new Variable(i)).ToArray();
         var heap = new TestHeap();
-        var sut = new VariableTrail<TestHeap>(heap, variables.Length);
+        var sut = new VariableTrail(heap, variables.Length);
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -130,7 +130,7 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var heap = new TestHeap();
-        var sut = new VariableTrail<TestHeap>(heap, variables.Length);
+        var sut = new VariableTrail(heap, variables.Length);
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -185,7 +185,7 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var heap = new TestHeap();
-        var sut = new VariableTrail<TestHeap>(heap, variables.Length);
+        var sut = new VariableTrail(heap, variables.Length);
 
         sut.Push(false);
         Assert.Equal(1, sut.DecisionLevel);
@@ -239,7 +239,7 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var heap = new TestHeap();
-        var sut = new VariableTrail<TestHeap>(heap, variables.Length);
+        var sut = new VariableTrail(heap, variables.Length);
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -292,7 +292,7 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var heap = new TestHeap();
-        var sut = new VariableTrail<TestHeap>(heap, variables.Length);
+        var sut = new VariableTrail(heap, variables.Length);
 
         sut.Push(true);
         Assert.Equal(1, sut.DecisionLevel);
@@ -342,7 +342,7 @@ public sealed class VariableTrailTests
     {
         var variables = Enumerable.Range(0, 10).Select(i => new Variable(i)).ToArray();
         var heap = new TestHeap();
-        var sut = new VariableTrail<TestHeap>(heap, variables.Length);
+        var sut = new VariableTrail(heap, variables.Length);
 
         foreach (var v in variables) v.Sense = true;
 

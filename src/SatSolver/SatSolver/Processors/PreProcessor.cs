@@ -3,9 +3,8 @@ using Revo.SatSolver.Tools;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class PreProcessor<TConstraintFactory>(SatSolverOptions _options, Problem _problem, UnitPropagationQueue _unitPropagationQueue, Variable[] _variables, ConstraintLiteral[] _literals, IConstraintFactory constraintFactory) : IPreProcessor where TConstraintFactory : IConstraintFactory
+sealed class PreProcessor(SatSolverOptions _options, Problem _problem, UnitPropagationQueue _unitPropagationQueue, Variable[] _variables, ConstraintLiteral[] _literals, IConstraintFactory _constraintFactory) : IPreProcessor
 {
-    readonly TConstraintFactory _constraintFactory = (TConstraintFactory)constraintFactory;
     public int BuildConstraints()
     {
         var clauseCount = 0;

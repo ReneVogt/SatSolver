@@ -21,7 +21,7 @@ public sealed class ActivityManagerTests
             ConstraintActivityDecayFactor = 0.7d
         };
 
-        var sut = new ActivityManager<ICandidateHeap>(variables, [], candidateHeap.Object, options);
+        var sut = new ActivityManager(variables, [], candidateHeap.Object, options);
 
         Assert.Equal(1, sut.VariableActivityIncrement);
         Assert.All(variables, v => Assert.Equal(v.Index, v.Activity));
@@ -54,7 +54,7 @@ public sealed class ActivityManagerTests
             VariableActivityDecayFactor = 0.5d,
             ConstraintActivityDecayFactor = 0.7d
         };
-        var sut = new ActivityManager<ICandidateHeap>(variables, [], candidateHeap.Object, options);
+        var sut = new ActivityManager(variables, [], candidateHeap.Object, options);
         var constraint = _constraintFactory.CreateInitialConstraint([variables[0].PositiveLiteral]);
         sut.IncreaseVariableActivity(constraint);
         candidateHeap.Verify(heap => heap.Rescale(It.IsAny<double>()), Times.Once);
@@ -77,7 +77,7 @@ public sealed class ActivityManagerTests
         c0.Activity = 12;
         c0.IsTracked = true;
         constraints.Add(c0);
-        var sut = new ActivityManager<ICandidateHeap>(variables, constraints, candidateHeap.Object, options);
+        var sut = new ActivityManager(variables, constraints, candidateHeap.Object, options);
         var c1 = _constraintFactory.CreateInitialConstraint([new Variable(1).PositiveLiteral]);
         c1.Activity = 23;
         c1.IsTracked = false;
@@ -116,7 +116,7 @@ public sealed class ActivityManagerTests
         c1.IsTracked = true;
         constraints.Add(c1);
 
-        var sut = new ActivityManager<ICandidateHeap>([], constraints, candidateHeap.Object, options);
+        var sut = new ActivityManager([], constraints, candidateHeap.Object, options);
 
         Assert.Equal(1, sut.ConstraintActivityIncrement);
 
@@ -153,7 +153,7 @@ public sealed class ActivityManagerTests
         var constraints = new List<Constraint> { c0, c1 };       
         var constraint = constraints[1];
 
-        var sut = new ActivityManager<ICandidateHeap>([], constraints, candidateHeap.Object, options);
+        var sut = new ActivityManager([], constraints, candidateHeap.Object, options);
 
         Assert.Equal(1, sut.ConstraintActivityIncrement);
 

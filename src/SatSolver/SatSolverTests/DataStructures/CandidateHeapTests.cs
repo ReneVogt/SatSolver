@@ -18,7 +18,7 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
+        var sut = new CandidateHeap(variables, null!);
 
         Assert.Equal(5, sut.Count);
         Assert.Equal(4, sut.Dequeue()!.Index);
@@ -33,7 +33,7 @@ public sealed class CandidateHeapTests
     {
         var variables = Enumerable.Range(0, 5).Select(i => new Variable(i)).ToArray();
 
-        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
+        var sut = new CandidateHeap(variables, null!);
 
         variables[0].Activity = 5;
         variables[1].Activity = 8;
@@ -64,7 +64,7 @@ public sealed class CandidateHeapTests
         variables[2].Sense = true;
         variables[4].Sense = false;
 
-        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
+        var sut = new CandidateHeap(variables, null!);
 
         Assert.Equal(5, sut.Count);
         Assert.Equal(1, sut.Dequeue()!.Index);
@@ -83,7 +83,7 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
+        var sut = new CandidateHeap(variables, null!);
 
         Assert.Equal(5, sut.Count);
         Assert.Equal(4, sut.Dequeue()!.Index);
@@ -121,7 +121,7 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
+        var sut = new CandidateHeap(variables, null!);
 
         Assert.Equal(4, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);
@@ -150,7 +150,7 @@ public sealed class CandidateHeapTests
         variables[3].Activity = 7;
         variables[4].Activity = 9;
 
-        var sut = new CandidateHeap<ConstraintFactory>(variables, null!);
+        var sut = new CandidateHeap(variables, null!);
 
         variables[4].Activity = 3;
         variables[4].Reason = _constraintFactory.CreateInitialConstraint([variables[4].PositiveLiteral]);
@@ -179,7 +179,7 @@ public sealed class CandidateHeapTests
         variables[4].Activity = 9;
 
         var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
-        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
+        var sut = new CandidateHeap(variables, constraintFactory.Object);
 
         variables[4].Activity = 12;
         variables[4].Reason = _constraintFactory.CreateInitialConstraint([variables[4].PositiveLiteral]);
@@ -208,7 +208,7 @@ public sealed class CandidateHeapTests
         variables[4].Activity = 2;
 
         var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
-        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
+        var sut = new CandidateHeap(variables, constraintFactory.Object);
 
         variables[4].Activity = 1;
         variables[4].Reason = _constraintFactory.CreateInitialConstraint([variables[4].PositiveLiteral]);
@@ -239,7 +239,7 @@ public sealed class CandidateHeapTests
         variables[4].Activity = 2;
 
         var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
-        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
+        var sut = new CandidateHeap(variables, constraintFactory.Object);
 
         variables[4].Activity = 5;
         variables[4].Reason = _constraintFactory.CreateInitialConstraint([variables[4].PositiveLiteral]);
@@ -270,7 +270,7 @@ public sealed class CandidateHeapTests
         variables[4].Activity = 2;
 
         var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
-        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
+        var sut = new CandidateHeap(variables, constraintFactory.Object);
 
         variables[2].Activity = 3;
         variables[2].Reason = _constraintFactory.CreateInitialConstraint([variables[2].PositiveLiteral]);
@@ -299,7 +299,7 @@ public sealed class CandidateHeapTests
         variables[4].Activity = 2;
 
         var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
-        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
+        var sut = new CandidateHeap(variables, constraintFactory.Object);
 
         variables[2].Activity = 9;
         variables[2].Reason = _constraintFactory.CreateInitialConstraint([variables[2].PositiveLiteral]);
@@ -329,7 +329,7 @@ public sealed class CandidateHeapTests
         variables[4].Activity = 9;
 
         var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
-        var sut = new CandidateHeap<IConstraintFactory>(variables, constraintFactory.Object);
+        var sut = new CandidateHeap(variables, constraintFactory.Object);
 
         Assert.Equal(4, sut.Dequeue()!.Index);
         Assert.Equal(1, sut.Dequeue()!.Index);

@@ -1,30 +1,19 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Processors;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Tools;
 
-sealed class RestartManager<
-        TVariableTrail,
-        TPropagationRateTracker,
-        TLiteralBlockDistanceTracker,
-        TLearnedConstraintReducer,
-        TLubySequence> : IManageRestart
-    where TVariableTrail : IVariableTrail
-    where TPropagationRateTracker : ITrackPropagationRate
-    where TLiteralBlockDistanceTracker : ITrackLiteralBlockDistance
-    where TLearnedConstraintReducer : IReduceLearnedConstraints
-    where TLubySequence : ILubySequence
+sealed class RestartManager : IManageRestart
 {
-    readonly TVariableTrail _trail;
-    readonly TPropagationRateTracker _propagationRateTracker;
-    readonly TLiteralBlockDistanceTracker _literalBlockDistanceTracker;
+    readonly IVariableTrail _trail;
+    readonly ITrackPropagationRate _propagationRateTracker;
+    readonly ITrackLiteralBlockDistance _literalBlockDistanceTracker;
     readonly UnitPropagationQueue _unitPropagationQueue;
-    readonly TLubySequence? _lubySequence;
+    readonly ILubySequence? _lubySequence;
 
     readonly bool _useRestarts, _restartOnPropagationRate, _restartOnLiteralBlockDistance;
-    readonly TLearnedConstraintReducer _constraintReducer;
+    readonly IReduceLearnedConstraints _constraintReducer;
     readonly bool _reduceConstraints;
 
     long _restartCounter, _nextRestartThreshold;
@@ -38,13 +27,13 @@ sealed class RestartManager<
         IReduceLearnedConstraints constraintReducer,
         ILubySequence? lubySequence)
     {
-        _trail = (TVariableTrail)trail;
-        _propagationRateTracker = (TPropagationRateTracker)propagationRateTracker;
-        _literalBlockDistanceTracker = (TLiteralBlockDistanceTracker)literalBlockDistanceTracker;
+        _trail = trail;
+        _propagationRateTracker = propagationRateTracker;
+        _literalBlockDistanceTracker = literalBlockDistanceTracker;
         _unitPropagationQueue = unitPropagationQueue;
-        _constraintReducer = (TLearnedConstraintReducer)constraintReducer;
+        _constraintReducer = constraintReducer;
 
-        _lubySequence = (TLubySequence?)lubySequence;
+        _lubySequence = lubySequence;
         _nextRestartThreshold = _lubySequence?.Next() ?? options.Restart.Interval ?? long.MaxValue;
         _reduceConstraints = options.ConstraintDeletion.ReduceOnRestart;
         _restartOnPropagationRate = options.Restart.ByPropagationRate;

@@ -1,11 +1,9 @@
-﻿using System.Diagnostics;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.DataStructures;
 
-sealed class VariableTrail<TCandidateHeap>(ICandidateHeap candidateHeap, int _capacity) : IVariableTrail where TCandidateHeap : ICandidateHeap
+sealed class VariableTrail(ICandidateHeap _candidateHeap, int _capacity) : IVariableTrail
 {
-    readonly TCandidateHeap _candidateHeap = (TCandidateHeap)candidateHeap;
     readonly Variable[] _trail = new Variable[_capacity];
     readonly Stack<(int TrailIndex, bool FirstTryOfCandidate)> _decisionLevels = new(_capacity);
 

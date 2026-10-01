@@ -5,18 +5,8 @@ using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class VariablePropagator<
-    TVariableTrail, 
-    TActivityManager, 
-    TPropagationRateTracker>(IVariableTrail trail, UnitPropagationQueue _unitPropagationQueue, IManageActivities activityManager, ITrackPropagationRate propagationRateTracker, Statistics _statistics) : IPropagateVariables
-    where TVariableTrail : IVariableTrail
-    where TActivityManager : IManageActivities
-    where TPropagationRateTracker : ITrackPropagationRate
+sealed class VariablePropagator(IVariableTrail _trail, UnitPropagationQueue _unitPropagationQueue, IManageActivities _activityManager, ITrackPropagationRate _propagationRateTracker, Statistics _statistics) : IPropagateVariables
 {
-    readonly TVariableTrail _trail = (TVariableTrail)trail;
-    readonly TActivityManager _activityManager = (TActivityManager)activityManager;
-    readonly TPropagationRateTracker _propagationRateTracker = (TPropagationRateTracker)propagationRateTracker;
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Constraint? PropagateVariable(Variable variable, bool sense, Constraint? reason)
     {
@@ -26,7 +16,7 @@ sealed class VariablePropagator<
 
         _statistics.LogPropagation(variable);
         if (reason is not null)
-            propagationRateTracker.AddPropagation();
+            _propagationRateTracker.AddPropagation();
 
         var watchedLiteral = sense ? variable.NegativeLiteral : variable.PositiveLiteral;
 

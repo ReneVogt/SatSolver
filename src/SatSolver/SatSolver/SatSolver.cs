@@ -2,7 +2,6 @@
 using Revo.SatSolver.Processors;
 using Revo.SatSolver.Tools;
 using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Revo.SatSolver;
 
@@ -11,37 +10,19 @@ namespace Revo.SatSolver;
 /// satisfies all clauses in a SATisfiability 
 /// problem.
 /// </summary>
-sealed partial class SatSolver<
-    TConstraintFactory,
-    TCandidateHeap,
-    TVariableTrail,
-    TVariablePropagator,
-    TConflictHandler,
-    TActivityManager,
-    TPropagationRateTracker,
-    TLearnedConstraintsReducer,
-    TRestartManager> : ISatSolver
-    where TConstraintFactory : IConstraintFactory
-    where TCandidateHeap : ICandidateHeap
-    where TVariableTrail : IVariableTrail
-    where TVariablePropagator : IPropagateVariables
-    where TConflictHandler : IHandleConflicts
-    where TActivityManager : IManageActivities
-    where TPropagationRateTracker : ITrackPropagationRate
-    where TLearnedConstraintsReducer : IReduceLearnedConstraints
-    where TRestartManager : IManageRestart
+sealed partial class SatSolver : ISatSolver
 {
-    readonly TRestartManager _restartManager;
-    readonly TConstraintFactory _constraintFactory;
-    readonly TCandidateHeap _candidateHeap;
-    readonly TVariableTrail _trail;
-    readonly TVariablePropagator _variablePropagator;
-    readonly TConflictHandler _conflictHandler;
-    readonly TActivityManager _activityManager;
+    readonly IManageRestart _restartManager;
+    readonly IConstraintFactory _constraintFactory;
+    readonly ICandidateHeap _candidateHeap;
+    readonly IVariableTrail _trail;
+    readonly IPropagateVariables _variablePropagator;
+    readonly IHandleConflicts _conflictHandler;
+    readonly IManageActivities _activityManager;
     readonly bool _dpllOnly;
     readonly UnitPropagationQueue _unitPropagationQueue;
-    readonly TPropagationRateTracker _propagationRateTracker;
-    readonly TLearnedConstraintsReducer _learnedConstraintsReducer;
+    readonly ITrackPropagationRate _propagationRateTracker;
+    readonly IReduceLearnedConstraints _learnedConstraintsReducer;
     readonly Variable[] _variables;
     readonly ConstraintLiteral[] _literals;
 
@@ -49,20 +30,19 @@ sealed partial class SatSolver<
 
     public SatSolver(ComponentStoreBase store)
     {
-        _constraintFactory = (TConstraintFactory)store.ConstraintFactory;
-        _variablePropagator = (TVariablePropagator)store.VariablePropagator;
-        _conflictHandler = (TConflictHandler)store.ConflictHandler;
-        _activityManager = (TActivityManager)store.ActivityManager;
-        _trail = (TVariableTrail)store.VariableTrail;
-        _candidateHeap = (TCandidateHeap)store.CandidateHeap;
-        _restartManager = (TRestartManager)store.RestartManager;
+        _constraintFactory = store.ConstraintFactory;
+        _variablePropagator = store.VariablePropagator;
+        _conflictHandler = store.ConflictHandler;
+        _activityManager = store.ActivityManager;
+        _trail = store.VariableTrail;
+        _candidateHeap = store.CandidateHeap;
+        _restartManager = store.RestartManager;
         _unitPropagationQueue = store.UnitPropagationQueue;
-        _propagationRateTracker = (TPropagationRateTracker)store.PropagationRateTracker;
-        _restartManager = (TRestartManager)store.RestartManager;
+        _propagationRateTracker = store.PropagationRateTracker;
         _dpllOnly = store.Options.Mode == SatSolverMode.DPLL;
         _variables = store.Variables;
         _literals = store.Literals;
-        _learnedConstraintsReducer = (TLearnedConstraintsReducer)store.LearnedConstraintsReducer;
+        _learnedConstraintsReducer = store.LearnedConstraintsReducer;
 
         _originalConstraintCount = store.PreProcessor.BuildConstraints();
         _candidateHeap.Heapify();

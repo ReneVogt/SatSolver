@@ -15,12 +15,12 @@ namespace Revo.SatSolver.DataStructures;
 /// that it does not count. So please don't
 /// refactor to use only a Variable[] for nodes.
 /// </summary>
-sealed class CandidateHeap<TConstraintFactory> : ICandidateHeap where TConstraintFactory : IConstraintFactory
+sealed class CandidateHeap : ICandidateHeap
 {
     const int Arity = 2;
     const int Log2Arity = 1;
 
-    readonly TConstraintFactory _constraintFactory;
+    readonly IConstraintFactory _constraintFactory;
     readonly Variable[] _variables;
     readonly (int Variable, double Activity)[] _nodes;
     readonly int[] _indices;
@@ -37,7 +37,7 @@ sealed class CandidateHeap<TConstraintFactory> : ICandidateHeap where TConstrain
 
     public CandidateHeap(Variable[] variables, IConstraintFactory constraintFactory)
     {
-        _constraintFactory = (TConstraintFactory)constraintFactory;
+        _constraintFactory = constraintFactory;
         _variables = variables;
         _nodes = [.. _variables.Select(v => (v.Index, v.Activity))];
         _indices = [.. Enumerable.Range(0, _nodes.Length)];

@@ -44,7 +44,7 @@ public sealed class RestartManagerTests
         literalBlockDistanceTracker.Setup(l => l.CurrentRatio).Returns(17000);
         var constraintReducer = new Mock<IReduceLearnedConstraints>();
         var trail = new Mock<IVariableTrail>();
-        var sut = new RestartManager<IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, IReduceLearnedConstraints, LubySequence>(
+        var sut = new RestartManager(
             options,
             trail.Object,
             propagationRateTracker.Object,
@@ -86,7 +86,7 @@ public sealed class RestartManagerTests
         literalBlockDistanceTracker.Setup(l => l.CurrentRatio).Returns(17000);
         var constraintReducer = new Mock<IReduceLearnedConstraints>();
         var trail = new Mock<IVariableTrail>();
-        var sut = new RestartManager<IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, IReduceLearnedConstraints, LubySequence>(
+        var sut = new RestartManager(
             options,
             trail.Object,
             propagationRateTracker.Object,
@@ -152,7 +152,7 @@ public sealed class RestartManagerTests
         var constraintReducer = new Mock<IReduceLearnedConstraints>();
         var trail = new Mock<IVariableTrail>();
 
-        var sut = new RestartManager<IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, IReduceLearnedConstraints, ILubySequence>(
+        var sut = new RestartManager(
             options,
             trail.Object,
             propagationRateTracker.Object,
@@ -232,7 +232,7 @@ public sealed class RestartManagerTests
         literalBlockDistanceTracker.Setup(l => l.CurrentRatio).Returns(1);
         var constraintReducer = new Mock<IReduceLearnedConstraints>();
         var trail = new Mock<IVariableTrail>();
-        var sut = new RestartManager<IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, IReduceLearnedConstraints, ILubySequence>(
+        var sut = new RestartManager(
             options,
             trail.Object,
             propagationRateTracker.Object,
@@ -298,7 +298,7 @@ public sealed class RestartManagerTests
             .Returns(true);
         var constraintReducer = new Mock<IReduceLearnedConstraints>();
         var trail = new Mock<IVariableTrail>();
-        var sut = new RestartManager<IVariableTrail, ITrackPropagationRate, ITrackLiteralBlockDistance, IReduceLearnedConstraints, ILubySequence>(
+        var sut = new RestartManager(
             options,
             trail.Object,
             propagationRateTracker.Object,

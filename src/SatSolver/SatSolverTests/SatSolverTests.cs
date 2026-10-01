@@ -3,7 +3,6 @@ using Revo.SatSolver;
 using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Processors;
 using Revo.SatSolver.Tools;
-using Xunit.Abstractions;
 using static Revo.SatSolver.SatSolverFactory;
 
 namespace SatSolverTests;

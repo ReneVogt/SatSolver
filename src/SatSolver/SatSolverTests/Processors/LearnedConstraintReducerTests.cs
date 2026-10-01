@@ -70,7 +70,7 @@ public sealed class LearnedConstraintReducerTests
                 RatioToDelete = 0.6
             }
         };
-        var sut = new LearnedConstraintsReducer<IConstraintFactory>(
+        var sut = new LearnedConstraintsReducer(
             options, 
             learnedConstraints, 
             constraintFactory, new Statistics(null, null));
@@ -105,7 +105,7 @@ public sealed class LearnedConstraintReducerTests
                 OriginalConstraintCountFactor = null
             }
         };
-        var sut = new LearnedConstraintsReducer<IConstraintFactory>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
             null!, new Statistics(null, null));
@@ -132,7 +132,7 @@ public sealed class LearnedConstraintReducerTests
                 OriginalConstraintCountFactor = 9
             }
         };
-        var sut = new LearnedConstraintsReducer<IConstraintFactory>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
             null!, new Statistics(null, null));
@@ -160,7 +160,7 @@ public sealed class LearnedConstraintReducerTests
                 OriginalConstraintCountFactor = 9
             }
         };
-        var sut = new LearnedConstraintsReducer<IConstraintFactory>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
             constraintFactory, new Statistics(null, null));
@@ -187,7 +187,7 @@ public sealed class LearnedConstraintReducerTests
                 OriginalConstraintCountFactor = null
             }
         };
-        var sut = new LearnedConstraintsReducer<IConstraintFactory>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
             null!, new Statistics(null, null));
@@ -213,7 +213,7 @@ public sealed class LearnedConstraintReducerTests
                 OriginalConstraintCountFactor = null
             }
         };
-        var sut = new LearnedConstraintsReducer<IConstraintFactory>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
             constraintFactory, new Statistics(null, null));
@@ -244,7 +244,7 @@ public sealed class LearnedConstraintReducerTests
                 OriginalConstraintCountFactor = 9
             }
         };
-        var sut = new LearnedConstraintsReducer<IConstraintFactory>(
+        var sut = new LearnedConstraintsReducer(
             options,
             learnedConstraints,
             null!, new Statistics(null, null));

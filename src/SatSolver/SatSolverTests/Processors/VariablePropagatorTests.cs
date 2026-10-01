@@ -39,7 +39,7 @@ public sealed class VariablePropagatorTests
         var units = new UnitPropagationQueue();
         var propagationRateTracker = new Mock<ITrackPropagationRate>(MockBehavior.Strict);
 
-        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
+        var sut = new VariablePropagator(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
 
         var conflict = sut.PropagateVariable(variables[0], true, null);
         Assert.Null(conflict);
@@ -92,7 +92,7 @@ public sealed class VariablePropagatorTests
         var units = new UnitPropagationQueue();
         var propagationRateTracker = new Mock<ITrackPropagationRate>(MockBehavior.Strict);
 
-        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
+        var sut = new VariablePropagator(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
 
         var conflict = sut.PropagateVariable(variables[0], false, null);
         Assert.Null(conflict);
@@ -133,7 +133,7 @@ public sealed class VariablePropagatorTests
         var units = new UnitPropagationQueue();
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
+        var sut = new VariablePropagator(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
 
         var conflict = sut.PropagateVariable(variables[0], true, null);
         Assert.Equal(constraint1, conflict);
@@ -170,7 +170,7 @@ public sealed class VariablePropagatorTests
         var units = new UnitPropagationQueue();
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
+        var sut = new VariablePropagator(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
 
         var conflict = sut.PropagateVariable(variables[0], false, null);
         Assert.Null(conflict);
@@ -206,7 +206,7 @@ public sealed class VariablePropagatorTests
         var units = new UnitPropagationQueue();
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
+        var sut = new VariablePropagator(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
 
         var conflict = sut.PropagateVariable(variables[0], true, null);
         Assert.Equal(constraint1, conflict);
@@ -225,7 +225,7 @@ public sealed class VariablePropagatorTests
         var units = new UnitPropagationQueue();
         var propagationRateTracker = new Mock<ITrackPropagationRate>();
 
-        var sut = new VariablePropagator<IVariableTrail, IManageActivities, ITrackPropagationRate>(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
+        var sut = new VariablePropagator(trail.Object, units, activityManager.Object, propagationRateTracker.Object, new Statistics(null, null));
 
         var conflict = sut.PropagateVariable(variables[0], true, constraint1);
         Assert.Equal(constraint1, conflict);

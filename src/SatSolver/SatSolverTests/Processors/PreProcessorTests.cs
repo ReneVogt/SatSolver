@@ -35,7 +35,7 @@ public sealed class PreProcessorTests
         var variables = store.Variables;
         var literals = store.Literals;
         var unitsToPropagate = new UnitPropagationQueue();
-        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([], []));
+        var sut = new PreProcessor(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([], []));
         var originalConstraintCount = sut.BuildConstraints();
 
         // two tautologies
@@ -89,7 +89,7 @@ public sealed class PreProcessorTests
         var store = new TestComponentStore(options, 1, _ => null!);
         var variables = store.Variables;
         var unitsToPropagate = new UnitPropagationQueue();
-        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([], []));
+        var sut = new PreProcessor(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([], []));
         var originalConstraintCount = sut.BuildConstraints();        
 
         Assert.Equal(1, originalConstraintCount);
@@ -110,7 +110,7 @@ public sealed class PreProcessorTests
         var store = new TestComponentStore(options, 0, _ => null!);
         var variables = store.Variables;
         var unitsToPropagate = new UnitPropagationQueue();
-        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([], []));
+        var sut = new PreProcessor(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([], []));
         var originalConstraintCount = sut.BuildConstraints();
         Assert.Equal(0, originalConstraintCount);
     }
@@ -126,7 +126,7 @@ public sealed class PreProcessorTests
         var store = new TestComponentStore(options, problem.NumberOfLiterals, _ => null!);
         var variables = store.Variables;
         var unitsToPropagate = new UnitPropagationQueue();
-        var sut = new PreProcessor<ConstraintFactory>(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([], []));
+        var sut = new PreProcessor(options, problem, unitsToPropagate, variables, store.Literals, new ConstraintFactory([], []));
         var originalConstraintCount = sut.BuildConstraints();
 
         Assert.Equal("1 2 3 | 1 4 7",

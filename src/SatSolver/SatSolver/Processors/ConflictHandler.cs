@@ -6,49 +6,24 @@ using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
-sealed class ConflictHandler<
-    TActivityManager, 
-    TVariableTrail, 
-    TPropagationRateTracker, 
-    TLiteralBlockDistanceTracker,
-    TLearnedConstraintCreator,
-    TRestartManager,
-    TConstraintMinimizer,
-    TConstraintFactory>(
+sealed class ConflictHandler(
     SatSolverOptions options,
     ConstraintLiteral[] literals,
-    IManageActivities activityManager,
-    IVariableTrail trail,
-    ITrackPropagationRate propagationRateTracker,
-    ITrackLiteralBlockDistance literalBlockDistanceTracker,
-    ICreateLearnedConstraints learnedConstraintCreator,
-    UnitPropagationQueue unitPropagationQueue,
-    IManageRestart restartManager,
-    IMinimizeConstraints constraintMinimizer,
-    IConstraintFactory constraintFactory,
-    Statistics _statistics) : IHandleConflicts
-    where TActivityManager : IManageActivities
-    where TVariableTrail : IVariableTrail
-    where TPropagationRateTracker : ITrackPropagationRate
-    where TLiteralBlockDistanceTracker : ITrackLiteralBlockDistance
-    where TLearnedConstraintCreator : ICreateLearnedConstraints
-    where TRestartManager : IManageRestart
-    where TConstraintMinimizer : IMinimizeConstraints        
-    where TConstraintFactory : IConstraintFactory
+    IManageActivities _activityManager,
+    IVariableTrail _trail,
+    ITrackPropagationRate _propagationRateTracker,
+    ITrackLiteralBlockDistance _literalBlockDistanceTracker,
+    ICreateLearnedConstraints _learnedConstraintCreator,
+    UnitPropagationQueue _unitPropagationQueue,
+    IManageRestart _restartManager,
+    IMinimizeConstraints _constraintMinimizer,
+    IConstraintFactory _constraintFactory,
+    Statistics _statistics) : IHandleConflicts    
 {
-    readonly TActivityManager _activityManager = (TActivityManager)activityManager;
-    readonly TVariableTrail _trail = (TVariableTrail)trail;
-    readonly TPropagationRateTracker _propagationRateTracker = (TPropagationRateTracker)propagationRateTracker;
-    readonly TLiteralBlockDistanceTracker _literalBlockDistanceTracker = (TLiteralBlockDistanceTracker)literalBlockDistanceTracker;
-    readonly TLearnedConstraintCreator _learnedConstraintCreator = (TLearnedConstraintCreator)learnedConstraintCreator;
-    readonly UnitPropagationQueue _unitPropagationQueue = unitPropagationQueue;
-    readonly TRestartManager _restartManager = (TRestartManager)restartManager;
     readonly int _literalBlockDistanceDeletionLimit = options.ConstraintDeletion.LiteralBlockDistanceToKeep;
     readonly int _literalBlockDistanceMaximum = options.MaximumLiteralBlockDistance;
     readonly StampArray _learnedLiterals = [];
     readonly ConstraintLiteral[] _literals = literals;
-    readonly TConstraintMinimizer _constraintMinimizer = (TConstraintMinimizer)constraintMinimizer;
-    readonly TConstraintFactory _constraintFactory = (TConstraintFactory)constraintFactory;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void HandleConflict(Constraint conflictingConstraint)
