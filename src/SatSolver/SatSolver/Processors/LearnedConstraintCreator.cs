@@ -1,7 +1,6 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Tools;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
@@ -9,7 +8,6 @@ sealed class LearnedConstraintCreator(IVariableTrail _trail, IManageActivities _
 {
     readonly StampArray _seenVariables = [];
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CreateLearnedConstraint(Constraint conflictingConstraint, StampArray learnedLiterals)
     {
         var conflicts = 0;

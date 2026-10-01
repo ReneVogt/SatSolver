@@ -1,13 +1,11 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Tools;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
 sealed class VariablePropagator(IVariableTrail _trail, UnitPropagationQueue _unitPropagationQueue, IManageActivities _activityManager, ITrackPropagationRate _propagationRateTracker, Statistics _statistics) : IPropagateVariables
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Constraint? PropagateVariable(Variable variable, bool sense, Constraint? reason)
     {
         variable.Sense = sense;

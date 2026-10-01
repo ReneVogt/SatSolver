@@ -1,6 +1,5 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Tools;
-using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
@@ -18,7 +17,6 @@ sealed class LearnedConstraintsReducer(
 
     int _conflictCount;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ReduceLearnedConstraintsIfNecessary(int originalConstraintCount)
     {
         if (!_reduceClauses) return;
@@ -32,7 +30,6 @@ sealed class LearnedConstraintsReducer(
 
         if (reduce) ReduceLearnedConstraints();
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ReduceLearnedConstraints()
     {
         var previousCount = _learnedConstraints.Count;

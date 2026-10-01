@@ -1,6 +1,5 @@
 ﻿using Revo.SatSolver.DataStructures;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Tools;
 
@@ -9,7 +8,6 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
     readonly StampArray _literalBlockDistanceCounter = [];
 
     /// <inheritdoc/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Constraint CreateInitialConstraint(IEnumerable<ConstraintLiteral> literals)
     {
         var l = literals.ToArray();
@@ -26,7 +24,6 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
     }
 
     /// <inheritdoc/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Constraint CreateAdditionalConstraint(IEnumerable<ConstraintLiteral> literals)
     {
         var l = literals.ToArray();
@@ -138,7 +135,6 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
     }
 
     /// <inheritdoc/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Constraint CreateLearnedConstraint(ConstraintLiteral[] learnedLiterals, int decisionLevel, double activity, int maximumLiteralBlockDistance, int literalBlockDistanceDeletionLimit, out int jumpBackLevel)
     {
         _literalBlockDistanceCounter.Clear();
@@ -192,7 +188,6 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
 
         return learnedConstraint;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ReleaseLearnedConstraints(double ratio)
     {
         var learnedConstraints = _learnedConstraints;
@@ -201,7 +196,6 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
             ReleaseConstraint(learnedConstraints[i]);
         learnedConstraints.RemoveRange(start, learnedConstraints.Count-start);
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ReleaseConstraint(Constraint constraint)
     {
         if (constraint.IsOmitted) return;
@@ -218,7 +212,6 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
         constraint.Watched2.Watchers.Remove(constraint);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ReleaseAdditionalConstraints()
     {
         _learnedConstraints.ForEach(ReleaseConstraint);
@@ -231,7 +224,6 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
             ReleaseConstraint(constraint);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static Constraint? CreateBinary(ConstraintLiteral[] literals)
     {
         if (literals.Length != 2) return null;

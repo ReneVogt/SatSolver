@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.DataStructures;
 
@@ -18,7 +17,6 @@ sealed class StampArray(int _initialCapacity) : IEnumerable<int>
         [ExcludeFromCodeCoverage]
         readonly object IEnumerator.Current => Current;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext()
         {
             if (_version != _parent._version)
@@ -55,7 +53,6 @@ sealed class StampArray(int _initialCapacity) : IEnumerable<int>
     public StampArray() : this(1024)
     { }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Add(int index)
     {
         CheckArraySize(index);
@@ -65,7 +62,6 @@ sealed class StampArray(int _initialCapacity) : IEnumerable<int>
         _version++;
         return true;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Remove(int index)
     {
         if (!Contains(index)) return false;
@@ -75,9 +71,7 @@ sealed class StampArray(int _initialCapacity) : IEnumerable<int>
         return true;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Contains(int index) => _buffer.Length > index && _buffer[index] == _currentStamp;
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Clear()
     {
         _version++;
@@ -86,14 +80,12 @@ sealed class StampArray(int _initialCapacity) : IEnumerable<int>
         CheckStampOverflow();
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void CheckArraySize(int required)
     {
         if (required >= _buffer.Length)
             Array.Resize(ref _buffer, required << 1);
     }
     [ExcludeFromCodeCoverage]
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void CheckStampOverflow()
     {
         if (_currentStamp < int.MaxValue) return;        
@@ -101,9 +93,7 @@ sealed class StampArray(int _initialCapacity) : IEnumerable<int>
         _currentStamp = 1;        
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public IEnumerator<int> GetEnumerator() => new Enumerator(this);
     [ExcludeFromCodeCoverage]
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

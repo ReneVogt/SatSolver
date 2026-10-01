@@ -1,5 +1,4 @@
 ﻿using Revo.SatSolver.DataStructures;
-using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Tools;
 
@@ -15,7 +14,6 @@ sealed class PropagationRateTracker(int fastHalflife, int slowHalflife, double _
     int _conflictsSinceLastRestart;
     int _conflictsSinceTriggered;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddConflict()
     {
         _fastEma.Push(_propagationsSinceLastConflict);
@@ -32,12 +30,9 @@ sealed class PropagationRateTracker(int fastHalflife, int slowHalflife, double _
         _conflictsSinceLastRestart++;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddPropagation() => _propagationsSinceLastConflict++;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool ShouldRestart() => _conflictsSinceLastRestart >= _coolDownForConflicts && _conflictsSinceTriggered >= _holdForConflicts;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ResetAfterRestart() => _conflictsSinceLastRestart = _conflictsSinceTriggered = 0;    
 }

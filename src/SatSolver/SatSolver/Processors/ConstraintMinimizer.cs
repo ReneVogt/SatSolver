@@ -1,6 +1,5 @@
 ﻿using Revo.SatSolver.DataStructures;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
@@ -15,7 +14,6 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
 
     int[] _constraintBuffer = new int[1024];
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void MinimizeConstraint(StampArray constraint, int decisionLevel, ConstraintLiteral[] knownLiterals)
     {
         int maxStackSize = 64 * constraint.Count;
@@ -34,7 +32,6 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
                 constraint.Remove(index);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool IsRedundant(int literalIndex)
         {
             var learnedLiteral = knownLiterals[literalIndex];
@@ -104,7 +101,6 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
     }
 
     [ExcludeFromCodeCoverage]
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void CheckBufferSize(int required)
     {
         if (required > _constraintBuffer.Length)

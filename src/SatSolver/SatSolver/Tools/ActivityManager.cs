@@ -1,5 +1,4 @@
 ﻿using Revo.SatSolver.DataStructures;
-using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Tools;
 sealed class ActivityManager(Variable[] _variables, List<Constraint> _learnedConstraints, ICandidateHeap _candidateHeap, SatSolverOptions _options) : IManageActivities
@@ -14,7 +13,6 @@ sealed class ActivityManager(Variable[] _variables, List<Constraint> _learnedCon
     public double ConstraintActivityIncrement => _constraintActivityIncrement;
     public double VariableActivityIncrement => _variableActivityIncrement;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncreaseConstraintActivity(Constraint constraint, double factor = 1)
     {
         if (!constraint.IsTracked) return;
@@ -27,10 +25,8 @@ sealed class ActivityManager(Variable[] _variables, List<Constraint> _learnedCon
             learnedConstraints[i].Activity /= _rescaleLimit;
         _constraintActivityIncrement /= _rescaleLimit;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void DecayConstraintActivity() => _constraintActivityIncrement /= _constraintActivityDecay;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void IncreaseVariableActivity(Constraint constraint)
     {
         var literals = constraint.Literals;
@@ -42,7 +38,6 @@ sealed class ActivityManager(Variable[] _variables, List<Constraint> _learnedCon
         }
         _variableActivityIncrement /= _variableActivityDecay;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void RescaleVariableActivity()
     {
         var variables = _variables;

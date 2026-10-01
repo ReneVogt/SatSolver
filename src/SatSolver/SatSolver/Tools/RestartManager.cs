@@ -1,6 +1,5 @@
 ﻿using Revo.SatSolver.DataStructures;
 using Revo.SatSolver.Processors;
-using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Tools;
 
@@ -44,9 +43,7 @@ sealed class RestartManager : IManageRestart
             _restartOnLiteralBlockDistance;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddConflict() => _restartCounter++;
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool RestartIfNecessary()
     {
         if (!_useRestarts) return false;

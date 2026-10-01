@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-
-namespace Revo.SatSolver.DataStructures;
+﻿namespace Revo.SatSolver.DataStructures;
 
 sealed class VariableTrail(ICandidateHeap _candidateHeap, int _capacity) : IVariableTrail
 {
@@ -15,20 +13,16 @@ sealed class VariableTrail(ICandidateHeap _candidateHeap, int _capacity) : IVari
 
     public Variable this[int index]
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _trail[index];
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Add(Variable variable)
     {
         _trail[_trailSize++] = variable;
         variable.DecisionLevel = DecisionLevel;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Push(bool firstTryOfCandidate = true) => _decisionLevels.Push((_trailSize, firstTryOfCandidate));
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void JumpBack(int level)
     {
         Statistics.LogBackJump(_decisionLevels.Count, level);
@@ -38,7 +32,6 @@ sealed class VariableTrail(ICandidateHeap _candidateHeap, int _capacity) : IVari
 
         ResetVariableTrail(index);
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public (Variable? candidate, bool sense) Backtrack()
     {
         var first = false;
@@ -57,14 +50,12 @@ sealed class VariableTrail(ICandidateHeap _candidateHeap, int _capacity) : IVari
         return (variable, sense);
 
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
     {
         _decisionLevels.Clear();
         ResetVariableTrail(0);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void ResetVariableTrail(int targetLevelStart)
     {
         _candidateHeap.Enqueue(_trail.AsSpan(targetLevelStart.._trailSize));

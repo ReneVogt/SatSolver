@@ -2,7 +2,6 @@
 using Revo.SatSolver.Tools;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.Processors;
 
@@ -25,7 +24,6 @@ sealed class ConflictHandler(
     readonly StampArray _learnedLiterals = [];
     readonly ConstraintLiteral[] _literals = literals;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void HandleConflict(Constraint conflictingConstraint)
     {
         _propagationRateTracker.AddConflict();

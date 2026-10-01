@@ -1,5 +1,4 @@
 ﻿using Revo.SatSolver.Tools;
-using System.Runtime.CompilerServices;
 
 namespace Revo.SatSolver.DataStructures;
 
@@ -45,7 +44,6 @@ sealed class CandidateHeap : ICandidateHeap
         HeapifyInternal();
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Enqueue(Span<Variable> variables)
     {
         for(var i=0; i<variables.Length; i++)
@@ -62,7 +60,6 @@ sealed class CandidateHeap : ICandidateHeap
             Enqueue(variable);
         }
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void Enqueue(Variable variable)
     {
         var index = _indices[variable.Index];
@@ -81,7 +78,6 @@ sealed class CandidateHeap : ICandidateHeap
         else if (cmp < 0)
             MoveDown(_nodes[index], index);
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Variable? Dequeue()
     {
         var variables = _variables;
@@ -108,7 +104,6 @@ sealed class CandidateHeap : ICandidateHeap
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void RemoveRootNode()
     {
         var lastNodeIndex = --_size;
@@ -116,7 +111,6 @@ sealed class CandidateHeap : ICandidateHeap
             MoveDown(_nodes[lastNodeIndex], 0);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Heapify()
     {
         for(var i=0; i<_indices.Length; i++)
@@ -124,7 +118,6 @@ sealed class CandidateHeap : ICandidateHeap
         HeapifyInternal();
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void HeapifyInternal()
     {
         var nodes = _nodes;
@@ -133,7 +126,6 @@ sealed class CandidateHeap : ICandidateHeap
             MoveDown(nodes[index], index);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void MoveUp((int Variable, double Activity) node, int nodeIndex)
     {
         var nodes = _nodes;
@@ -152,7 +144,6 @@ sealed class CandidateHeap : ICandidateHeap
         nodes[nodeIndex] = node;
         indices[node.Variable] = nodeIndex;
     }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void MoveDown((int Variable, double Activity) node, int nodeIndex)
     {
         var nodes = _nodes;
@@ -185,8 +176,6 @@ sealed class CandidateHeap : ICandidateHeap
         indices[node.Variable] = nodeIndex;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] 
     static int GetParentIndex(int index) => index - 1 >> Log2Arity;
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] 
     static int GetFirstChildIndex(int index) => (index << Log2Arity) + 1;
 }
