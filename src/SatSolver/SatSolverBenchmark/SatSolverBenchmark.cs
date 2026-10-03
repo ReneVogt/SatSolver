@@ -5,7 +5,9 @@ using BenchmarkDotNet.Running;
 using Perfolizer.Mathematics.OutlierDetection;
 using Revo.SatSolver;
 using Revo.SatSolver.Parsing;
-using SatSolverTests;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using TestHelpers;
 
 namespace SatSolverBenchmark;
 
@@ -30,45 +32,46 @@ public class SatSolverBenchmark
         }
     }
 
-    readonly SatSolverOptions _options = SatSolverOptions.CDCL;
+    static readonly SatSolverOptions _options = SatSolverOptions.DPLL;
+    //static readonly SatSolverOptions _options = SatSolverOptions.CDCL with
+    //{
+    //    //VariableActivityDecayFactor = 0.95,
+    //    //LiteralBlockDistanceTracking = new(),
+    //    //PropagationRateTracking = new(),
+    //    MaximumLiteralBlockDistance = 100,
+    //    ConstraintDeletion = new()
+    //    {
+    //        ConflictInterval = 5000,
+    //        LiteralBlockDistanceToKeep = 3,
+    //        RatioToDelete = 0.5,
+    //        ReduceOnRestart = false,
+    //        OriginalConstraintCountFactor = 4
+    //    },
+    //    Restart = new()
+    //    {
+    //        ByLiteralBlockDistance = false,
+    //        ByPropagationRate = false,
+    //        Interval = null,
+    //        Luby = false
+    //    }
+    //};
 
     Problem _problem = null!;
 
-    public sealed record BenchmarkCase(string FilePath, bool IsSatisfiable)
+    public sealed record BenchmarkCase(string Name, string FilePath, bool IsSatisfiable)
     {
         public override string ToString() => FilePath;
     }
 
-    // Replace these six paths with the selected CNF files and keep the selection fixed.
-    public static IEnumerable<BenchmarkCase> Cases =>
-    [
-        new("SAT/easy.cnf", true),
-        new("SAT/medium.cnf", true),
-        new("SAT/hard.cnf", true),
-        new("UNSAT/easy.cnf", false),
-        new("UNSAT/medium.cnf", false),
-        new("UNSAT/hard.cnf", false)
-    ];
+    public static IEnumerable<BenchmarkCase> Cases => //new[] { new BenchmarkCase("Test", "cnf\\UNSAT\\2bitadd_10.cnf", true) };
+        Directory.EnumerateFiles("cnf\\SAT", "*.cnf").Select(path => new BenchmarkCase(Path.GetFileNameWithoutExtension(path), path, true))
+        .Concat(Directory.EnumerateFiles("cnf\\UNSAT", "*.cnf").Select(path => new BenchmarkCase(Path.GetFileNameWithoutExtension(path), path, false)));
 
     [ParamsSource(nameof(Cases))]
     public BenchmarkCase Case { get; set; } = null!;
 
     [GlobalSetup]
-    public void Setup()
-    {
-        _problem = DimacsParser.Parse(File.ReadAllText(Case.FilePath)).Single();
-
-        // Validate once outside the measurement; Solve creates a fresh solver each time.
-        var solution = Solve();
-        if (Case.IsSatisfiable)
-        {
-            if (solution is null)
-                throw new Exception($"Problem {Case.FilePath} could not be solved.");
-            SolutionValidator.Validate(_problem, solution);
-        }
-        else if (solution is not null)
-            throw new Exception($"Problem {Case.FilePath} should not have a solution.");
-    }
+    public void Setup() => _problem = DimacsParser.Parse(File.ReadAllText(Path.Combine("cnf", Case.FilePath))).Single();
 
     [Benchmark]
     public Literal[]? Solve() => SatSolverFactory.EnumerateSolutions(_problem, _options).FirstOrDefault();
@@ -76,5 +79,51 @@ public class SatSolverBenchmark
     public static void Run()
     {
         BenchmarkRunner.Run<SatSolverBenchmark>();
+    }
+
+    public static void Validate()
+    {
+        var cases = Cases.ToArray();
+        Console.Clear();
+        Console.WriteLine(string.Join(Environment.NewLine, cases.Select(c => $"{c.Name, -25}...")));
+        var tasks = cases.Select(entry => Task.Run(() =>
+        {
+            var (isValid, elapsed) = Validate(entry);
+            return (entry, isValid, elapsed);
+        })).ToList();
+        while (tasks.Count > 0)
+        {
+            var finishedTask = Task.WhenAny(tasks).Result;
+            tasks.Remove(finishedTask);
+            var (entry, isValid, elapsed) = finishedTask.Result;
+            var index = Array.IndexOf(cases, entry);
+            Console.SetCursorPosition(25, index);
+            Console.ForegroundColor = isValid ? ConsoleColor.Green : ConsoleColor.Red;
+            Console.Write(elapsed);
+            Console.ResetColor();
+        }
+    }
+    static (bool, TimeSpan) Validate(BenchmarkCase entry)
+    {
+        var problem = DimacsParser.Parse(File.ReadAllText(entry.FilePath)).Single();
+
+        var watch = Stopwatch.StartNew();
+        var solution = SatSolverFactory.EnumerateSolutions(problem, _options).FirstOrDefault();
+        watch.Stop();
+        if (entry.IsSatisfiable)
+        {
+            if (solution is null) return (false, watch.Elapsed);
+            try
+            {
+                SolutionValidator.Validate(problem, solution);
+                return (true, watch.Elapsed);
+            }
+            catch
+            {
+                return (false, watch.Elapsed);
+            }
+
+        }
+        else return (solution is null, watch.Elapsed);
     }
 }

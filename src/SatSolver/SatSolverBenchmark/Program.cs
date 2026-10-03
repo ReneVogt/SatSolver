@@ -1,17 +1,16 @@
-﻿using  SatSolverBenchmark;
-
-using static System.Console;
-
+﻿using static System.Console;
+Clear();
 CursorVisible = false;
 
-WriteLine("[A]utomatic");
-WriteLine("[M]anual");
-WriteLine("[C]andidateQueue");
-WriteLine("[S]udoku");
-switch (ReadKey(true).Key)
+WriteLine("[V]alidate only");
+WriteLine("[B]enchmark");
+
+switch(Console.ReadKey(true).Key)
 {
-    case ConsoleKey.A: SatSolverBenchmark.SatSolverBenchmark.Run();  break;
-    case ConsoleKey.M: ManualBenchmark.Run(); break;
-    case ConsoleKey.C: CandidateHeapBenchmark.Run(); break;
-    case ConsoleKey.S: SudokuBenchmark.Run(); break;
+    case ConsoleKey.V:
+        SatSolverBenchmark.SatSolverBenchmark.Validate();
+        break;
+    case ConsoleKey.B:
+        SatSolverBenchmark.SatSolverBenchmark.Run();
+        break;
 }

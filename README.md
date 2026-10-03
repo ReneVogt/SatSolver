@@ -2,7 +2,7 @@
 
 Out of curiosity we started to implement a Satisfiability Solver.
 
-CNFs for tests (SAT/UNSAT) taken from [here](https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html), collections uf250-1065 and uuf250-1065.
+CNFs for tests and benchmarks mostly taken from [here](https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html).
 
 ---
-René Vogt, Dresden 2025
+René Vogt, Dresden 2026

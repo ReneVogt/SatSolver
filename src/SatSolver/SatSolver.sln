@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.10.12224.181 stable
+VisualStudioVersion = 18.10.12224.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SatSolverDemo", "SatSolverDemo\SatSolverDemo.csproj", "{1DE39F87-AB9F-4635-B02D-7C533CB42F20}"
 EndProject
@@ -11,7 +11,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projektmappenelemente", "Pr
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		..\..\.gitignore = ..\..\.gitignore
-		..\..\benchmark.md = ..\..\benchmark.md
 		..\..\LICENSE = ..\..\LICENSE
 		..\..\README.md = ..\..\README.md
 	EndProjectSection
@@ -21,6 +20,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SatSolverBenchmark", "SatSolverBenchmark\SatSolverBenchmark.csproj", "{5D19DCC4-F098-468E-B6F3-1A41458A6BFD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sudoku", "Sudoku\Sudoku.csproj", "{A633970D-D57B-49C6-9939-4389ECC8ED42}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestHelpers", "TestHelpers\TestHelpers.csproj", "{43277B9C-8F25-4815-829F-18D867023042}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,6 +49,10 @@ Global
 		{A633970D-D57B-49C6-9939-4389ECC8ED42}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A633970D-D57B-49C6-9939-4389ECC8ED42}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A633970D-D57B-49C6-9939-4389ECC8ED42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43277B9C-8F25-4815-829F-18D867023042}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43277B9C-8F25-4815-829F-18D867023042}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43277B9C-8F25-4815-829F-18D867023042}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43277B9C-8F25-4815-829F-18D867023042}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
