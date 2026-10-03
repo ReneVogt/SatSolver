@@ -21,7 +21,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<ProjectReference Include="..\SatSolver\SatSolver.csproj" />
+		<ProjectReference Include="..\TestHelpers\TestHelpers.csproj" />
 		<Using Include="Xunit" />
 		<InternalsVisibleTo Include="SatSolverBenchmark" />
 	</ItemGroup>

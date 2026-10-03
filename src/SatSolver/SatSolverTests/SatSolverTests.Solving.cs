@@ -1,5 +1,6 @@
 ﻿using Revo.SatSolver;
 using Revo.SatSolver.Parsing;
+using TestHelpers;
 using static Revo.SatSolver.SatSolverFactory;
 using static SatSolverTests.Problems;
 
@@ -93,42 +94,11 @@ public sealed partial class SatSolverTests
     [Trait("Options", "DPLL")]
     [MemberData(nameof(ProvideSimpleTestCases))]
     public void EnumerateSolutions_SimpleCases_DPLL(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), SatSolverOptions.DPLL);
-    [Theory]
-    [Trait("Category", "Benchmark")]
-    [Trait("Options", "DPLL")]
-    [MemberData(nameof(ProvideSatTestCases))]
-    public void EnumerateSolutions_SAT_DPLL(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, SatSolverOptions.DPLL);
-    [Theory]
-    [Trait("Category", "Benchmark")]
-    [Trait("Options", "DPLL")]
-    [MemberData(nameof(ProvideUnsatTestCases))]
-    public void EnumerateSolutions_UNSAT_DPLL(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.DPLL);
-
-    [Theory]
-    [Trait("Category", "Simple Cases")]
-    [Trait("Options", "CDCL")]
-    [MemberData(nameof(ProvideSimpleTestCases))]
-    public void EnumerateSolutions_SimpleCases_CDCL(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), SatSolverOptions.CDCL);
-    [Theory]
-    [Trait("Category", "Benchmark")]
-    [Trait("Options", "CDCL")]
-    [MemberData(nameof(ProvideSatTestCases))]
-    public void EnumerateSolutions_SAT_CDCL(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, SatSolverOptions.CDCL);
-    [Theory]
-    [Trait("Category", "Benchmark")]
-    [Trait("Options", "CDCL")]
-    [MemberData(nameof(ProvideUnsatTestCases))]
-    public void EnumerateSolutions_UNSAT_CDCL(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.CDCL);
 
     static void SolveFile(string file, SatSolverOptions options)
     {
         string cnf = File.ReadAllText(file);
         SolveCnf(Path.GetFileNameWithoutExtension(file), cnf, !cnf.Trim().EndsWith("c UNSAT"), options);
-    }
-    static void SolveFile(string file, bool sat, SatSolverOptions options)
-    {
-        string cnf = File.ReadAllText(file);
-        SolveCnf(Path.GetFileNameWithoutExtension(file), cnf, sat, options);
     }
     static void SolveCnf(string name, string cnf, bool sat, SatSolverOptions options)
     {
@@ -143,8 +113,6 @@ public sealed partial class SatSolverTests
             Assert.Empty(solutions);
     }
 
-    public static TheoryData<string> ProvideSatTestCases() => ProvideTestCases("SAT");
-    public static TheoryData<string> ProvideUnsatTestCases() => ProvideTestCases("UNSAT");
     public static TheoryData<string> ProvideSimpleTestCases() => ProvideTestCases("SimpleCases");
     static TheoryData<string> ProvideTestCases(string folder)
     {

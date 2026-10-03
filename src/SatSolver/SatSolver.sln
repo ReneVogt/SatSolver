@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SatSolverBenchmark", "SatSo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sudoku", "Sudoku\Sudoku.csproj", "{A633970D-D57B-49C6-9939-4389ECC8ED42}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestHelpers", "TestHelpers\TestHelpers.csproj", "{43277B9C-8F25-4815-829F-18D867023042}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +50,10 @@ Global
 		{A633970D-D57B-49C6-9939-4389ECC8ED42}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A633970D-D57B-49C6-9939-4389ECC8ED42}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A633970D-D57B-49C6-9939-4389ECC8ED42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43277B9C-8F25-4815-829F-18D867023042}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43277B9C-8F25-4815-829F-18D867023042}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43277B9C-8F25-4815-829F-18D867023042}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43277B9C-8F25-4815-829F-18D867023042}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
