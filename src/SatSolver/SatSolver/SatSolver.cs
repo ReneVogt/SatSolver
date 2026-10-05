@@ -26,6 +26,7 @@ sealed partial class SatSolver : ISatSolver
     readonly ConstraintLiteral[] _literals;
 
     int _originalConstraintCount;
+    bool _isUnsatisfiable;
 
     public SatSolver(ComponentStoreBase store)
     {
@@ -50,6 +51,9 @@ sealed partial class SatSolver : ISatSolver
 
     Literal[]? Solve(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_isUnsatisfiable) return null;
+
         for (;;)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -71,7 +75,13 @@ sealed partial class SatSolver : ISatSolver
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var (unitLiteral, reason) = _unitPropagationQueue.Dequeue();
-                if (unitLiteral.Sense is not null) continue;
+                if (unitLiteral.Sense is not null)
+                {
+                    // A contradictory assignment must already have caused a conflict
+                    // during propagation; only fulfilled queue entries may be skipped.
+                    Debug.Assert(unitLiteral.Sense == true);
+                    continue;
+                }
 
                 if (reason is null)
                     _trail.Push();
@@ -81,6 +91,7 @@ sealed partial class SatSolver : ISatSolver
 
                 if (_trail.DecisionLevel == 0)
                 {
+                    _isUnsatisfiable = true;
                     Statistics.NoMoreSolutions();
                     return null;
                 }
@@ -106,14 +117,15 @@ sealed partial class SatSolver : ISatSolver
         var constraint = _constraintFactory.CreateAdditionalConstraint(
             clause.Literals.Select(l => l.Sense ? _variables[l.Id-1].PositiveLiteral : _variables[l.Id-1].NegativeLiteral));
 
+        if (_isUnsatisfiable) return;
         if (constraint.Watched1.Sense == true) return;
         if (constraint.Watched1.Sense is not null)
         {
             var level = constraint.Watched1.Variable.DecisionLevel;
             if (level == 0)
             {
-                _trail.Reset();
-                SetInitialUnits();
+                _isUnsatisfiable = true;
+                Statistics.NoMoreSolutions();
                 return;
             }
             
@@ -130,7 +142,10 @@ sealed partial class SatSolver : ISatSolver
         _trail.Reset();
 
         if (removeAdditionalClauses)
+        {
             _constraintFactory.ReleaseAdditionalConstraints();
+            _isUnsatisfiable = false;
+        }
 
         SetInitialUnits();
     }

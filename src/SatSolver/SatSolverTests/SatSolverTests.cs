@@ -100,6 +100,7 @@ public sealed partial class SatSolverTests
             .Returns(constraint4);
 
         Assert.Null(sut.FindSolution());
+        Assert.Null(sut.FindSolution());
         propagator.VerifyAll();
     }
     [Fact]
@@ -606,7 +607,7 @@ public sealed partial class SatSolverTests
         constraintFactory.VerifyAll();
     }
     [Fact]
-    public void AddClause_AllAssigned_ByLevel0()
+    public void AddClause_AllAssigned_ByLevel0_PreservesUnsatisfiableState()
     {
         var preProcessor = new Mock<IPreProcessor>();
         var heap = new Mock<ICandidateHeap>();
@@ -631,22 +632,19 @@ public sealed partial class SatSolverTests
         expectedLiterals[2].Sense = false;
         expectedLiterals[2].Variable.DecisionLevel = 0;
         var constraint = new Constraint(expectedLiterals, literals[0], expectedLiterals[1]);
-        var initialUnit = new Constraint([literals[1]], literals[1], literals[1]);
-        literals[1].Watchers.Add(initialUnit);
 
         var seq = new MockSequence();
         constraintFactory.InSequence(seq).Setup(cf =>
             cf.CreateAdditionalConstraint(It.Is<IEnumerable<ConstraintLiteral>>(literals => literals.SequenceEqual(expectedLiterals))))
             .Returns(constraint);
-        trail.InSequence(seq).Setup(t => t.Reset());
 
-        var units = store.UnitPropagationQueue;
-        units.Enqueue((literals[0], constraint));
         var sut = Create(store);
         sut.AddClause(clause);
 
-        Assert.Equal((literals[1], initialUnit), Assert.Single(units));
+        Assert.Null(sut.FindSolution());
+        Assert.Null(sut.FindSolution());
         trail.VerifyAll();
+        trail.VerifyNoOtherCalls();
         constraintFactory.VerifyAll();
     }
     [Fact]
