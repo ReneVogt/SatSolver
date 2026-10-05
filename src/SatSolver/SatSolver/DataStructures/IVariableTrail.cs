@@ -10,8 +10,7 @@ interface IVariableTrail
     int StartIndexOfCurrentDecisionLevel { get; }
 
     void Add(Variable variable);
-    (Variable? candidate, bool sense) Backtrack();
     void JumpBack(int level);
-    void Push(bool firstTryOfCandidate = true);
+    void Push();
     void Reset();
 }

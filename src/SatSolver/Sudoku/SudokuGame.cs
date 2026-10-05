@@ -43,7 +43,17 @@ sealed class SudokuGame
         using var reader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream("Sudoku.sudoku.cnf")!);
         var cnf = reader.ReadToEnd();
         var problem = DimacsParser.Parse(cnf).Single();
-        var options = SatSolverOptions.Sudoku;
+        var options = SatSolverOptions.Default with
+        {
+            Restart = new()
+            {
+                Interval = null,
+                Luby = false,
+                ByLiteralBlockDistance = false,
+                ByPropagationRate = false
+            },
+            MaximumLiteralBlockDistance = 10
+        };
         _solver = SatSolverFactory.Create(problem, options);
     }
 

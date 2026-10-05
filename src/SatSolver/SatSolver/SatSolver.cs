@@ -19,7 +19,6 @@ sealed partial class SatSolver : ISatSolver
     readonly IPropagateVariables _variablePropagator;
     readonly IHandleConflicts _conflictHandler;
     readonly IManageActivities _activityManager;
-    readonly bool _dpllOnly;
     readonly UnitPropagationQueue _unitPropagationQueue;
     readonly ITrackPropagationRate _propagationRateTracker;
     readonly IReduceLearnedConstraints _learnedConstraintsReducer;
@@ -39,7 +38,6 @@ sealed partial class SatSolver : ISatSolver
         _restartManager = store.RestartManager;
         _unitPropagationQueue = store.UnitPropagationQueue;
         _propagationRateTracker = store.PropagationRateTracker;
-        _dpllOnly = store.Options.Mode == SatSolverMode.DPLL;
         _variables = store.Variables;
         _literals = store.Literals;
         _learnedConstraintsReducer = store.LearnedConstraintsReducer;
@@ -48,70 +46,9 @@ sealed partial class SatSolver : ISatSolver
         _candidateHeap.Heapify();
     }
 
-    public Literal[]? FindSolution(CancellationToken cancellationToken = default) => _dpllOnly ? SolveDPLL(cancellationToken) : SolveCDCL(cancellationToken);
+    public Literal[]? FindSolution(CancellationToken cancellationToken = default) => Solve(cancellationToken);
 
-    Literal[]? SolveDPLL(CancellationToken cancellationToken)
-    {
-        Variable? candidateVariable = null;
-        var candidateSense = true;
-
-        for(; ; )
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var firstTry = false;
-            Constraint? conflictingConstraint = null;
-
-            if (_unitPropagationQueue.Count == 0)
-            {
-                if (candidateVariable is null)
-                {
-                    candidateVariable = _candidateHeap.Dequeue();
-                    if (candidateVariable is null)
-                    {
-                        var solution = BuildSolution();
-                        Statistics.DeliveringSolution(solution);
-                        return solution;
-                    }
-                    else
-                    {
-                        candidateSense = candidateVariable.Polarity;
-                        firstTry = true;
-                    }
-                }
-
-                _trail.Push(firstTry);
-                conflictingConstraint = _variablePropagator.PropagateVariable(candidateVariable, candidateSense, null);
-            }
-
-            while (conflictingConstraint is null && _unitPropagationQueue.Count > 0)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                (var literal, _) = _unitPropagationQueue.Dequeue();
-                if (literal.Sense is not null)
-                {
-                    Debug.Assert(literal.Sense.Value);
-                    continue;
-                }
-                conflictingConstraint = _variablePropagator.PropagateVariable(literal.Variable, literal.Orientation, null);
-            }
-
-            candidateVariable = null;
-            if (conflictingConstraint is null) continue;
-
-            Statistics.AddConflict(conflictingConstraint);
-            _propagationRateTracker.AddConflict();
-            _restartManager.AddConflict();
-            _activityManager.IncreaseVariableActivity(conflictingConstraint);
-
-            if (_restartManager.RestartIfNecessary()) continue;
-            
-            _unitPropagationQueue.Clear();
-            (candidateVariable, candidateSense) = _trail.Backtrack();
-            if (candidateVariable is null) return null;
-        }
-    }
-    Literal[]? SolveCDCL(CancellationToken cancellationToken)
+    Literal[]? Solve(CancellationToken cancellationToken)
     {
         for (;;)
         {
@@ -180,15 +117,6 @@ sealed partial class SatSolver : ISatSolver
                 return;
             }
             
-            if (_dpllOnly)
-            {
-                _unitPropagationQueue.Clear();
-                _trail.JumpBack(level - 1);
-                if (constraint.Literals.Length == 1 || constraint.Watched2.Sense is not null)
-                    _unitPropagationQueue.Enqueue((constraint.Watched1, constraint));
-                return;
-            }
-
             _trail.JumpBack(level);
             _conflictHandler.HandleConflict(constraint);
             return;

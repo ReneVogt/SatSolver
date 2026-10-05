@@ -3,13 +3,13 @@
 sealed class VariableTrail(ICandidateHeap _candidateHeap, int _capacity) : IVariableTrail
 {
     readonly Variable[] _trail = new Variable[_capacity];
-    readonly Stack<(int TrailIndex, bool FirstTryOfCandidate)> _decisionLevels = new(_capacity);
+    readonly Stack<int> _decisionLevels = new(_capacity);
 
     int _trailSize;
 
     public int Count => _trailSize;
     public int DecisionLevel => _decisionLevels.Count;
-    public int StartIndexOfCurrentDecisionLevel => _decisionLevels.TryPeek(out var l) ? l.TrailIndex : -1; 
+    public int StartIndexOfCurrentDecisionLevel => _decisionLevels.TryPeek(out var trailIndex) ? trailIndex : -1; 
 
     public Variable this[int index]
     {
@@ -21,34 +21,16 @@ sealed class VariableTrail(ICandidateHeap _candidateHeap, int _capacity) : IVari
         _trail[_trailSize++] = variable;
         variable.DecisionLevel = DecisionLevel;
     }
-    public void Push(bool firstTryOfCandidate = true) => _decisionLevels.Push((_trailSize, firstTryOfCandidate));
+    public void Push() => _decisionLevels.Push(_trailSize);
 
     public void JumpBack(int level)
     {
         Statistics.LogBackJump(_decisionLevels.Count, level);
         var index = Count;
         while (_decisionLevels.Count > level)
-            (index, _) = _decisionLevels.Pop();
+            index = _decisionLevels.Pop();
 
         ResetVariableTrail(index);
-    }
-    public (Variable? candidate, bool sense) Backtrack()
-    {
-        var first = false;
-        var index = -1;
-        while (_decisionLevels.Count > 0 && !first) (index, first) = _decisionLevels.Pop();
-        if (!first)
-        {
-            ResetVariableTrail(0);
-            return (null, true);
-        }
-
-        var variable = _trail[index];
-        var sense = !variable.Sense!.Value;
-
-        ResetVariableTrail(index);
-        return (variable, sense);
-
     }
     public void Reset()
     {

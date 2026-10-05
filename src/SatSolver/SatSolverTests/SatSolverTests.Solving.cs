@@ -26,27 +26,9 @@ public sealed partial class SatSolverTests
 
     [Fact]
     [Trait("Category", "Simple Cases")]
-    [Trait("Options", "CDCL")]
-    public void EnumerateSolutions_NoClauses_AllSolutions_CDCL()
+    public void EnumerateSolutions_NoClauses_AllSolutions()
     {
-        var solutions = new Problem(3, []).EnumerateSolutions(SatSolverOptions.CDCL).ToArray();
-        var clauses = solutions.Select(s => new Clause(s)).OrderBy(c => c).ToArray();
-        Assert.Equal([
-            [-1, -2, -3],
-                [-1, -2, 3],
-                [-1, 2, -3],
-                [-1, 2, 3],
-                [1, -2, -3],
-                [1, -2, 3],
-                [1, 2, -3],
-                [1, 2, 3]], clauses.Select(c => c.Literals));
-    }
-    [Fact]
-    [Trait("Category", "Simple Cases")]
-    [Trait("Options", "DPLL")]
-    public void EnumerateSolutions_NoClauses_AllSolutions_DPLL()
-    {
-        var solutions = new Problem(3, []).EnumerateSolutions(SatSolverOptions.DPLL).ToArray();
+        var solutions = new Problem(3, []).EnumerateSolutions(SatSolverOptions.Default).ToArray();
         var clauses = solutions.Select(s => new Clause(s)).OrderBy(c => c).ToArray();
         Assert.Equal([
             [-1, -2, -3],
@@ -67,60 +49,28 @@ public sealed partial class SatSolverTests
         InlineData(nameof(FourStateSudoku), FourStateSudoku, 24)
     ]
     [Trait("Category", "Simple Cases")]
-    [Trait("Options", "CDCL")]
-    public void EnumerateMutlipleSolutions_CDCL(string name, string dimacs, int expectedSolutions) => EnumerateMutlipleSolutions(name, dimacs, expectedSolutions, true);
-    [Theory]
-    [
-        InlineData(nameof(SimpleOr), SimpleOr, 3),
-        InlineData(nameof(TwoStateSudoku), TwoStateSudoku, 2),
-        InlineData(nameof(ThreeStateSudoku), ThreeStateSudoku, 6),
-        InlineData(nameof(FourStateSudoku), FourStateSudoku, 24)
-    ]
-    [Trait("Category", "Simple Cases")]
-    [Trait("Options", "DPLL")]
-    public void EnumerateMutlipleSolutions_DPLL(string name, string dimacs, int expectedSolutions) => EnumerateMutlipleSolutions(name, dimacs, expectedSolutions, false);
-    static void EnumerateMutlipleSolutions(string name, string dimacs, int expectedSolutions, bool cdcl)
+    public void EnumerateMutlipleSolutions(string name, string dimacs, int expectedSolutions)
     {
-        var file = $"{name}-{(cdcl ? "cdcl" : "dpll")}.log";
+        var file = $"{name}.log";
         using var logger = DebugLogger.Log(file);
         var problem = DimacsParser.Parse(dimacs).Single();
-        var solutions = problem.EnumerateSolutions(cdcl ? SatSolverOptions.CDCL : SatSolverOptions.DPLL).ToArray();
+        var solutions = problem.EnumerateSolutions(SatSolverOptions.Default).ToArray();
         SolutionValidator.Validate(problem, solutions);
         Assert.Equal(expectedSolutions, solutions.Length);
     }
 
     [Theory]
     [Trait("Category", "Simple Cases")]
-    [Trait("Options", "DPLL")]
     [MemberData(nameof(ProvideSimpleTestCases))]
-    public void EnumerateSolutions_SimpleCases_DPLL(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), SatSolverOptions.DPLL);
-
-    //[Theory]
-    //[Trait("Category", "Benchmark")]
-    //[Trait("Options", "DPLL")]
-    //[MemberData(nameof(ProvideSatTestCases))]
-    //public void EnumerateSolutions_SAT_DPLL(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, SatSolverOptions.DPLL);
-    //[Theory]
-    //[Trait("Category", "UNSAT")]
-    //[Trait("Options", "DPLL")]
-    //[MemberData(nameof(ProvideUnsatTestCases))]
-    //public void EnumerateSolutions_UNSAT_DPLL(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.DPLL);
-
-    [Theory]
-    [Trait("Category", "Simple Cases")]
-    [Trait("Options", "CDCL")]
-    [MemberData(nameof(ProvideSimpleTestCases))]
-    public void EnumerateSolutions_SimpleCases_CDCL(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), SatSolverOptions.CDCL);
+    public void EnumerateSolutions_SimpleCases(string fileName) => SolveFile(Path.Combine("SimpleCases", fileName), SatSolverOptions.Default);
     [Theory]
     [Trait("Category", "SAT")]
-    [Trait("Options", "CDCL")]
     [MemberData(nameof(ProvideSatTestCases))]
-    public void EnumerateSolutions_SAT_CDCL(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, SatSolverOptions.CDCL);
+    public void EnumerateSolutions_SAT(string fileName) => SolveFile(Path.Combine("SAT", fileName), true, SatSolverOptions.Default);
     [Theory]
     [Trait("Category", "UNSAT")]
-    [Trait("Options", "CDCL")]
     [MemberData(nameof(ProvideUnsatTestCases))]
-    public void EnumerateSolutions_UNSAT_CDCL(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.CDCL);
+    public void EnumerateSolutions_UNSAT(string fileName) => SolveFile(Path.Combine("UNSAT", fileName), false, SatSolverOptions.Default);
 
     static void SolveFile(string file, bool sat, SatSolverOptions options)
     {

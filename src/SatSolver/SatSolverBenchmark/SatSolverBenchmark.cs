@@ -6,7 +6,6 @@ using Perfolizer.Mathematics.OutlierDetection;
 using Revo.SatSolver;
 using Revo.SatSolver.Parsing;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using TestHelpers;
 
 namespace SatSolverBenchmark;
@@ -32,29 +31,27 @@ public class SatSolverBenchmark
         }
     }
 
-    static readonly SatSolverOptions _options = SatSolverOptions.DPLL;
-    //static readonly SatSolverOptions _options = SatSolverOptions.CDCL with
-    //{
-    //    //VariableActivityDecayFactor = 0.95,
-    //    //LiteralBlockDistanceTracking = new(),
-    //    //PropagationRateTracking = new(),
-    //    MaximumLiteralBlockDistance = 100,
-    //    ConstraintDeletion = new()
-    //    {
-    //        ConflictInterval = 5000,
-    //        LiteralBlockDistanceToKeep = 3,
-    //        RatioToDelete = 0.5,
-    //        ReduceOnRestart = false,
-    //        OriginalConstraintCountFactor = 4
-    //    },
-    //    Restart = new()
-    //    {
-    //        ByLiteralBlockDistance = false,
-    //        ByPropagationRate = false,
-    //        Interval = null,
-    //        Luby = false
-    //    }
-    //};
+    static readonly SatSolverOptions _options = new()
+    {
+        //LiteralBlockDistanceTracking = new(),
+        //PropagationRateTracking = new(),
+        MaximumLiteralBlockDistance = 100,
+        ConstraintDeletion = new()
+        {
+            ConflictInterval = 5000,
+            LiteralBlockDistanceToKeep = 3,
+            RatioToDelete = 0.5,
+            ReduceOnRestart = false,
+            OriginalConstraintCountFactor = 4
+        },
+        Restart = new()
+        {
+            ByLiteralBlockDistance = false,
+            ByPropagationRate = false,
+            Interval = null,
+            Luby = false
+        }
+    };
 
     Problem _problem = null!;
 
@@ -63,7 +60,7 @@ public class SatSolverBenchmark
         public override string ToString() => FilePath;
     }
 
-    public static IEnumerable<BenchmarkCase> Cases => //new[] { new BenchmarkCase("Test", "cnf\\UNSAT\\2bitadd_10.cnf", true) };
+    public static IEnumerable<BenchmarkCase> Cases => //new[] { new BenchmarkCase("Test", "cnf\\UNSAT\\2bitadd_10.cnf", false) };
         Directory.EnumerateFiles("cnf\\SAT", "*.cnf").Select(path => new BenchmarkCase(Path.GetFileNameWithoutExtension(path), path, true))
         .Concat(Directory.EnumerateFiles("cnf\\UNSAT", "*.cnf").Select(path => new BenchmarkCase(Path.GetFileNameWithoutExtension(path), path, false)));
 
@@ -71,7 +68,7 @@ public class SatSolverBenchmark
     public BenchmarkCase Case { get; set; } = null!;
 
     [GlobalSetup]
-    public void Setup() => _problem = DimacsParser.Parse(File.ReadAllText(Path.Combine("cnf", Case.FilePath))).Single();
+    public void Setup() => _problem = DimacsParser.Parse(File.ReadAllText(Case.FilePath)).Single();
 
     [Benchmark]
     public Literal[]? Solve() => SatSolverFactory.EnumerateSolutions(_problem, _options).FirstOrDefault();
@@ -102,6 +99,7 @@ public class SatSolverBenchmark
             Console.Write(elapsed);
             Console.ResetColor();
         }
+        Console.SetCursorPosition(0, cases.Length+1);
     }
     static (bool, TimeSpan) Validate(BenchmarkCase entry)
     {

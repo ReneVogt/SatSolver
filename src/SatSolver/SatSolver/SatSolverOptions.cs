@@ -12,7 +12,7 @@ namespace Revo.SatSolver;
 public sealed record SatSolverOptions
 {
     /// <summary>
-    /// Configures how the <see cref="SatSolverFactory"/> decides to
+    /// Configures how the <see cref="SatSolver"/> decides to
     /// restart its search.
     /// </summary>
     [ExcludeFromCodeCoverage]
@@ -132,77 +132,17 @@ public sealed record SatSolverOptions
 
     /// <summary>
     /// The recommended default options set
-    /// using CDCL with a restart strategy
-    /// based on a Luby sequence with base 100
-    /// and depending on literal block distance
-    /// average and propagation rate.
-    /// </summary>
-    public static SatSolverOptions Default { get; } = new();
-
-    /// <summary>
-    /// Options for a poor man's VSIDS solver without
-    /// any restarts or other fancy strategies.
-    /// </summary>
-    public static SatSolverOptions DPLL { get; } = new ()
-    {
-        Mode = SatSolverMode.DPLL,
-        VariableActivityDecayFactor = 0.9995,
-        Restart = new()
-        {
-            Interval = null,
-            Luby = false,
-            ByLiteralBlockDistance = false,
-            ByPropagationRate = false
-        },
-        ConstraintDeletion = new()
-        {
-            LiteralBlockDistanceToKeep = 0,
-            OriginalConstraintCountFactor = null,
-            ConflictInterval = null,
-            RatioToDelete = 0
-        }
-    };
-        
-    /// <summary>
-    /// The recommended default options set
-    /// using CDCL with a restart strategy
+    /// using a restart strategy based on a 
+    /// Luby sequence with base 100 and 
     /// depending on literal block distance
     /// average and propagation rate.
     /// </summary>
-    public static SatSolverOptions CDCL { get; } = new();
-
-    /// <summary>
-    /// The recommended options set for 
-    /// solving the sudoku cnf using CDCL 
-    /// without restarts and a maximum 
-    /// literal block distance of 10.
-    /// </summary>
-    public static SatSolverOptions Sudoku { get; } = CDCL with
-    {
-        Restart = new()
-        {
-            Interval = null,
-            Luby = false,
-            ByLiteralBlockDistance = false,
-            ByPropagationRate = false
-        },
-        MaximumLiteralBlockDistance = 10
-    };
-
-
-    /// <summary>
-    /// Defines the <see cref="SatSolverMode"/> (<see cref="SatSolverMode.CDCL"/>
-    /// or <see cref="SatSolverMode.DPLL"/> to use.
-    /// </summary>
-    public SatSolverMode Mode { get; init; } = SatSolverMode.CDCL;
-
+    public static SatSolverOptions Default { get; } = new();
+       
     /// <summary>
     /// The activites of variables are incremented when a
     /// they are part of a learned constraint and decayed by
     /// this factor after each conflict.
-    /// If <see cref="OnlyDpll"/> is <c>true</c>,
-    /// the activities of all variables in a conflicting
-    /// constraint are incremented.
     /// </summary>
     public double VariableActivityDecayFactor { get; init; } = 0.95;
     /// <summary>
@@ -231,7 +171,7 @@ public sealed record SatSolverOptions
     public ConstraintDeletionOptions ConstraintDeletion { get; init; } = new();
 
     /// <summary>
-    /// Configures how the <see cref="SatSolverFactory"/> decides to restart
+    /// Configures how the <see cref="SatSolver"/> decides to restart
     /// its search.
     /// </summary>
     public RestartOptions Restart { get; init; } = new ();

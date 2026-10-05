@@ -56,7 +56,7 @@ public sealed partial class SatSolverTests
         var propagator = new Mock<IPropagateVariables>(MockBehavior.Strict);
         var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
         trail.Setup(t => t.DecisionLevel).Returns(0);
-        var store = new TestComponentStore(SatSolverOptions.CDCL, 5, name => name switch
+        var store = new TestComponentStore(SatSolverOptions.Default, 5, name => name switch
         {
             nameof(ComponentStoreBase.VariablePropagator) => propagator.Object,
             nameof(ComponentStoreBase.CandidateHeap) => heap.Object,
@@ -109,7 +109,7 @@ public sealed partial class SatSolverTests
         var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
         var heap = new Mock<ICandidateHeap>(MockBehavior.Strict);
         var propagator = new Mock<IPropagateVariables>(MockBehavior.Strict);
-        var store = new TestComponentStore(SatSolverOptions.CDCL, 1, name => name switch
+        var store = new TestComponentStore(SatSolverOptions.Default, 1, name => name switch
         {
             nameof(ComponentStoreBase.VariablePropagator) => propagator.Object,
             nameof(ComponentStoreBase.CandidateHeap) => heap.Object,
@@ -154,7 +154,7 @@ public sealed partial class SatSolverTests
         var constraintFactory = new Mock<IConstraintFactory>(MockBehavior.Strict);
         var sequence = new MockSequence();
         var preProcessor = new Mock<IPreProcessor>();
-        var store = new TestComponentStore(SatSolverOptions.CDCL, 2, name => name switch
+        var store = new TestComponentStore(SatSolverOptions.Default, 2, name => name switch
         {
             nameof(ComponentStoreBase.CandidateHeap) => candidateHeap.Object,
             nameof(ComponentStoreBase.VariablePropagator) => propagator.Object,
@@ -177,10 +177,10 @@ public sealed partial class SatSolverTests
 
         candidateHeap.InSequence(sequence).Setup(h => h.Heapify());
         candidateHeap.InSequence(sequence).Setup(h => h.Dequeue()).Returns(variables[0]);
-        trail.InSequence(sequence).Setup(t => t.Push(true));
+        trail.InSequence(sequence).Setup(t => t.Push());
         propagator.InSequence(sequence).Setup(p => p.PropagateVariable(variables[0], true, null)).Callback(() => variables[0].Sense = true).Returns((Constraint?)null);
         candidateHeap.InSequence(sequence).Setup(h => h.Dequeue()).Returns(variables[1]);
-        trail.InSequence(sequence).Setup(t => t.Push(true));
+        trail.InSequence(sequence).Setup(t => t.Push());
         propagator.InSequence(sequence).Setup(p => p.PropagateVariable(variables[1], true, null)).Callback(() => variables[1].Sense = true).Returns((Constraint?)null);
         candidateHeap.InSequence(sequence).Setup(h => h.Dequeue()).Returns((Variable?)null);
 
@@ -205,7 +205,7 @@ public sealed partial class SatSolverTests
         var reducer = new Mock<IReduceLearnedConstraints>(MockBehavior.Strict);
         var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
 
-        var store = new TestComponentStore(SatSolverOptions.CDCL, 3, name => name switch
+        var store = new TestComponentStore(SatSolverOptions.Default, 3, name => name switch
         {
             nameof(ComponentStoreBase.CandidateHeap) => heap.Object,
             nameof(ComponentStoreBase.VariablePropagator) => propagator.Object,
@@ -225,7 +225,7 @@ public sealed partial class SatSolverTests
 
         heap.InSequence(sequence).Setup(h => h.Heapify());
         heap.InSequence(sequence).Setup(h => h.Dequeue()).Returns(variables[0]);
-        trail.InSequence(sequence).Setup(t => t.Push(true));
+        trail.InSequence(sequence).Setup(t => t.Push());
 
         var reason = _constraintFactory.CreateInitialConstraint([variables[2].NegativeLiteral]); // to avoid trail.Push() 
         propagator.InSequence(sequence)
@@ -271,7 +271,7 @@ public sealed partial class SatSolverTests
         var trail = new Mock<IVariableTrail>(MockBehavior.Strict);
         var activityManager = new Mock<IManageActivities>(MockBehavior.Strict);
         var sequence = new MockSequence();
-        var store = new TestComponentStore(SatSolverOptions.CDCL, 2, name => name switch
+        var store = new TestComponentStore(SatSolverOptions.Default, 2, name => name switch
         {
             nameof(ComponentStoreBase.CandidateHeap) => heap.Object,
             nameof(ComponentStoreBase.VariablePropagator) => propagator.Object,
@@ -296,7 +296,7 @@ public sealed partial class SatSolverTests
         preProcessor.Setup(p => p.BuildConstraints()).Returns(17);
         heap.InSequence(sequence).Setup(h => h.Heapify());
         heap.InSequence(sequence).Setup(h => h.Dequeue()).Returns(variable);
-        trail.InSequence(sequence).Setup(t => t.Push(true)).Callback(() => decisionLevel++);
+        trail.InSequence(sequence).Setup(t => t.Push()).Callback(() => decisionLevel++);
 
         propagator.InSequence(sequence)
             .Setup(p => p.PropagateVariable(variable, false, null))
@@ -346,7 +346,7 @@ public sealed partial class SatSolverTests
 
         var sequence = new MockSequence();
 
-        var store = new TestComponentStore(SatSolverOptions.CDCL, 2, name => name switch
+        var store = new TestComponentStore(SatSolverOptions.Default, 2, name => name switch
         {
             nameof(ComponentStoreBase.CandidateHeap) => heap.Object,
             nameof(ComponentStoreBase.VariablePropagator) => propagator.Object,
@@ -372,7 +372,7 @@ public sealed partial class SatSolverTests
 
         heap.InSequence(sequence).Setup(h => h.Heapify());
         heap.InSequence(sequence).Setup(h => h.Dequeue()).Returns(variable);
-        trail.InSequence(sequence).Setup(t => t.Push(true)).Callback(() => decisionLevel++);
+        trail.InSequence(sequence).Setup(t => t.Push()).Callback(() => decisionLevel++);
 
         propagator.InSequence(sequence)
             .Setup(p => p.PropagateVariable(variable, false, null))

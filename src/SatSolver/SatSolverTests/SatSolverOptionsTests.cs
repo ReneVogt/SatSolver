@@ -20,11 +20,9 @@ public sealed class SatSolverOptionsTests
     }
 
     public static TheoryData<SatSolverOptions, string[]?> ProvideOptionTests() =>
-        new TheoryData<SatSolverOptions, string[]?>
+        new()
         {
             {SatSolverOptions.Default, null},
-            {SatSolverOptions.DPLL, null},
-            {SatSolverOptions.CDCL, null},
 
             {new () { ConstraintActivityDecayFactor = 0 },
             ["Decay factors must not be zero."] },
