@@ -55,14 +55,14 @@ public class SatSolverBenchmark
 
     Problem _problem = null!;
 
-    public sealed record BenchmarkCase(string Name, string FilePath, bool IsSatisfiable)
+    public sealed record BenchmarkCase(string FilePath, bool IsSatisfiable)
     {
-        public override string ToString() => FilePath;
+        public override string ToString() => Path.GetFileNameWithoutExtension(FilePath);
     }
 
     public static IEnumerable<BenchmarkCase> Cases => //new[] { new BenchmarkCase("Test", "cnf\\UNSAT\\2bitadd_10.cnf", false) };
-        Directory.EnumerateFiles("cnf\\SAT", "*.cnf").Select(path => new BenchmarkCase(Path.GetFileNameWithoutExtension(path), path, true))
-        .Concat(Directory.EnumerateFiles("cnf\\UNSAT", "*.cnf").Select(path => new BenchmarkCase(Path.GetFileNameWithoutExtension(path), path, false)));
+        Directory.EnumerateFiles("cnf\\SAT", "*.cnf").Select(path => new BenchmarkCase(path, true))
+        .Concat(Directory.EnumerateFiles("cnf\\UNSAT", "*.cnf").Select(path => new BenchmarkCase(path, false)).OrderBy(c => c.ToString()));
 
     [ParamsSource(nameof(Cases))]
     public BenchmarkCase Case { get; set; } = null!;
@@ -82,7 +82,7 @@ public class SatSolverBenchmark
     {
         var cases = Cases.ToArray();
         Console.Clear();
-        Console.WriteLine(string.Join(Environment.NewLine, cases.Select(c => $"{c.Name, -25}...")));
+        Console.WriteLine(string.Join(Environment.NewLine, cases.Select(c => $"{c, -25}...")));
         var tasks = cases.Select(entry => Task.Run(() =>
         {
             var (isValid, elapsed) = Validate(entry);
