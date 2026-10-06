@@ -58,8 +58,12 @@ sealed class RestartManager : IManageRestart
         if (_lubySequence is not null)
             _nextRestartThreshold = _lubySequence.Next();
 
+        // Pending root implications remain valid across a restart.
+        // Implications above root may depend on assignments we discard.
+        if (_trail.DecisionLevel > 0)
+            _unitPropagationQueue.Clear();
+
         _trail.JumpBack(0);
-        _unitPropagationQueue.Clear();
         _propagationRateTracker.ResetAfterRestart();
         _literalBlockDistanceTracker.ResetAfterRestart();
 
