@@ -12,7 +12,9 @@ public interface ISatSolver
     /// is called with <c>removeAdditionalClauses: true</c>.
     /// </summary>
     /// <param name="cancellationToken">A token to cancel the process.</param>
-    /// <returns>A satisfying assignment, or <c>null</c> if the current clauses are unsatisfiable.</returns>
+    /// <returns>A complete satisfying assignment with exactly one entry for every ID
+    /// in 1..NumberOfLiterals of the original problem, including variables absent from
+    /// all clauses, or <c>null</c> if the current clauses are unsatisfiable.</returns>
     /// <remarks>Cancellation is checked even when the clauses are already known to be unsatisfiable.</remarks>
     /// <exception cref="OperationCanceledException">The solver was cancelled.</exception>
     Literal[]? FindSolution(CancellationToken cancellationToken = default);

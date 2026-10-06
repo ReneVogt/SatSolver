@@ -12,9 +12,11 @@ public sealed partial class SatSolverTests
     [Trait("Category", "Simple Cases")]
     public void EnumerateSolutions_NoLiterals_EmptySolution()
     {
-        var solution = new Problem(0, []).EnumerateSolutions().Single();
+        var problem = new Problem(0, []);
+        var solution = problem.EnumerateSolutions().Single();
         Assert.NotNull(solution);
         Assert.Empty(solution);
+        SolutionValidator.Validate(problem, new[] { solution });
     }
     [Fact]
     [Trait("Category", "Simple Cases")]
@@ -28,7 +30,9 @@ public sealed partial class SatSolverTests
     [Trait("Category", "Simple Cases")]
     public void EnumerateSolutions_NoClauses_AllSolutions()
     {
-        var solutions = new Problem(3, []).EnumerateSolutions(SatSolverOptions.Default).ToArray();
+        var problem = new Problem(3, []);
+        var solutions = problem.EnumerateSolutions(SatSolverOptions.Default).ToArray();
+        SolutionValidator.Validate(problem, solutions);
         var clauses = solutions.Select(s => new Clause(s)).OrderBy(c => c).ToArray();
         Assert.Equal([
             [-1, -2, -3],
