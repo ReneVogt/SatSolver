@@ -26,6 +26,7 @@ sealed partial class SatSolver : ISatSolver
     readonly ConstraintLiteral[] _literals;
 
     int _originalConstraintCount;
+    bool _isUnsatisfiable;
 
     public SatSolver(ComponentStoreBase store)
     {
@@ -50,6 +51,9 @@ sealed partial class SatSolver : ISatSolver
 
     Literal[]? Solve(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_isUnsatisfiable) return null;
+
         for (;;)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -71,7 +75,13 @@ sealed partial class SatSolver : ISatSolver
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var (unitLiteral, reason) = _unitPropagationQueue.Dequeue();
-                if (unitLiteral.Sense is not null) continue;
+                if (unitLiteral.Sense is not null)
+                {
+                    // A contradictory assignment must already have caused a conflict
+                    // during propagation; only fulfilled queue entries may be skipped.
+                    Debug.Assert(unitLiteral.Sense == true);
+                    continue;
+                }
 
                 if (reason is null)
                     _trail.Push();
@@ -81,6 +91,7 @@ sealed partial class SatSolver : ISatSolver
 
                 if (_trail.DecisionLevel == 0)
                 {
+                    _isUnsatisfiable = true;
                     Statistics.NoMoreSolutions();
                     return null;
                 }
@@ -106,31 +117,60 @@ sealed partial class SatSolver : ISatSolver
         var constraint = _constraintFactory.CreateAdditionalConstraint(
             clause.Literals.Select(l => l.Sense ? _variables[l.Id-1].PositiveLiteral : _variables[l.Id-1].NegativeLiteral));
 
-        if (constraint.Watched1.Sense == true) return;
-        if (constraint.Watched1.Sense is not null)
+        if (_isUnsatisfiable) return;
+        if (constraint.Watched1.Sense == false)
         {
             var level = constraint.Watched1.Variable.DecisionLevel;
             if (level == 0)
             {
-                _trail.Reset();
-                SetInitialUnits();
+                _isUnsatisfiable = true;
+                Statistics.NoMoreSolutions();
                 return;
             }
             
+            if (ResetIfUnitsPending()) return;
             _trail.JumpBack(level);
             _conflictHandler.HandleConflict(constraint);
             return;
         }
 
-        if (constraint.Literals.Length == 1 || constraint.Watched2.Sense is not null)
-            _unitPropagationQueue.Enqueue((constraint.Watched1, constraint));
+        // Two non-false watchers remain safe across backjumps.
+        if (constraint.Literals.Length > 1 && constraint.Watched2.Sense != false) return;
+
+        var unitLevel = constraint.Literals.Length == 1 ? 0 : constraint.Watched2.Variable.DecisionLevel;
+        var unitLiteral = constraint.Watched1;
+        if (unitLiteral.Sense == true && unitLiteral.Variable.DecisionLevel <= unitLevel) return;
+
+        // The clause is unit at this level, even if its only non-false literal
+        // is currently true at a higher level. Establish its implication before
+        // a later backjump or restart can silently remove that assignment.
+        if (_trail.DecisionLevel > unitLevel)
+        {
+            if (ResetIfUnitsPending()) return;
+            _trail.JumpBack(unitLevel);
+        }
+        Debug.Assert(unitLiteral.Sense is null);
+        _unitPropagationQueue.Enqueue((unitLiteral, constraint));
+    }
+    bool ResetIfUnitsPending()
+    {
+        if (_unitPropagationQueue.Count == 0) return false;
+
+        // A backjump may invalidate queued reasons; simply clearing the queue
+        // can lose implications of earlier additions. Replay from unassigned
+        // variables, retaining every clause (including the new one).
+        Reset();
+        return true;
     }
     public void Reset(bool removeAdditionalClauses = false)
     {
         _trail.Reset();
 
         if (removeAdditionalClauses)
+        {
             _constraintFactory.ReleaseAdditionalConstraints();
+            _isUnsatisfiable = false;
+        }
 
         SetInitialUnits();
     }
