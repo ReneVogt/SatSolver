@@ -8,6 +8,53 @@ namespace SatSolverTests.Tools;
 
 public sealed class RestartManagerTests
 {
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(1, true)]
+    [InlineData(3, false)]
+    [InlineData(3, true)]
+    public void Restart_PendingPropagations_DiscardedOnlyWhenLeavingHigherLevel(int decisionLevel, bool triggerRestart)
+    {
+        var options = new SatSolverOptions
+        {
+            Restart = new()
+            {
+                Interval = 1,
+                Luby = false,
+                ByLiteralBlockDistance = false,
+                ByPropagationRate = false
+            },
+            ConstraintDeletion = new() { ReduceOnRestart = false }
+        };
+        var trail = new Mock<IVariableTrail>();
+        var currentLevel = decisionLevel;
+        trail.Setup(t => t.DecisionLevel).Returns(() => currentLevel);
+        trail.Setup(t => t.JumpBack(0)).Callback(() => currentLevel = 0);
+        var factory = new ConstraintFactory([], []);
+        var first = factory.CreateInitialConstraint([new Variable(0).PositiveLiteral]);
+        var second = factory.CreateInitialConstraint([new Variable(1).NegativeLiteral]);
+        var queue = new UnitPropagationQueue();
+        queue.Enqueue((first.Watched1, first));
+        queue.Enqueue((second.Watched1, second));
+        var pending = queue.ToArray();
+        var sut = new RestartManager(options, trail.Object,
+            Mock.Of<ITrackPropagationRate>(), Mock.Of<ITrackLiteralBlockDistance>(),
+            queue, Mock.Of<IReduceLearnedConstraints>(), null);
+
+        if (triggerRestart) sut.AddConflict();
+
+        Assert.Equal(triggerRestart, sut.RestartIfNecessary());
+
+        if (triggerRestart && decisionLevel > 0)
+            Assert.Empty(queue);
+        else
+            Assert.Equal(pending, queue.ToArray());
+        Assert.Equal(triggerRestart ? 0 : decisionLevel, currentLevel);
+        trail.Verify(t => t.JumpBack(0), triggerRestart ? Times.Once() : Times.Never());
+    }
+
     sealed class LubyMock(IEnumerable<long> sequence) : ILubySequence
     {
         readonly IEnumerator<long> _enumerator = sequence.GetEnumerator();
@@ -96,7 +143,7 @@ public sealed class RestartManagerTests
             null);
 
         Assert.False(sut.RestartIfNecessary());
-        for (var i = 0; i<23; i++)
+        for (var i = 0; i<22; i++)
         {
             sut.AddConflict();
             Assert.False(sut.RestartIfNecessary());
@@ -108,10 +155,11 @@ public sealed class RestartManagerTests
         constraintReducer.Verify(cr => cr.ReduceLearnedConstraints(), Times.Once);
         constraintReducer.VerifyNoOtherCalls();
         trail.Verify(t => t.JumpBack(0), Times.Once);
+        trail.VerifyGet(t => t.DecisionLevel, Times.Once);
         trail.VerifyNoOtherCalls();
         Assert.False(sut.RestartIfNecessary());
 
-        for (var i = 0; i<23; i++)
+        for (var i = 0; i<22; i++)
         {
             sut.AddConflict();
             Assert.False(sut.RestartIfNecessary());
@@ -122,6 +170,7 @@ public sealed class RestartManagerTests
         constraintReducer.VerifyNoOtherCalls();
 
         trail.Verify(t => t.JumpBack(0), Times.Exactly(2));
+        trail.VerifyGet(t => t.DecisionLevel, Times.Exactly(2));
         trail.VerifyNoOtherCalls();
         Assert.False(sut.RestartIfNecessary());
 
@@ -164,7 +213,7 @@ public sealed class RestartManagerTests
         Assert.False(sut.RestartIfNecessary());
         propagationRateTracker.VerifyAll();
         propagationRateTracker.VerifyNoOtherCalls();
-        for (var i = 0; i<5; i++)
+        for (var i = 0; i<4; i++)
         {
             sut.AddConflict();
             Assert.False(sut.RestartIfNecessary());
@@ -180,9 +229,10 @@ public sealed class RestartManagerTests
         propagationRateTracker.VerifyNoOtherCalls();
 
         trail.Verify(t => t.JumpBack(0), Times.Once);
+        trail.VerifyGet(t => t.DecisionLevel, Times.Once);
         trail.VerifyNoOtherCalls();
         Assert.False(sut.RestartIfNecessary());
-        for (var i = 0; i<20; i++)
+        for (var i = 0; i<19; i++)
         {
             sut.AddConflict();
             Assert.False(sut.RestartIfNecessary());
@@ -198,6 +248,7 @@ public sealed class RestartManagerTests
         propagationRateTracker.Verify(p => p.ResetAfterRestart(), Times.Exactly(2));
         propagationRateTracker.VerifyNoOtherCalls();
         trail.Verify(t => t.JumpBack(0), Times.Exactly(2));
+        trail.VerifyGet(t => t.DecisionLevel, Times.Exactly(2));
         trail.VerifyNoOtherCalls();
         Assert.False(sut.RestartIfNecessary());
         propagationRateTracker.VerifyNoOtherCalls();
@@ -254,6 +305,7 @@ public sealed class RestartManagerTests
         constraintReducer.Verify(c => c.ReduceLearnedConstraints(), Times.Once());
         constraintReducer.VerifyNoOtherCalls();
         trail.Verify(t => t.JumpBack(0), Times.Once);
+        trail.VerifyGet(t => t.DecisionLevel, Times.Once);
         trail.VerifyNoOtherCalls();
 
         Assert.False(sut.RestartIfNecessary());
@@ -268,6 +320,7 @@ public sealed class RestartManagerTests
         constraintReducer.Verify(c => c.ReduceLearnedConstraints(), Times.Exactly(2));
         constraintReducer.VerifyNoOtherCalls();
         trail.Verify(t => t.JumpBack(0), Times.Exactly(2));
+        trail.VerifyGet(t => t.DecisionLevel, Times.Exactly(2));
         trail.VerifyNoOtherCalls();
     }
     [Fact]
@@ -312,6 +365,7 @@ public sealed class RestartManagerTests
         Assert.True(sut.RestartIfNecessary());
         literalBlockDistanceTracker.Verify(l => l.ResetAfterRestart(), Times.Once);
         trail.Verify(t => t.JumpBack(0), Times.Once);
+        trail.VerifyGet(t => t.DecisionLevel, Times.Once);
         trail.VerifyNoOtherCalls();
 
         Assert.False(sut.RestartIfNecessary());
@@ -319,6 +373,7 @@ public sealed class RestartManagerTests
         Assert.True(sut.RestartIfNecessary());
         literalBlockDistanceTracker.Verify(l => l.ResetAfterRestart(), Times.Exactly(2));
         trail.Verify(t => t.JumpBack(0), Times.Exactly(2));
+        trail.VerifyGet(t => t.DecisionLevel, Times.Exactly(2));
         trail.VerifyNoOtherCalls();
 
         literalBlockDistanceTracker.VerifyAll();
