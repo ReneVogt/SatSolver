@@ -96,7 +96,7 @@ public sealed class RestartManagerTests
             null);
 
         Assert.False(sut.RestartIfNecessary());
-        for (var i = 0; i<23; i++)
+        for (var i = 0; i<22; i++)
         {
             sut.AddConflict();
             Assert.False(sut.RestartIfNecessary());
@@ -111,7 +111,7 @@ public sealed class RestartManagerTests
         trail.VerifyNoOtherCalls();
         Assert.False(sut.RestartIfNecessary());
 
-        for (var i = 0; i<23; i++)
+        for (var i = 0; i<22; i++)
         {
             sut.AddConflict();
             Assert.False(sut.RestartIfNecessary());
@@ -164,7 +164,7 @@ public sealed class RestartManagerTests
         Assert.False(sut.RestartIfNecessary());
         propagationRateTracker.VerifyAll();
         propagationRateTracker.VerifyNoOtherCalls();
-        for (var i = 0; i<5; i++)
+        for (var i = 0; i<4; i++)
         {
             sut.AddConflict();
             Assert.False(sut.RestartIfNecessary());
@@ -182,7 +182,7 @@ public sealed class RestartManagerTests
         trail.Verify(t => t.JumpBack(0), Times.Once);
         trail.VerifyNoOtherCalls();
         Assert.False(sut.RestartIfNecessary());
-        for (var i = 0; i<20; i++)
+        for (var i = 0; i<19; i++)
         {
             sut.AddConflict();
             Assert.False(sut.RestartIfNecessary());

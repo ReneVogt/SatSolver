@@ -48,7 +48,7 @@ sealed class RestartManager : IManageRestart
     {
         if (!_useRestarts) return false;
 
-        if (!(_restartCounter > _nextRestartThreshold || 
+        if (!(_restartCounter >= _nextRestartThreshold || 
             _restartOnPropagationRate && _propagationRateTracker.ShouldRestart() || 
             _restartOnLiteralBlockDistance && _literalBlockDistanceTracker.ShouldRestart())) return false;
 
