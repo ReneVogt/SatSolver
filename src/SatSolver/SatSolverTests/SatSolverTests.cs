@@ -716,7 +716,7 @@ public sealed partial class SatSolverTests
         constraintFactory.InSequence(seq).Setup(cf =>
             cf.CreateAdditionalConstraint(It.Is<IEnumerable<ConstraintLiteral>>(literals => literals.SequenceEqual(expectedLiterals))))
             .Returns(constraint);
-        trail.InSequence(seq).Setup(t => t.Count).Returns(12);
+        trail.InSequence(seq).Setup(t => t.DecisionLevel).Returns(0);
 
         var units = store.UnitPropagationQueue;
         var sut = Create(store);
@@ -752,7 +752,7 @@ public sealed partial class SatSolverTests
         constraintFactory.InSequence(seq).Setup(cf =>
             cf.CreateAdditionalConstraint(It.Is<IEnumerable<ConstraintLiteral>>(literals => literals.SequenceEqual(expectedLiterals))))
             .Returns(constraint);
-        trail.InSequence(seq).Setup(t => t.Count).Returns(12);
+        trail.InSequence(seq).Setup(t => t.DecisionLevel).Returns(0);
 
         var units = store.UnitPropagationQueue;
         var sut = Create(store);

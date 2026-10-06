@@ -67,63 +67,19 @@ sealed class ConstraintFactory(ConstraintLiteral[] _literals, List<Constraint> _
                 firstWatched = literal;
         }
 
-        // The second watcher now depends on the state
-        // of the first:
-        // - first watcher "true"
-        //   we look for the literal with
-        //   the highest decision level below(!)
-        //   the first watchers decision level.
-        //   (so after the fulfilling literal is
-        //   reset by a back jump, this is the first
-        //   to also get unassigned; and before that
-        //   we don't need to update watchers during
-        //   propagation).
-        // - first watcher "false"
-        //   we look for the "false" literal with the
-        //  (second) highest decision level
-        // - first watcher unassigned
-        //   we look for either
-        //   + an unassigned literal
-        //   + the "false" literal with the hightest decision level
+        // Prefer a second non-false literal. Otherwise watch the false literal
+        // with the highest decision level, so no unwatched false literal can
+        // become unassigned while that watcher remains false after a backjump.
+        // If the only true literal lies above all false ones, AddClause must
+        // lower its assignment to the level where this clause becomes unit.
         ConstraintLiteral? secondWatched = null;
         for (var i = 0; i<l.Length; i++)
         {
             var literal = l[i];
             if (literal == firstWatched) continue;
 
-            secondWatched ??= literal;
-            var level = literal.Variable.DecisionLevel;
-
-            if (firstWatched.Sense == true)
-            {
-                if ((level > secondWatched.Variable.DecisionLevel ||
-                    secondWatched.Variable.DecisionLevel > firstWatched.Variable.DecisionLevel) &&
-                    level <= firstWatched.Variable.DecisionLevel)
-                    secondWatched = literal;
-                continue;
-            }
-
-            if (firstWatched.Sense == false)
-            {
-                // so we know that all literals are false and
-                // simply take the one with the hightst decision level
-                if (level > secondWatched.Variable.DecisionLevel)
-                    secondWatched = literal;
-                continue;
-            }
-
-            // first watcher is unassigned, so
-            // we look for either an unassigned literal
-            // or (if the first watcher has the only one)
-            // the latest set literal
-            if (secondWatched.Sense is null) continue; // that's fine enough
-            if (literal.Sense is null)
-            {
-                secondWatched = literal;
-                continue;
-            }
-
-            if (level > secondWatched.Variable.DecisionLevel)
+            if (secondWatched is null || secondWatched.Sense == false &&
+                (literal.Sense != false || literal.Variable.DecisionLevel > secondWatched.Variable.DecisionLevel))
                 secondWatched = literal;
         }
 

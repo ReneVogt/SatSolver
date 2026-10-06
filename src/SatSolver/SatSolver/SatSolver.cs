@@ -118,8 +118,7 @@ sealed partial class SatSolver : ISatSolver
             clause.Literals.Select(l => l.Sense ? _variables[l.Id-1].PositiveLiteral : _variables[l.Id-1].NegativeLiteral));
 
         if (_isUnsatisfiable) return;
-        if (constraint.Watched1.Sense == true) return;
-        if (constraint.Watched1.Sense is not null)
+        if (constraint.Watched1.Sense == false)
         {
             var level = constraint.Watched1.Variable.DecisionLevel;
             if (level == 0)
@@ -129,13 +128,39 @@ sealed partial class SatSolver : ISatSolver
                 return;
             }
             
+            if (ResetIfUnitsPending()) return;
             _trail.JumpBack(level);
             _conflictHandler.HandleConflict(constraint);
             return;
         }
 
-        if (constraint.Literals.Length == 1 || constraint.Watched2.Sense is not null)
-            _unitPropagationQueue.Enqueue((constraint.Watched1, constraint));
+        // Two non-false watchers remain safe across backjumps.
+        if (constraint.Literals.Length > 1 && constraint.Watched2.Sense != false) return;
+
+        var unitLevel = constraint.Literals.Length == 1 ? 0 : constraint.Watched2.Variable.DecisionLevel;
+        var unitLiteral = constraint.Watched1;
+        if (unitLiteral.Sense == true && unitLiteral.Variable.DecisionLevel <= unitLevel) return;
+
+        // The clause is unit at this level, even if its only non-false literal
+        // is currently true at a higher level. Establish its implication before
+        // a later backjump or restart can silently remove that assignment.
+        if (_trail.DecisionLevel > unitLevel)
+        {
+            if (ResetIfUnitsPending()) return;
+            _trail.JumpBack(unitLevel);
+        }
+        Debug.Assert(unitLiteral.Sense is null);
+        _unitPropagationQueue.Enqueue((unitLiteral, constraint));
+    }
+    bool ResetIfUnitsPending()
+    {
+        if (_unitPropagationQueue.Count == 0) return false;
+
+        // A backjump may invalidate queued reasons; simply clearing the queue
+        // can lose implications of earlier additions. Replay from unassigned
+        // variables, retaining every clause (including the new one).
+        Reset();
+        return true;
     }
     public void Reset(bool removeAdditionalClauses = false)
     {

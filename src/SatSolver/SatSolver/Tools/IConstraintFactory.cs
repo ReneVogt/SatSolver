@@ -13,11 +13,11 @@ interface IConstraintFactory
     Constraint CreateInitialConstraint(IEnumerable<ConstraintLiteral> literals);
 
     /// <summary>
-    /// Used for creating a constraint from a found solution 
-    /// to force finding further solutions.or for additional 
-    /// constraints added via <see cref="ISatSolver.AddClause(Clause)"/>,
-    /// The watchers will be set to the unassigned literals or the
-    /// literals with the highest decision levels.
+    /// Creates additional constraints, including clauses blocking found solutions.
+    /// Prefers non-false watchers; false watchers are chosen at the highest
+    /// decision levels. The caller must handle conflicts and establish unit
+    /// implications at the required level, including when the only true literal
+    /// is assigned above all false literals.
     /// </summary>
     Constraint CreateAdditionalConstraint(IEnumerable<ConstraintLiteral> literals);
 

@@ -5,8 +5,11 @@
   They test individual types, using `TestComponentStore` and mocks where needed.
 - **Component tests** live under `ComponentTests/<feature>` with matching namespaces
   and `[Trait("TestLevel", "Component")]`. They exercise cooperating production
-  components through the solver's public API, using small in-memory problems and
-  no mocks. Group classes by behavior, for example `Solving/UnsatisfiableStateTests`,
+  components primarily through the solver's public API, using small in-memory
+  problems and no mocks. Tests under `Propagation` may drive real internal
+  components directly to control decision levels and verify backjumps or actual
+  restarts independently of search heuristics.
+  Group classes by behavior, for example `Solving/UnsatisfiableStateTests`,
   so incremental insertion, reset, and other regressions can grow independently.
 - **Integration tests**, when added, should live under `IntegrationTests/<feature>`
   with `[Trait("TestLevel", "Integration")]`. Use these for complete workflows

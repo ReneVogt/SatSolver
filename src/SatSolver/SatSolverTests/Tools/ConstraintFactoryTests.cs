@@ -193,7 +193,7 @@ public sealed class ConstraintFactoryTests
         Assert.True(constraint.IsAdditional);
     }
     [Fact]
-    public void Addidtional_AllAssigned_OneTrue()
+    public void Additional_AllAssigned_OneTrue_WatchesHighestFalseLevel()
     {
         var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
@@ -205,16 +205,16 @@ public sealed class ConstraintFactoryTests
         var constraint = sut.CreateAdditionalConstraint(clause);
 
         Assert.Equal(v1.PositiveLiteral, constraint.Watched1);
-        Assert.Equal(v3.NegativeLiteral, constraint.Watched2);
+        Assert.Equal(v0.NegativeLiteral, constraint.Watched2);
         Assert.Equal(constraint, Assert.Single(constraint.Watched1.Watchers));
         Assert.Equal(constraint, Assert.Single(constraint.Watched2.Watchers));
 
         Assert.Empty(v0.PositiveLiteral.Watchers);
-        Assert.Empty(v0.NegativeLiteral.Watchers);
         Assert.Empty(v1.NegativeLiteral.Watchers);
         Assert.Empty(v2.PositiveLiteral.Watchers);
         Assert.Empty(v2.NegativeLiteral.Watchers);
         Assert.Empty(v3.PositiveLiteral.Watchers);
+        Assert.Empty(v3.NegativeLiteral.Watchers);
 
         Assert.Equal(clause, constraint.Literals);
 
@@ -226,7 +226,7 @@ public sealed class ConstraintFactoryTests
         Assert.True(constraint.IsAdditional);
     }
     [Fact]
-    public void Addidtional_AllAssigned_TwoTrue()
+    public void Additional_AllAssigned_TwoTrue_WatchesBothTrueLiterals()
     {
         var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
@@ -238,15 +238,15 @@ public sealed class ConstraintFactoryTests
         var constraint = sut.CreateAdditionalConstraint(clause);
 
         Assert.Equal(v3.PositiveLiteral, constraint.Watched1);
-        Assert.Equal(v2.NegativeLiteral, constraint.Watched2);
+        Assert.Equal(v0.PositiveLiteral, constraint.Watched2);
         Assert.Equal(constraint, Assert.Single(constraint.Watched1.Watchers));
         Assert.Equal(constraint, Assert.Single(constraint.Watched2.Watchers));
 
-        Assert.Empty(v0.PositiveLiteral.Watchers);
         Assert.Empty(v0.NegativeLiteral.Watchers);
         Assert.Empty(v1.PositiveLiteral.Watchers);
         Assert.Empty(v1.NegativeLiteral.Watchers);
         Assert.Empty(v2.PositiveLiteral.Watchers);
+        Assert.Empty(v2.NegativeLiteral.Watchers);
         Assert.Empty(v3.NegativeLiteral.Watchers);
 
         Assert.Equal(clause, constraint.Literals);
@@ -358,7 +358,7 @@ public sealed class ConstraintFactoryTests
         Assert.True(constraint.IsAdditional);
     }
     [Fact]
-    public void Addidtional_HalfAssigned_OneTrue()
+    public void Additional_HalfAssigned_OneTrue_WatchesUnassignedLiteral()
     {
         var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
@@ -371,16 +371,15 @@ public sealed class ConstraintFactoryTests
         var constraint = sut.CreateAdditionalConstraint(clause);
 
         Assert.Equal(v2.NegativeLiteral, constraint.Watched1);
-        Assert.Equal(v0.NegativeLiteral, constraint.Watched2);
+        Assert.Contains(constraint.Watched2, new[] { v1.PositiveLiteral, v3.NegativeLiteral });
         Assert.Equal(constraint, Assert.Single(constraint.Watched1.Watchers));
         Assert.Equal(constraint, Assert.Single(constraint.Watched2.Watchers));
 
         Assert.Empty(v0.PositiveLiteral.Watchers);
-        Assert.Empty(v1.PositiveLiteral.Watchers);
+        Assert.Empty(v0.NegativeLiteral.Watchers);
         Assert.Empty(v1.NegativeLiteral.Watchers);
         Assert.Empty(v2.PositiveLiteral.Watchers);
         Assert.Empty(v3.PositiveLiteral.Watchers);
-        Assert.Empty(v3.NegativeLiteral.Watchers);
         Assert.Empty(v4.PositiveLiteral.Watchers);
         Assert.Empty(v4.NegativeLiteral.Watchers);
 
@@ -394,7 +393,7 @@ public sealed class ConstraintFactoryTests
         Assert.True(constraint.IsAdditional);
     }
     [Fact]
-    public void Addidtional_HalfAssigned_TwoTrue()
+    public void Additional_HalfAssigned_TwoTrue_WatchesNonFalseLiteral()
     {
         var sut = new ConstraintFactory([], []);
         var v0 = new Variable(0) { Sense = true, DecisionLevel = 8 };
@@ -407,18 +406,16 @@ public sealed class ConstraintFactoryTests
         var constraint = sut.CreateAdditionalConstraint(clause);
 
         Assert.Equal(v0.PositiveLiteral, constraint.Watched1);
-        Assert.Equal(v4.NegativeLiteral, constraint.Watched2);
+        Assert.Contains(constraint.Watched2, new[] { v1.PositiveLiteral, v2.NegativeLiteral, v3.NegativeLiteral });
         Assert.Equal(constraint, Assert.Single(constraint.Watched1.Watchers));
         Assert.Equal(constraint, Assert.Single(constraint.Watched2.Watchers));
 
         Assert.Empty(v0.NegativeLiteral.Watchers);
-        Assert.Empty(v1.PositiveLiteral.Watchers);
         Assert.Empty(v1.NegativeLiteral.Watchers);
         Assert.Empty(v2.PositiveLiteral.Watchers);
-        Assert.Empty(v2.NegativeLiteral.Watchers);
         Assert.Empty(v3.PositiveLiteral.Watchers);
-        Assert.Empty(v3.NegativeLiteral.Watchers);
         Assert.Empty(v4.PositiveLiteral.Watchers);
+        Assert.Empty(v4.NegativeLiteral.Watchers);
 
         Assert.Equal(clause, constraint.Literals);
 
