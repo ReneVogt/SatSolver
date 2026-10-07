@@ -14,8 +14,6 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
 
     public void MinimizeConstraint(StampArray constraint, int decisionLevel, ConstraintLiteral[] knownLiterals)
     {
-        int maxStackSize = 64 * constraint.Count;
-        int visitLimit = Math.Max(3000, 20 * constraint.Count);
         _redundant.Clear();
         _notRedundant.Clear();
 
@@ -45,8 +43,6 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
 
             while(_stack.Count > 0)            
             {
-                if (++visitBudget > visitLimit) return false;
-
                 var (variable, index) = _stack.Pop();
                 if (variable.DecisionLevel == 0)
                 {
@@ -66,7 +62,6 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
                     }
 
                     _stack.Push((variable, 0));
-                    if (_stack.Count > maxStackSize) return false;
                     continue;
                 }
 
@@ -79,7 +74,6 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
 
                 var reasonLiteral = reason.Literals[index++];
                 _stack.Push((variable, index));
-                if (_stack.Count > maxStackSize) return false;
 
                 var reasonVariable = reasonLiteral.Variable;
                 if (variable == reasonVariable) continue;
@@ -93,7 +87,6 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
                 }
                 if (!_seen.Add(reasonLiteral.StampIndex)) continue;
                 _stack.Push((reasonVariable, -1));
-                if (_stack.Count > maxStackSize) return false;
             }
 
             return true;
