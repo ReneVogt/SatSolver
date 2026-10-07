@@ -60,7 +60,7 @@ public class SatSolverBenchmark
         public override string ToString() => Path.GetFileNameWithoutExtension(FilePath);
     }
 
-    public static IEnumerable<BenchmarkCase> Cases => //new[] { new BenchmarkCase("Test", "cnf\\UNSAT\\2bitadd_10.cnf", false) };
+    public static IEnumerable<BenchmarkCase> Cases => //[new BenchmarkCase("cnf\\UNSAT\\2bitadd_10.cnf", false)];
         Directory.EnumerateFiles("cnf\\SAT", "*.cnf").Select(path => new BenchmarkCase(path, true))
         .Concat(Directory.EnumerateFiles("cnf\\UNSAT", "*.cnf").Select(path => new BenchmarkCase(path, false)).OrderBy(c => c.ToString()));
 
