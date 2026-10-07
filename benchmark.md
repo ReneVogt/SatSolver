@@ -1,18 +1,18 @@
 # Fixed Clause Minimization
-- fixing outer loop condition
+- fixing outer loop condition and removing unnecessary checks
 - same options as baseline
 
-| Method | Case             | Mean          | Error         | StdDev        | Median        |
-|------- |----------------- |--------------:|--------------:|--------------:|--------------:|
-| Solve  | 2bitadd_10       |  6,231.354 ms | 2,924.1561 ms | 9,283.2447 ms |  5,027.200 ms |
-| Solve  | 2bitadd_11       |      2.967 ms |     0.0198 ms |     0.0377 ms |      2.957 ms |
-| Solve  | 3blocks          |     10.829 ms |     0.0952 ms |     0.1812 ms |     10.780 ms |
-| Solve  | bmc-galileo-9    | 28,688.448 ms |   310.2266 ms |   778.2980 ms | 28,704.746 ms |
-| Solve  | e0ddr2-10-by-5-1 |  3,138.073 ms |    36.1824 ms |   111.1236 ms |  3,104.216 ms |
-| Solve  | qg3-09           |  6,047.402 ms |    93.3486 ms |   179.8510 ms |  5,951.553 ms |
-| Solve  | qg5-13           |  4,071.572 ms |    29.4940 ms |    56.1155 ms |  4,063.184 ms |
-| Solve  | random3          |  8,963.567 ms |    45.2207 ms |    86.0370 ms |  8,946.665 ms |
-| Solve  | random3u         |  8,346.269 ms |    45.0411 ms |    85.6954 ms |  8,326.646 ms |
+| Method | Case             | Mean          | Error       | StdDev      | Median        |
+|------- |----------------- |--------------:|------------:|------------:|--------------:|
+| Solve  | 2bitadd_10       |  5,091.053 ms |  34.3658 ms |  65.3845 ms |  5,072.943 ms |
+| Solve  | 2bitadd_11       |      2.978 ms |   0.0362 ms |   0.0689 ms |      2.936 ms |
+| Solve  | 3blocks          |     10.776 ms |   0.1614 ms |   0.3070 ms |     10.659 ms |
+| Solve  | bmc-galileo-9    | 28,384.377 ms | 296.5453 ms | 612.4175 ms | 28,266.345 ms |
+| Solve  | e0ddr2-10-by-5-1 |  3,180.255 ms |  36.9149 ms | 112.2582 ms |  3,162.862 ms |
+| Solve  | qg3-09           |  5,926.361 ms |  38.6150 ms |  73.4690 ms |  5,919.704 ms |
+| Solve  | qg5-13           |  4,095.232 ms |  33.9652 ms |  65.4395 ms |  4,094.768 ms |
+| Solve  | random3          |  8,809.509 ms |  56.5942 ms | 107.6764 ms |  8,793.018 ms |
+| Solve  | random3u         |  8,277.434 ms |  26.0116 ms |  49.4898 ms |  8,279.700 ms |
 
 # Baseline
 - No restarts
