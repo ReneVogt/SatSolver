@@ -21,11 +21,13 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
         _redundant.Clear();
         _notRedundant.Clear();
 
-        CheckBufferSize(constraint.Count);
+        var constraintLength = constraint.Count;
+
+        CheckBufferSize(constraintLength);
         var i = 0;
         foreach (var index in constraint)
             _constraintBuffer[i++] = index;
-        for (i = 0; i< constraint.Count; i++)
+        for (i = 0; i< constraintLength; i++)
         {
             var index = _constraintBuffer[i];
             if (IsRedundant(index))

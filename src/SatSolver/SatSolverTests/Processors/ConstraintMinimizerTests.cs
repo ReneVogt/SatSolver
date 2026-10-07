@@ -4,7 +4,7 @@ using Revo.SatSolver.Tools;
 
 namespace SatSolverTests.Processors;
 
-public sealed class ConstraintMinimizerTests
+public sealed partial class ConstraintMinimizerTests
 {
     readonly ConstraintFactory _constraintFactory = new([], []);
     [Fact]
@@ -41,15 +41,16 @@ public sealed class ConstraintMinimizerTests
 
         var learned = new StampArray
         {
-            variables[1].NegativeLiteral.StampIndex,
-            variables[2].NegativeLiteral.StampIndex,
-            variables[5].NegativeLiteral.StampIndex,
-            variables[6].NegativeLiteral.StampIndex,
+            variables[1].PositiveLiteral.StampIndex,
+            variables[2].PositiveLiteral.StampIndex,
+            variables[5].PositiveLiteral.StampIndex,
+            variables[6].PositiveLiteral.StampIndex,
             variables[8].NegativeLiteral.StampIndex
         };
 
         var copy = new StampArray();
         foreach (var index in learned) copy.Add(index);
+        Assert.All(learned, index => Assert.Equal(false, literals[index].Sense));
 
         var sut = new ConstraintMinimizer();
         sut.MinimizeConstraint(learned, 3, literals);
