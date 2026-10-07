@@ -9,12 +9,14 @@ namespace Revo.SatSolver;
 public static class SatSolverFactory
 {
     /// <summary>
-    /// Enumerates all solutions the solver can find by adding already found solutions
-    /// as inverted constraints.
+    /// Enumerates all complete satisfying assignments by adding already found solutions
+    /// as inverted constraints. Each assignment includes every declared variable.
+    /// Assignments differing only in unused variables are distinct models.
     /// </summary>
     /// <param name="solver">The <see cref="ISatSolver"/> to enumerate.</param>
     /// <param name="cancellationToken">A token to cancel the solver.</param>
-    /// <returns>The sequence of solutions the <paramref name="solver"/> can find.
+    /// <returns>A sequence of distinct complete models, or an empty sequence if unsatisfiable.
+    /// A problem with no variables and no clauses has one model: an empty array.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="solver"/> was <c>null</c>.</exception>
     /// <exception cref="OperationCanceledException">The solver was canceled.</exception>
     public static IEnumerable<Literal[]> EnumerateSolutions(this ISatSolver solver, CancellationToken cancellationToken = default)
@@ -52,16 +54,17 @@ public static class SatSolverFactory
         return new SatSolver(store);
     }
     /// <summary>
-    /// Finds a variable configuration that satisfies the SATisfiability <paramref name="problem"/>.
-    /// If there is no solution the method return, <c>null</c>.
+    /// Enumerates all complete satisfying assignments of the SATisfiability <paramref name="problem"/>.
+    /// Each model assigns every ID in 1..NumberOfLiterals exactly once, including unused
+    /// variables. Assignments differing only in unused variables are distinct models.
     /// </summary>
     /// <param name="problem">The <see cref="Problem"/> to satisfy.</param>
     /// <param name="options">The options for the solver.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>If a solution was found the method returns an array of <see cref="Literal"/>s indicating
-    /// their senses that solve the problem. If no solution was found the method returns <c>null</c>.</returns>
+    /// <returns>A sequence of distinct complete models, or an empty sequence if unsatisfiable.
+    /// A problem with no variables and no clauses has one model: an empty array.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="problem"/> was <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">The problem contains either invalid literal IDs or no literals at all.</exception>
+    /// <exception cref="ArgumentException">The problem contains either invalid literal IDs or empty clauses.</exception>
     public static IEnumerable<Literal[]> EnumerateSolutions(this Problem problem, SatSolverOptions? options = null, CancellationToken cancellationToken = default) =>
         Create(problem, options).EnumerateSolutions(cancellationToken);
 
