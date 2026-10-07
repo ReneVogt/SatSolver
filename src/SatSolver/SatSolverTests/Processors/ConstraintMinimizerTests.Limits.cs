@@ -6,24 +6,6 @@ namespace SatSolverTests.Processors;
 public sealed partial class ConstraintMinimizerTests
 {
     [Theory]
-    [InlineData(12, false)]
-    [InlineData(13, false)]
-    [InlineData(12, true)]
-    [InlineData(13, true)]
-    public void Minimize_ReasonSizeLimit_KeepsCandidateOnlyWhenLimitIsExceeded(int reasonSize, bool nested)
-    {
-        var graph = new MinimizationGraph();
-        var roots = Enumerable.Range(4, reasonSize - 2).Select(id => graph.Imply(id, false)).ToArray();
-        var anchor = graph.Decide(1, 1);
-        var largeReason = graph.Imply(nested ? 20 : 0, true, [anchor, .. roots]);
-        var candidate = nested ? graph.Imply(0, false, largeReason) : largeReason;
-        var uip = graph.Decide(2, 2);
-
-        graph.Check(new ConstraintMinimizer(), uip, [candidate, anchor],
-            reasonSize == 12 ? [anchor] : [candidate, anchor]);
-    }
-
-    [Theory]
     [InlineData(80, false)]
     [InlineData(300, true)]
     public void Minimize_StackBudget_StopsConservativelyAndContinuesWithNextCandidate(int chainLength, bool exhausted)

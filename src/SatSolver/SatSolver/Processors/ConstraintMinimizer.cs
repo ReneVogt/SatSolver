@@ -5,8 +5,6 @@ namespace Revo.SatSolver.Processors;
 
 sealed class ConstraintMinimizer : IMinimizeConstraints
 {
-    const int _maxReasonSize = 12;
-
     readonly StampArray _seen = [];
     readonly StampArray _redundant = [];
     readonly StampArray _notRedundant = [];
@@ -61,7 +59,7 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
                 if (index < 0)
                 { 
                     var r = variable.Reason;
-                    if (r is null || r.Literals.Length > _maxReasonSize)
+                    if (r is null)
                     {
                         _notRedundant.Add(variable.Index);
                         return false;
