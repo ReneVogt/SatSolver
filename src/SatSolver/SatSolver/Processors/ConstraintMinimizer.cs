@@ -39,7 +39,6 @@ sealed class ConstraintMinimizer : IMinimizeConstraints
             _stack.Clear();
             _stack.Push((learnedVariable, -1));
             _seen.Clear();
-            var visitBudget = 0;
 
             while(_stack.Count > 0)            
             {
